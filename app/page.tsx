@@ -37,7 +37,7 @@ export default function Page() {
       ポイ活AI判定
     </h1>
 
-    <p className="mt-4 max-w-3xl text-base font-medium leading-8 text-white/95 md:text-lg">
+   <p className="mt-4 max-w-3xl text-base font-medium leading-8 text-white/95 md:text-lg">
       いまポイ活で話題の案件は、ここでチェック。主要ポイントサイトの掲載案件を横断比較し、
       <span className="font-black text-yellow-100">
         AIが話題度と報酬条件を判定
