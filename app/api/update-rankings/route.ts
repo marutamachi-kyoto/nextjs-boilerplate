@@ -67,16 +67,24 @@ export async function GET() {
   const best = getBestOffers(offers || []);
 
   // スコア付け
-  const ranked = best
-    .map((o) => ({
-      ...o,
-      final_score: calcScore(o, trends),
-    }))
-    .sort((a, b) => b.final_score - a.final_score)
-    .map((o, i) => ({
-      ...o,
-      rank: i + 1,
-    }));
+const ranked = best
+  .map((o) => ({
+    offer_title: o.title,
+    category: o.category,
+    point_site: o.point_site,
+    reward: o.reward,
+    url: o.url,
+    tags: o.tags || [],
+    reward_score: o.reward / 30000,
+    trend_score: 0,
+    ease_score: (6 - (o.difficulty || 3)) / 5,
+    final_score: calcScore(o, trends),
+  }))
+  .sort((a, b) => b.final_score - a.final_score)
+  .map((o, i) => ({
+    ...o,
+    rank: i + 1,
+  }));
 
   // 全削除 → 再登録
   await supabase.from("rankings").delete().neq("id", "0");
