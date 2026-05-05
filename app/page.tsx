@@ -22,22 +22,48 @@ export default function Page() {
 
   return (
     <div className="bg-[#FFF9E6] min-h-screen pb-10">
-      <header className="p-4 text-center">
-        <h1 className="font-bold text-2xl">ポイ活AI判定</h1>
+    <header className="relative overflow-hidden bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white">
+  <div className="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_top_right,#ffffff,transparent_36%),radial-gradient(circle_at_bottom_left,#fde68a,transparent_34%)]" />
+  <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/20 blur-2xl" />
+  <div className="absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-yellow-300/30 blur-2xl" />
 
-        <div className="mt-3 mx-auto max-w-md bg-white border-2 border-red-200 rounded-2xl shadow p-4">
-          <p className="text-base font-semibold leading-relaxed text-gray-800">
-            いまポイ活で話題の案件は、ここでチェック！
-            <br />
-            主要なポイントサイトに掲載されている各案件の話題度
-            <br />
-            を、<span className="text-red-500 font-bold">AI</span>
-            が判定し、ランキングしています
-          </p>
-        </div>
-      </header>
+  <div className="relative mx-auto max-w-6xl px-5 py-11 md:py-14">
+    <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-black text-white shadow-sm ring-1 ring-white/30 backdrop-blur">
+      <span className="h-2 w-2 rounded-full bg-emerald-300" />
+      Google Trends連動・自動更新
+    </div>
 
-      <div className="flex overflow-x-auto px-3 gap-2 mb-4">
+    <h1 className="mt-6 text-4xl font-black tracking-tight drop-shadow-sm md:text-6xl">
+      ポイ活AI判定
+    </h1>
+
+    <p className="mt-4 max-w-3xl text-base font-medium leading-8 text-white/95 md:text-lg">
+      いまポイ活で話題の案件は、ここでチェック。主要ポイントサイトの掲載案件を横断比較し、
+      <span className="font-black text-yellow-100">
+        AIが話題度と報酬条件を判定
+      </span>
+      してランキング化します。
+    </p>
+
+    <div className="mt-6 flex flex-wrap gap-2">
+      {[
+        "主要10サイト比較",
+        "最高報酬を自動選択",
+        "TOP20ランキング",
+        "毎日更新対応",
+      ].map((label) => (
+        <span
+          key={label}
+          className="rounded-full bg-white/20 px-3 py-2 text-xs font-black text-white shadow-sm ring-1 ring-white/25 backdrop-blur"
+        >
+          {label}
+        </span>
+      ))}
+    </div>
+  </div>
+</header>
+
+      <div className="max-w-6xl mx-auto flex overflow-x-auto px-5 gap-2 mt-4 mb-6">
         {categories.map((cat) => (
           <button
             key={cat}
