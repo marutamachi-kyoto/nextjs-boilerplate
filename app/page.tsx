@@ -22,7 +22,7 @@ export default function Page() {
 
   return (
     <div className="bg-[#FFF9E6] min-h-screen pb-10">
-    <header className="relative overflow-hidden bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white">
+    <header className="relative overflow-hidden bg-gradient-to-br from-purple-400 via-pink-400 to-orange-300 text-white">
   <div className="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_top_right,#ffffff,transparent_36%),radial-gradient(circle_at_bottom_left,#fde68a,transparent_34%)]" />
   <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/20 blur-2xl" />
   <div className="absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-yellow-300/30 blur-2xl" />
