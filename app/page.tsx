@@ -70,7 +70,7 @@ export default function Page() {
         <div className="relative mx-auto flex max-w-[1400px] items-center justify-between px-10 py-10">
 
           {/* LEFT */}
-          <div className="w-[520px] shrink-0">
+          <div className="w-[620px] shrink-0">
 
             {/* BADGE */}
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-lg font-black text-pink-600 shadow-xl">
@@ -87,9 +87,9 @@ export default function Page() {
             </h1>
 
             {/* DESCRIPTION */}
-            <div className="mt-10 max-w-[520px]">
+            <div className="mt-10 max-w-[620px]">
 
-              <p className="text-[29px] font-black leading-[1.75] text-[#34151B]">
+              <p className="text-[24px] font-black leading-[1.7] text-[#34151B]">
                 いま注目すべきポイ活ジャンルを、
                 <br />
                 AIが毎日判定。クリックデータ・話題性・
