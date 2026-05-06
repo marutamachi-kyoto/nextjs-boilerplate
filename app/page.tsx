@@ -71,7 +71,7 @@ export default function Page() {
 
             {/* BADGE */}
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-black text-pink-600 shadow-xl lg:px-6 lg:py-3 lg:text-lg">
-              🤖 AIが毎日自動判定中
+              🤖 AIが１時間ごと（毎時０分）に自動判定中
             </div>
 
             {/* TITLE */}
@@ -96,7 +96,7 @@ export default function Page() {
                 「世間での話題度」「クリック数」「報酬レンジ」
                 </span>
                 の各データをもとに、初心者の方向けのポイ活をAIが判定し、              
-                <span className="text-[#FFF3A1]">毎日自動的にランキング化</span>しています。
+                <span className="text-[#FFF3A1]">１時間ごと（毎時０分）に、ランキング反映</span>しています。
               </p>
 
             </div>
