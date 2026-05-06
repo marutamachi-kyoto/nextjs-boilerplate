@@ -90,7 +90,7 @@ export default function Page() {
                 いま注目すべきポイ活ジャンルを、AIが毎日判定。
                 <br />
 　　　　　　　　<span className="text-pink-600">
-                世間での話題性・クリックデータ・報酬レンジ </p>をもとに、
+                世間での話題性・クリックデータ・報酬レンジ </span>をもとに、
                 <br />
 　　　　　　　　<span className="text-pink-600">
                 今やるべきポイ活
