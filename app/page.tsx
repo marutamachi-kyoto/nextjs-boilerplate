@@ -62,7 +62,7 @@ export default function Page() {
     <div className="min-h-screen bg-[#FFF8F4]">
 
       {/* HERO */}
-      <header className="overflow-hidden bg-gradient-to-r from-pink-500 via-pink-300 to-orange-200">
+      <header className="overflow-hidden bg-gradient-to-r from-[#FFB6D5] via-[#FFD1E6] to-[#FFE7C2]">
 
         <div className="mx-auto flex max-w-[1400px] flex-col gap-10 px-5 py-8 lg:flex-row lg:items-center lg:justify-between lg:px-10 lg:py-10">
 
