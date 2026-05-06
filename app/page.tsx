@@ -71,7 +71,7 @@ export default function Page() {
 
             {/* BADGE */}
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-black text-pink-600 shadow-xl lg:px-6 lg:py-3 lg:text-lg">
-              🤖 AIが毎日判定中
+              🤖 AIが毎日自動判定中
             </div>
 
             {/* TITLE */}
