@@ -97,7 +97,7 @@ export default function Page() {
   <span className="text-[#FFF3A1]">
     今やるべきポイ活
   </span>
-  をAIがランキング化！
+  を、AIがランキング化！
 </p>
 
 
