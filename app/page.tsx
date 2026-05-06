@@ -148,7 +148,7 @@ export default function Page() {
                   </div>
 
                   <div className="rounded-full bg-white px-5 py-2 text-sm font-black text-pink-600">
-                    AI分析中
+                    AI判定
                   </div>
 
                 </div>
