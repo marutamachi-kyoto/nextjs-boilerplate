@@ -93,9 +93,9 @@ export default function Page() {
                 <br />
                 <br />
                 <span className="text-[#FFF3A1]">
-                  世間での話題性・クリックデータ・報酬レンジ
+                「世間での話題度」「クリック率」「報酬レンジ」
                 </span>
-                をもとに、今やるべきポイ活を、AIが判定し、              
+                の各データをもとに、今やるべきポイ活を、AIが判定し、              
                 <span className="text-[#FFF3A1]">毎日自動的にランキング化</span>しています。
               </p>
 
