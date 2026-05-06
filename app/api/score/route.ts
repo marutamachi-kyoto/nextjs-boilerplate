@@ -277,6 +277,15 @@ export async function GET() {
   .from("category_clicks")
   .select("category");
 
+    const yesterday = new Date();
+yesterday.setDate(yesterday.getDate() - 1);
+
+const { data: recentClicks } = await supabase
+  .from("category_clicks")
+  .select("category, created_at")
+  .gte("created_at", yesterday.toISOString());
+
+    
 const clickCounts: Record<string, number> = {};
 
 for (const row of clickData || []) {
@@ -298,6 +307,16 @@ const stabilityScore = genre.stability;
 
 const clicks = clickCounts[genre.category] || 0;
 
+const recentCount =
+  recentClicks?.filter(
+    (c) => c.category === genre.category
+  ).length || 0;
+
+const riseRate =
+  clicks > 0
+    ? Math.round((recentCount / clicks) * 100)
+    : 0;
+      
 const clickScore = Math.min(
   Math.log10(clicks + 1) / 3,
   1
@@ -331,6 +350,7 @@ const finalScore =
         secondary_site_name: genre.secondarySiteName,
         secondary_site_url: genre.secondarySiteUrl,
         updated_at: new Date().toISOString(),
+        rise_rate: riseRate,
       };
     });
 
