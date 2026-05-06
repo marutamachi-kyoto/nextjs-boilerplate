@@ -31,6 +31,25 @@ function difficultyStars(label: string) {
   return "★★★";
 }
 
+async function trackClick(category: string, siteName: string, url: string) {
+  try {
+    await fetch("/api/click", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        category,
+        site_name: siteName,
+      }),
+    });
+  } catch (error) {
+    console.error("click tracking failed:", error);
+  }
+
+  window.open(url, "_blank");
+}
+
 export default function Page() {
   const [scores, setScores] = useState<CategoryScore[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +64,7 @@ export default function Page() {
   }, []);
 
   const top = scores[0];
+
   const updatedAt = top?.updated_at
     ? new Date(top.updated_at).toLocaleString("ja-JP")
     : "自動更新中";
@@ -59,7 +79,7 @@ export default function Page() {
         <div className="relative mx-auto max-w-6xl px-5 py-11 md:py-14">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/25 px-3 py-1 text-xs font-black text-white shadow-sm ring-1 ring-white/35 backdrop-blur">
             <span className="h-2 w-2 rounded-full bg-emerald-300" />
-            Google Trends連動・完全自動更新
+            ユーザー行動AI・完全自動更新
           </div>
 
           <h1 className="mt-6 text-4xl font-black tracking-tight drop-shadow-md md:text-6xl">
@@ -68,7 +88,7 @@ export default function Page() {
 
           <p className="mt-4 max-w-3xl text-base font-bold leading-8 text-white/95 drop-shadow-md md:text-lg">
             いま注目すべきポイ活ジャンルを、AIが毎日判定。
-            Google Trendsなどの話題性データをもとに、
+            クリックデータ・話題性・報酬レンジをもとに、
             <span className="font-black text-yellow-100 drop-shadow">
               今やるべきポイ活
             </span>
@@ -79,7 +99,7 @@ export default function Page() {
             {[
               "案件取得不要",
               "ジャンル完全自動判定",
-              "報酬レンジ推定",
+              "クリック計測対応",
               "主要サイトへ案内",
             ].map((label) => (
               <span
@@ -103,6 +123,7 @@ export default function Page() {
             <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
               <div>
                 <p className="text-sm font-black text-pink-500">1位</p>
+
                 <h2 className="mt-1 text-3xl font-black">{top.category}</h2>
 
                 <p className="mt-3 text-sm font-bold leading-relaxed text-slate-600">
@@ -131,20 +152,32 @@ export default function Page() {
                   このジャンルを探すなら
                 </p>
 
-                <a
-                  href={top.primary_site_url}
-                  className="mt-3 block rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-3 text-center text-sm font-black text-white shadow-lg shadow-pink-500/20 transition hover:scale-[1.02]"
+                <button
+                  onClick={() =>
+                    trackClick(
+                      top.category,
+                      top.primary_site_name,
+                      top.primary_site_url
+                    )
+                  }
+                  className="mt-3 block w-full rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-3 text-center text-sm font-black text-white shadow-lg shadow-pink-500/20 transition hover:scale-[1.02]"
                 >
                   {top.primary_site_name}で探す
-                </a>
+                </button>
 
                 {top.secondary_site_name && top.secondary_site_url && (
-                  <a
-                    href={top.secondary_site_url}
-                    className="mt-2 block rounded-2xl bg-white px-5 py-3 text-center text-sm font-black text-slate-700 shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-50"
+                  <button
+                    onClick={() =>
+                      trackClick(
+                        top.category,
+                        top.secondary_site_name!,
+                        top.secondary_site_url!
+                      )
+                    }
+                    className="mt-2 block w-full rounded-2xl bg-white px-5 py-3 text-center text-sm font-black text-slate-700 shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-50"
                   >
                     {top.secondary_site_name}でも探す
-                  </a>
+                  </button>
                 )}
               </div>
             </div>
@@ -156,8 +189,8 @@ export default function Page() {
 
           <p className="mt-3 text-sm font-semibold leading-7 text-slate-600">
             このランキングは「この案件が必ず掲載されています」と保証するものではありません。
-            Google Trendsの急上昇キーワード、ポイ活ジャンルとの関連性、
-            想定報酬レンジ、難易度をもとに、
+            話題性データ、ポイ活ジャンルとの関連性、想定報酬レンジ、難易度、
+            そしてユーザーのクリック行動をもとに、
             <span className="font-black text-pink-500">
               今チェックすべきポイ活ジャンル
             </span>
@@ -213,7 +246,7 @@ export default function Page() {
                       <h3 className="text-lg font-black">{item.category}</h3>
 
                       <span className="rounded-full bg-pink-50 px-2 py-1 text-xs font-black text-pink-600">
-                        {item.trend_keyword || "トレンド判定"}
+                        {item.trend_keyword || "AI判定"}
                       </span>
                     </div>
 
@@ -238,20 +271,32 @@ export default function Page() {
                   </div>
 
                   <div className="md:min-w-[210px] md:text-right">
-                    <a
-                      href={item.primary_site_url}
-                      className="block rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-3 text-center text-sm font-black text-white shadow-lg shadow-pink-500/20 transition hover:scale-[1.02]"
+                    <button
+                      onClick={() =>
+                        trackClick(
+                          item.category,
+                          item.primary_site_name,
+                          item.primary_site_url
+                        )
+                      }
+                      className="block w-full rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-3 text-center text-sm font-black text-white shadow-lg shadow-pink-500/20 transition hover:scale-[1.02]"
                     >
                       {item.primary_site_name}で探す
-                    </a>
+                    </button>
 
                     {item.secondary_site_name && item.secondary_site_url && (
-                      <a
-                        href={item.secondary_site_url}
-                        className="mt-2 block rounded-2xl bg-orange-50 px-5 py-3 text-center text-sm font-black text-orange-600 transition hover:bg-orange-100"
+                      <button
+                        onClick={() =>
+                          trackClick(
+                            item.category,
+                            item.secondary_site_name!,
+                            item.secondary_site_url!
+                          )
+                        }
+                        className="mt-2 block w-full rounded-2xl bg-orange-50 px-5 py-3 text-center text-sm font-black text-orange-600 transition hover:bg-orange-100"
                       >
                         {item.secondary_site_name}で探す
-                      </a>
+                      </button>
                     )}
                   </div>
                 </div>
