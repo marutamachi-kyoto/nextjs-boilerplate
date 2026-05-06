@@ -160,7 +160,7 @@ export default function Page() {
                 <div className="p-8">
 
                   {/* TITLE */}
-                  <div className="rounded-3xl bg-pink-100 px-6 py-6 text-center text-5xl font-black text-pink-600">
+                  <div className="rounded-3xl bg-pink-100 px-6 py-6 text-center text-[44px] font-black whitespace-nowrap text-pink-600">
                     今やるべきポイ活
                   </div>
 
