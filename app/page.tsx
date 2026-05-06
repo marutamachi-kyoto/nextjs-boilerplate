@@ -22,12 +22,14 @@ type CategoryScore = {
 
 export default function Page() {
   const [items, setItems] = useState<CategoryScore[]>([]);
+  const [updatedAt, setUpdatedAt] = useState("");
 
   useEffect(() => {
     fetch("/api/score")
       .then((res) => res.json())
       .then((json) => {
         setItems(json.data || []);
+        setUpdatedAt(new Date().toLocaleString("ja-JP"));
       });
   }, []);
 
@@ -101,13 +103,13 @@ export default function Page() {
                 </div>
 
                 <div className="rounded-2xl bg-yellow-50 px-5 py-4 text-center text-sm font-black text-orange-500">
-                  話題性・報酬分析
+                  話題性・報酬レンジ分析
                 </div>
               </div>
             </div>
           </div>
 
-          {/* RIGHT ILLUSTRATION */}
+          {/* RIGHT */}
           <div className="relative flex w-full max-w-xl items-end justify-center">
             <div className="relative h-[420px] w-[520px]">
               <div className="absolute inset-0 rounded-full bg-white/20 blur-3xl" />
@@ -159,37 +161,51 @@ export default function Page() {
                 <div className="absolute bottom-[-18px] left-1/2 h-7 w-[240px] -translate-x-1/2 rounded-b-full bg-[#27272F]" />
               </div>
 
-              {/* MONEY */}
-              <div className="absolute bottom-0 right-0">
-                <div className="relative h-[170px] w-[230px]">
-                  <div className="absolute bottom-0 right-0 h-28 w-36 rounded-2xl bg-pink-300 shadow-xl" />
+              {/* MONEY AREA */}
+              <div className="absolute bottom-[-10px] right-[-10px]">
+                <div className="relative h-[210px] w-[340px]">
+                  {/* BOX */}
+                  <div className="absolute bottom-6 right-8 h-28 w-36 rounded-2xl bg-pink-300 shadow-2xl">
+                    <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-yellow-100 text-3xl">
+                      🪙
+                    </div>
+                  </div>
 
-                  <div className="absolute bottom-0 left-6 h-16 w-32 rounded-xl bg-green-200 shadow-lg">
+                  {/* MONEY */}
+                  <div className="absolute bottom-0 left-14 h-16 w-36 rounded-xl bg-green-200 shadow-lg">
                     <div className="absolute left-1/2 top-1/2 h-5 w-full -translate-x-1/2 -translate-y-1/2 bg-white" />
                   </div>
 
                   {/* COINS */}
-                  <div className="absolute left-0 bottom-2 text-7xl">
+                  <div className="absolute bottom-10 left-0 text-7xl animate-bounce">
                     🪙
                   </div>
 
-                  <div className="absolute left-14 bottom-12 text-6xl">
+                  <div className="absolute bottom-0 left-20 text-6xl">
                     🪙
                   </div>
 
-                  <div className="absolute right-4 bottom-10 text-7xl">
+                  <div className="absolute bottom-16 left-28 text-7xl">
                     🪙
                   </div>
 
-                  <div className="absolute right-20 top-4 text-5xl">
+                  <div className="absolute bottom-8 right-0 text-7xl">
                     🪙
                   </div>
 
-                  <div className="absolute left-20 top-0 text-4xl">
+                  <div className="absolute bottom-24 right-24 text-6xl">
+                    🪙
+                  </div>
+
+                  <div className="absolute right-10 top-14 text-5xl">
                     ✨
                   </div>
 
-                  <div className="absolute right-0 top-14 text-4xl">
+                  <div className="absolute left-24 top-4 text-4xl">
+                    ✨
+                  </div>
+
+                  <div className="absolute left-40 top-0 text-5xl">
                     ✨
                   </div>
                 </div>
@@ -202,13 +218,19 @@ export default function Page() {
       {/* MAIN */}
       <main className="mx-auto max-w-6xl px-4 py-10">
         <section>
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <h2 className="text-3xl font-black text-slate-800">
               🔥 AIランキング
             </h2>
 
-            <div className="rounded-full bg-pink-100 px-4 py-2 text-sm font-black text-pink-600">
-              完全自動更新
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-pink-100 px-4 py-2 text-sm font-black text-pink-600">
+                完全自動更新
+              </div>
+
+              <div className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-500 shadow">
+                最終更新：{updatedAt}
+              </div>
             </div>
           </div>
 
