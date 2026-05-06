@@ -273,21 +273,49 @@ export async function GET() {
   try {
     const trends = await getGoogleTrends();
 
-    const scored = GENRES.map((genre) => {
-      const trend = calcTrendScore(genre, trends);
-      const rewardScore = calcRewardScore(genre.rewardMin, genre.rewardMax);
-      const difficultyScore = calcDifficultyScore(genre.difficulty);
-      const stabilityScore = genre.stability;
+    const { data: clickData } = await supabase
+  .from("category_clicks")
+  .select("category");
 
-      const finalScore =
-        trend.score * 0.5 +
-        rewardScore * 0.3 +
-        difficultyScore * 0.1 +
-        stabilityScore * 0.1;
+const clickCounts: Record<string, number> = {};
+
+for (const row of clickData || []) {
+  clickCounts[row.category] =
+    (clickCounts[row.category] || 0) + 1;
+}
+    const scored = GENRES.map((genre) => {
+    const trend = calcTrendScore(genre, trends);
+    const rewardScore = calcRewardScore(
+      genre.rewardMin,
+      genre.rewardMax
+    );
+
+const difficultyScore = calcDifficultyScore(
+  genre.difficulty
+);
+
+const stabilityScore = genre.stability;
+
+const clicks = clickCounts[genre.category] || 0;
+
+const clickScore = Math.min(
+  Math.log10(clicks + 1) / 3,
+  1
+);
+      
+const finalScore =
+  trend.score * 0.35 +
+  clickScore * 0.30 +
+  rewardScore * 0.20 +
+  difficultyScore * 0.05 +
+  stabilityScore * 0.10;
 
       return {
         category: genre.category,
         trend_keyword: trend.keyword,
+
+        click_score: clickScore,
+        
         reward_min: genre.rewardMin,
         reward_max: genre.rewardMax,
         difficulty_label: genre.difficulty,
