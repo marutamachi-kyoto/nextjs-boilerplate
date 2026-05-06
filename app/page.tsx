@@ -252,7 +252,7 @@ export default function Page() {
           </h2>
 
           <div className="rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-500 shadow w-fit">
-            最終更新：{updatedAt}
+            あなたがページ更新した日時：{updatedAt}
           </div>
 
         </div>
