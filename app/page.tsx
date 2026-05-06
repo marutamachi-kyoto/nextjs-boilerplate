@@ -84,7 +84,7 @@ export default function Page() {
             {/* DESCRIPTION */}
             <div className="mt-6 max-w-[620px] lg:mt-10">
 
-              <p className="text-[22px] font-black leading-[1.8] text-[#34151B] lg:text-[24px]">
+              <p className="text-[26px] font-black leading-[1.8] text-[#34151B] lg:text-[24px]">
                 いま注目すべきポイ活ジャンルを、
                 AIが判定。
                 <br />
