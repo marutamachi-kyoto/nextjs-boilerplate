@@ -12,6 +12,7 @@ type CategoryScore = {
   difficulty_label: string;
   heat_level: number;
   final_score: number;
+  rise_rate?: number;
   reason: string;
   primary_site_name: string;
   primary_site_url: string;
@@ -276,7 +277,7 @@ export default function Page() {
   )}
 
 </div>
-
+</div>
                   <div className="md:min-w-[210px] md:text-right">
                     <button
                       onClick={() =>
