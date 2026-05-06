@@ -71,7 +71,7 @@ export default function Page() {
 
             {/* BADGE */}
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2 text-sm font-black text-pink-600 shadow-xl lg:px-6 lg:py-3 lg:text-lg">
-              🤖 AI分析中
+              🤖 AIが毎日判定中
             </div>
 
             {/* TITLE */}
@@ -89,16 +89,15 @@ export default function Page() {
                 AIが毎日判定。
                 <br />
 
-                <span className="text-orange-700">
+                <span className="text-[#FFF3A1]">
                   世間での話題性・クリックデータ・報酬レンジ
                 </span>
                 をもとに、
-                <br />
 
-                <span className="text-orange-700">
+                <span className="text-[#FFF3A1]">
                   今やるべきポイ活
                 </span>
-                をAIがランキング化します。
+                を、AIがランキング化します。
               </p>
 
             </div>
