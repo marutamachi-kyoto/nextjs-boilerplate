@@ -2,159 +2,262 @@
 
 import { useEffect, useState } from "react";
 
+type CategoryScore = {
+  id?: string;
+  category: string;
+  rank: number;
+  trend_keyword: string;
+  reward_min: number;
+  reward_max: number;
+  difficulty_label: string;
+  heat_level: number;
+  final_score: number;
+  reason: string;
+  primary_site_name: string;
+  primary_site_url: string;
+  secondary_site_name?: string | null;
+  secondary_site_url?: string | null;
+  updated_at?: string;
+};
+
+function stars(level: number) {
+  const safe = Math.max(1, Math.min(5, Number(level) || 1));
+  return "★".repeat(safe) + "☆".repeat(5 - safe);
+}
+
+function difficultyStars(label: string) {
+  if (label === "低") return "★☆☆";
+  if (label === "中") return "★★☆";
+  return "★★★";
+}
+
 export default function Page() {
-  const [data, setData] = useState<any>({});
-  const [active, setActive] = useState("");
+  const [scores, setScores] = useState<CategoryScore[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/rankings")
+    fetch("/api/score")
       .then((res) => res.json())
       .then((json) => {
-        setData(json);
-        const first = Object.keys(json)[0];
-        if (first) setActive(first);
-      });
+        setScores(json.data || []);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const categories = Object.keys(data);
-  const offers = data[active] || [];
-  const top = offers[0];
+  const top = scores[0];
+  const updatedAt = top?.updated_at
+    ? new Date(top.updated_at).toLocaleString("ja-JP")
+    : "自動更新中";
 
   return (
-    <div className="bg-[#FFF9E6] min-h-screen pb-10">
-    <header className="relative overflow-hidden bg-gradient-to-br from-purple-400 via-pink-400 to-orange-300 text-white">
-  <div className="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_top_right,#ffffff,transparent_36%),radial-gradient(circle_at_bottom_left,#fde68a,transparent_34%)]" />
-  <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/20 blur-2xl" />
-  <div className="absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-yellow-300/30 blur-2xl" />
+    <div className="min-h-screen bg-[#FFF9E6] text-slate-900">
+      <header className="relative overflow-hidden bg-gradient-to-br from-purple-400 via-pink-400 to-orange-300 text-white">
+        <div className="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_top_right,#ffffff,transparent_36%),radial-gradient(circle_at_bottom_left,#fde68a,transparent_34%)]" />
+        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/20 blur-2xl" />
+        <div className="absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-yellow-300/30 blur-2xl" />
 
-  <div className="relative mx-auto max-w-6xl px-5 py-11 md:py-14">
-    <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-black text-white shadow-sm ring-1 ring-white/30 backdrop-blur">
-      <span className="h-2 w-2 rounded-full bg-emerald-300" />
-      Google Trends連動・自動更新
-    </div>
-
-    <h1 className="mt-6 text-4xl font-black tracking-tight drop-shadow-sm md:text-6xl">
-      ポイ活AI判定
-    </h1>
-
-   <p className="mt-4 max-w-3xl text-base font-medium leading-8 text-white/95 md:text-lg">
-      いまポイ活で話題の案件は、ここでチェック。主要ポイントサイトの掲載案件を横断比較し、
-      <span className="font-black text-yellow-100">
-        AIが話題度と報酬条件を判定
-      </span>
-      してランキング化します。
-    </p>
-
-    <div className="mt-6 flex flex-wrap gap-2">
-      {[
-        "主要10サイト比較",
-        "最高報酬を自動選択",
-        "TOP20ランキング",
-        "毎日更新対応",
-      ].map((label) => (
-        <span
-          key={label}
-          className="rounded-full bg-white/20 px-3 py-2 text-xs font-black text-white shadow-sm ring-1 ring-white/25 backdrop-blur"
-        >
-          {label}
-        </span>
-      ))}
-    </div>
-  </div>
-</header>
-
-      <div className="max-w-6xl mx-auto flex overflow-x-auto px-5 gap-2 mt-4 mb-6">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActive(cat)}
-            className={`px-3 py-2 rounded-full text-sm whitespace-nowrap font-bold ${
-              active === cat
-                ? "bg-red-500 text-white"
-                : "bg-white text-gray-700 shadow"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      <main className="p-4 max-w-md mx-auto">
-        {top && (
-          <div className="bg-gradient-to-r from-red-100 to-red-200 p-6 rounded-2xl shadow-lg text-center mb-6">
-            <p className="font-bold text-red-500">🔥 AIが選んだ最注目案件</p>
-
-            <h2 className="text-xl font-bold mt-2">{top.offer_title}</h2>
-
-            <p className="text-3xl text-red-600 font-bold mt-1">
-              {top.reward.toLocaleString()}円
-            </p>
-
-            <a
-              href={top.url}
-              className="block mt-4 bg-red-500 text-white py-3 rounded-xl font-bold"
-            >
-              {top.point_site}で申し込む
-            </a>
-
-            <p className="text-xs text-gray-600 mt-3 leading-relaxed">
-              このリンクは、複数のポイントサイトを比較し、
-              <br />
-              最も高額な報酬がもらえるサイトへ自動で案内しています
-            </p>
+        <div className="relative mx-auto max-w-6xl px-5 py-11 md:py-14">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/25 px-3 py-1 text-xs font-black text-white shadow-sm ring-1 ring-white/35 backdrop-blur">
+            <span className="h-2 w-2 rounded-full bg-emerald-300" />
+            Google Trends連動・完全自動更新
           </div>
-        )}
 
-        <section className="mb-6">
-          <h2 className="font-bold mb-3">🏆 {active}ランキング（TOP20）</h2>
+          <h1 className="mt-6 text-4xl font-black tracking-tight drop-shadow-md md:text-6xl">
+            ポイ活AI判定
+          </h1>
 
-          {offers.map((o: any, i: number) => (
-            <div
-              key={o.id || i}
-              className={`p-3 rounded-xl mb-3 shadow ${
-                i === 0 ? "bg-yellow-200" : "bg-white"
-              }`}
-            >
-              <div className="flex justify-between gap-2">
-                <div className="font-bold">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-3 py-1 text-lg font-bold rounded-full ${
-                        i === 0
-                          ? "bg-yellow-400 text-white"
-                          : i === 1
-                          ? "bg-gray-400 text-white"
-                          : i === 2
-                          ? "bg-orange-400 text-white"
-                          : "bg-gray-200 text-gray-700"
-                      }`}
-                    >
-                      {i + 1}
-                    </span>
+          <p className="mt-4 max-w-3xl text-base font-bold leading-8 text-white/95 drop-shadow-md md:text-lg">
+            いま注目すべきポイ活ジャンルを、AIが毎日判定。
+            Google Trendsなどの話題性データをもとに、
+            <span className="font-black text-yellow-100 drop-shadow">
+              今やるべきポイ活
+            </span>
+            をランキング化します。
+          </p>
 
-                    <span>{o.offer_title}</span>
-                  </div>
-                </div>
+          <div className="mt-6 flex flex-wrap gap-2">
+            {[
+              "案件取得不要",
+              "ジャンル完全自動判定",
+              "報酬レンジ推定",
+              "主要サイトへ案内",
+            ].map((label) => (
+              <span
+                key={label}
+                className="rounded-full bg-white/25 px-3 py-2 text-xs font-black text-white shadow-sm ring-1 ring-white/25 backdrop-blur"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </header>
 
-                <p className="text-red-500 font-bold whitespace-nowrap">
-                  {o.reward.toLocaleString()}円
+      <main className="mx-auto max-w-6xl px-5 py-8">
+        {top && (
+          <section className="mb-7 overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-orange-100">
+            <div className="bg-gradient-to-r from-pink-500 to-orange-400 px-5 py-3 text-sm font-black text-white">
+              🔥 今日のAI最注目ジャンル
+            </div>
+
+            <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
+              <div>
+                <p className="text-sm font-black text-pink-500">1位</p>
+                <h2 className="mt-1 text-3xl font-black">{top.category}</h2>
+
+                <p className="mt-3 text-sm font-bold leading-relaxed text-slate-600">
+                  {top.reason}
                 </p>
+
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-black">
+                  <span className="rounded-full bg-orange-50 px-3 py-2 text-orange-600">
+                    報酬目安 {top.reward_min.toLocaleString()}〜
+                    {top.reward_max.toLocaleString()}円
+                  </span>
+
+                  <span className="rounded-full bg-pink-50 px-3 py-2 text-pink-600">
+                    熱度 {stars(top.heat_level)}
+                  </span>
+
+                  <span className="rounded-full bg-slate-100 px-3 py-2 text-slate-600">
+                    難易度 {top.difficulty_label}{" "}
+                    {difficultyStars(top.difficulty_label)}
+                  </span>
+                </div>
               </div>
 
-              <a
-                href={o.url}
-                className="block mt-3 bg-red-500 text-white text-center py-2 rounded-xl font-bold"
-              >
-                {o.point_site}で申し込む
-              </a>
+              <div className="min-w-[220px] rounded-3xl bg-orange-50 p-4 ring-1 ring-orange-100">
+                <p className="text-xs font-black text-slate-500">
+                  このジャンルを探すなら
+                </p>
 
-              <p className="text-xs text-gray-600 mt-2 leading-relaxed">
-                このリンクは、複数のポイントサイトを比較し、
-                <br />
-                最も高額な報酬がもらえるサイトへ自動で案内しています
-              </p>
+                <a
+                  href={top.primary_site_url}
+                  className="mt-3 block rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-3 text-center text-sm font-black text-white shadow-lg shadow-pink-500/20 transition hover:scale-[1.02]"
+                >
+                  {top.primary_site_name}で探す
+                </a>
+
+                {top.secondary_site_name && top.secondary_site_url && (
+                  <a
+                    href={top.secondary_site_url}
+                    className="mt-2 block rounded-2xl bg-white px-5 py-3 text-center text-sm font-black text-slate-700 shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-50"
+                  >
+                    {top.secondary_site_name}でも探す
+                  </a>
+                )}
+              </div>
             </div>
-          ))}
+          </section>
+        )}
+
+        <section className="mb-6 rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-orange-100">
+          <h2 className="text-xl font-black">このランキングについて</h2>
+
+          <p className="mt-3 text-sm font-semibold leading-7 text-slate-600">
+            このランキングは「この案件が必ず掲載されています」と保証するものではありません。
+            Google Trendsの急上昇キーワード、ポイ活ジャンルとの関連性、
+            想定報酬レンジ、難易度をもとに、
+            <span className="font-black text-pink-500">
+              今チェックすべきポイ活ジャンル
+            </span>
+            をAIが自動判定しています。
+          </p>
+
+          <p className="mt-2 text-xs font-bold text-slate-400">
+            最終更新：{updatedAt}
+          </p>
+        </section>
+
+        <section>
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-black text-pink-500">
+                AI Genre Ranking
+              </p>
+              <h2 className="text-2xl font-black">
+                今やるべきポイ活ランキング
+              </h2>
+            </div>
+          </div>
+
+          {loading && (
+            <div className="rounded-[2rem] bg-white p-10 text-center font-black text-slate-500 shadow-sm ring-1 ring-orange-100">
+              ランキングを読み込み中...
+            </div>
+          )}
+
+          <div className="grid gap-4">
+            {scores.map((item, i) => (
+              <article
+                key={item.id || item.category}
+                className="overflow-hidden rounded-[2rem] bg-white shadow-sm ring-1 ring-orange-100 transition hover:-translate-y-0.5 hover:shadow-xl"
+              >
+                <div className="grid gap-4 p-5 md:grid-cols-[auto_1fr_auto] md:items-center">
+                  <div
+                    className={`flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-black text-white shadow-sm ${
+                      i === 0
+                        ? "bg-gradient-to-br from-yellow-300 to-orange-500"
+                        : i === 1
+                        ? "bg-gradient-to-br from-slate-300 to-slate-500"
+                        : i === 2
+                        ? "bg-gradient-to-br from-orange-300 to-amber-700"
+                        : "bg-orange-100 text-orange-600"
+                    }`}
+                  >
+                    {i + 1}
+                  </div>
+
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-lg font-black">{item.category}</h3>
+
+                      <span className="rounded-full bg-pink-50 px-2 py-1 text-xs font-black text-pink-600">
+                        {item.trend_keyword || "トレンド判定"}
+                      </span>
+                    </div>
+
+                    <p className="mt-2 text-sm font-medium leading-relaxed text-slate-500">
+                      {item.reason}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-black">
+                      <span className="rounded-full bg-orange-50 px-3 py-1.5 text-orange-600">
+                        {item.reward_min.toLocaleString()}〜
+                        {item.reward_max.toLocaleString()}円
+                      </span>
+
+                      <span className="rounded-full bg-pink-50 px-3 py-1.5 text-pink-600">
+                        熱度 {stars(item.heat_level)}
+                      </span>
+
+                      <span className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-600">
+                        難易度 {item.difficulty_label}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="md:min-w-[210px] md:text-right">
+                    <a
+                      href={item.primary_site_url}
+                      className="block rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-3 text-center text-sm font-black text-white shadow-lg shadow-pink-500/20 transition hover:scale-[1.02]"
+                    >
+                      {item.primary_site_name}で探す
+                    </a>
+
+                    {item.secondary_site_name && item.secondary_site_url && (
+                      <a
+                        href={item.secondary_site_url}
+                        className="mt-2 block rounded-2xl bg-orange-50 px-5 py-3 text-center text-sm font-black text-orange-600 transition hover:bg-orange-100"
+                      >
+                        {item.secondary_site_name}で探す
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
       </main>
     </div>
