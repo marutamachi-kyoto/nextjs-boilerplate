@@ -85,7 +85,7 @@ export default function Page() {
             <div className="mt-6 max-w-[620px] lg:mt-10">
 
               <p className="text-[30px] font-black leading-[1.8] text-[#34151B] lg:text-[24px]">
-                いま注目すべきポイ活ジャンルを、
+                いまやるべきポイ活のジャンルを、
                 AIが判定。
                 <br />
                 <br />
@@ -94,10 +94,10 @@ export default function Page() {
                 </span>
                 をもとに、
 
-                <span className="text-[#FFF3A1]">
+                
                   今やるべきポイ活
-                </span>
-                を、AIが判定し、自動的にランキング化します。
+                
+                を、AIが判定し、<span className="text-[#FFF3A1]">自動的にランキング化</span>します。
               </p>
 
             </div>
