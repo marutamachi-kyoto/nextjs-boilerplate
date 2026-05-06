@@ -115,11 +115,11 @@ export default function Page() {
                 </div>
 
                 <div className="rounded-2xl bg-pink-100 px-3 py-4 text-center text-sm font-black text-pink-600 lg:px-5 lg:text-lg">
-                  主要サイトへ案内
+                  主要ポイントサイトへ案内
                 </div>
 
                 <div className="rounded-2xl bg-yellow-100 px-3 py-4 text-center text-sm font-black text-orange-500 lg:px-5 lg:text-lg">
-                  話題性・報酬レンジ分析
+                  話題度・報酬レンジ分析
                 </div>
 
               </div>
