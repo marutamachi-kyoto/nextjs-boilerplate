@@ -84,7 +84,7 @@ export default function Page() {
             {/* DESCRIPTION */}
             <div className="mt-6 max-w-[620px] lg:mt-10">
 
-              <p className="text-[30px] font-black leading-[1.8] text-[#34151B] lg:text-[24px]">
+              <p className="text-[18px] font-black leading-[1.8] text-[#34151B] lg:text-[24px]">
                 いまやるべきポイ活のジャンルを、
                 AIが判定。
                 <br />
@@ -92,12 +92,8 @@ export default function Page() {
                 <span className="text-[#FFF3A1]">
                   世間での話題性・クリックデータ・報酬レンジ
                 </span>
-                をもとに、
-
-                
-                  今やるべきポイ活
-                
-                を、AIが判定し、<span className="text-[#FFF3A1]">自動的にランキング化</span>します。
+                をもとに、今やるべきポイ活を、AIが判定し、              
+                <span className="text-[#FFF3A1]">自動的にランキング化</span>しています。
               </p>
 
             </div>
