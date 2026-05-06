@@ -270,11 +270,11 @@ export default function Page() {
     難易度 {item.difficulty_label}
   </span>
 
-  {item.rise_rate >= 120 && (
-    <span className="rounded-full bg-red-100 px-3 py-1.5 text-red-500 animate-pulse">
-      🔥 急上昇 +{item.rise_rate}%
-    </span>
-  )}
+{(item.rise_rate ?? 0) >= 120 && (
+  <span className="rounded-full bg-red-100 px-3 py-1.5 text-red-500 animate-pulse">
+    🔥 急上昇 +{item.rise_rate ?? 0}%
+  </span>
+)}
 
 </div>
 </div>
