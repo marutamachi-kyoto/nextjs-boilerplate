@@ -137,7 +137,7 @@ export default function Page() {
                   </span>
 
                   <span className="rounded-full bg-pink-50 px-3 py-2 text-pink-600">
-                    熱度 {stars(top.heat_level)}
+                    AI注目度 {stars(top.heat_level)}
                   </span>
 
                   <span className="rounded-full bg-slate-100 px-3 py-2 text-slate-600">
@@ -254,21 +254,28 @@ export default function Page() {
                       {item.reason}
                     </p>
 
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-black">
-                      <span className="rounded-full bg-orange-50 px-3 py-1.5 text-orange-600">
-                        {item.reward_min.toLocaleString()}〜
-                        {item.reward_max.toLocaleString()}円
-                      </span>
+                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-black">
 
-                      <span className="rounded-full bg-pink-50 px-3 py-1.5 text-pink-600">
-                        熱度 {stars(item.heat_level)}
-                      </span>
+  <span className="rounded-full bg-orange-50 px-3 py-1.5 text-orange-600">
+    報酬 {item.reward_min.toLocaleString()}〜
+    {item.reward_max.toLocaleString()}円
+  </span>
 
-                      <span className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-600">
-                        難易度 {item.difficulty_label}
-                      </span>
-                    </div>
-                  </div>
+  <span className="rounded-full bg-pink-50 px-3 py-1.5 text-pink-600">
+    AI注目度 {stars(item.heat_level)}
+  </span>
+
+  <span className="rounded-full bg-slate-100 px-3 py-1.5 text-slate-600">
+    難易度 {item.difficulty_label}
+  </span>
+
+  {item.rise_rate >= 120 && (
+    <span className="rounded-full bg-red-100 px-3 py-1.5 text-red-500 animate-pulse">
+      🔥 急上昇 +{item.rise_rate}%
+    </span>
+  )}
+
+</div>
 
                   <div className="md:min-w-[210px] md:text-right">
                     <button
