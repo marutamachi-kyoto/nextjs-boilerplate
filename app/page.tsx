@@ -92,8 +92,8 @@ export default function Page() {
   <span className="text-pink-600">
     世間での話題性・クリックデータ・報酬レンジ
   </span>
-  をもとに、
   <br />
+  をもとに、
   <span className="text-pink-600">
     今やるべきポイ活
   </span>
