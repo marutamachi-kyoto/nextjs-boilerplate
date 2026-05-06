@@ -58,7 +58,7 @@ const GENRES: GenreConfig[] = [
   },
   {
     category: "アプリ・ゲーム",
-    keywords: ["ポイ活アプリ", "ゲーム", "スマホゲーム", "アプリ", "TikTok Lite"],
+    keywords: ["ゲーム", "スマホゲーム", "アプリ", "TikTok Lite"],
     rewardMin: 500,
     rewardMax: 5000,
     difficulty: "低",
