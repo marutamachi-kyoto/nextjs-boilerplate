@@ -89,14 +89,15 @@ export default function Page() {
           <p className="text-[24px] font-black leading-[1.7] text-[#34151B]">
                 いま注目すべきポイ活ジャンルを、AIが毎日判定。
                 <br />
-                世間での話題性・クリックデータ・報酬レンジを
+　　　　　　　　<span className="text-pink-600">
+                世間での話題性・クリックデータ・報酬レンジ </p>をもとに、
                 <br />
-　　　　　　　　もとに、
-                <span className="text-pink-600">
-                  今やるべきポイ活
+　　　　　　　　<span className="text-pink-600">
+                今やるべきポイ活
                 </span>
                 をAIがランキング化します。
               </p>
+
 
 
             </div>
