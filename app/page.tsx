@@ -291,10 +291,6 @@ export default function Page() {
 
           <div className="flex items-center gap-3">
 
-            <div className="rounded-full bg-pink-100 px-5 py-2 text-sm font-black text-pink-600">
-              完全自動更新
-            </div>
-
             <div className="rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-500 shadow">
               最終更新：{updatedAt}
             </div>
@@ -312,7 +308,7 @@ export default function Page() {
               className="rounded-[2rem] bg-white p-8 shadow-lg ring-1 ring-orange-100"
             >
 
-              <div className="flex items-center justify-between gap-8">
+              <div className="flex items-stretch justify-between gap-8">
 
                 {/* LEFT */}
                 <div className="flex items-start gap-6">
@@ -373,7 +369,7 @@ export default function Page() {
                 </div>
 
                 {/* BUTTON */}
-                <div className="min-w-[240px]">
+                <div className="flex w-[320px] shrink-0 flex-col justify-center">
 
                   <button
                     onClick={() =>
