@@ -87,9 +87,9 @@ export default function Page() {
             <div className="mt-10 max-w-[620px]">
 
               <p className="text-[24px] font-black leading-[1.7] text-[#34151B]">
-                いま注目すべきポイ活ジャンルを、
+                いま注目すべきポイ活のジャンルを、
                 <br />
-                AIが毎日判定。クリックデータ・話題性・
+                AIが毎日判定。クリックデータ・世の中の話題性・
                 <br />
                 報酬レンジをもとに、
                 <span className="text-pink-600">
