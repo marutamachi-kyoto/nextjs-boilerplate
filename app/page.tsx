@@ -17,7 +17,7 @@ type CategoryScore = {
   primary_site_name: string;
   primary_site_url: string;
   secondary_site_name?: string;
-  secondary_site_url?: string;
+ secondary_site_url?: string;
 };
 
 export default function Page() {
@@ -62,12 +62,9 @@ export default function Page() {
     <div className="min-h-screen bg-[#FFF8F4]">
 
       {/* HERO */}
-      <header className="relative overflow-hidden bg-gradient-to-r from-pink-500 via-pink-300 to-orange-200">
+      <header className="overflow-hidden bg-gradient-to-r from-pink-500 via-pink-300 to-orange-200">
 
-        {/* BG LIGHT */}
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,white,transparent_20%),radial-gradient(circle_at_80%_10%,white,transparent_20%),radial-gradient(circle_at_50%_80%,#fde68a,transparent_25%)]" />
-
-        <div className="relative mx-auto flex max-w-[1400px] items-center justify-between px-10 py-10">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-10 py-10">
 
           {/* LEFT */}
           <div className="w-[620px] shrink-0">
@@ -133,15 +130,14 @@ export default function Page() {
           </div>
 
           {/* RIGHT */}
-          <div className="relative h-[640px] w-[760px] shrink-0">
+          <div className="relative h-[620px] w-[760px] shrink-0">
 
             {/* TABLET */}
             <div className="absolute right-4 top-8 h-[430px] w-[560px] rounded-[3rem] bg-[#2F3340] shadow-[0_45px_90px_rgba(0,0,0,0.22)]">
 
-              {/* SCREEN */}
               <div className="absolute left-1/2 top-8 h-[340px] w-[470px] -translate-x-1/2 overflow-hidden rounded-[2rem] bg-white">
 
-                {/* HEADER */}
+                {/* TOP BAR */}
                 <div className="flex h-14 items-center justify-between bg-yellow-300 px-6">
 
                   <div className="flex gap-3">
@@ -192,12 +188,7 @@ export default function Page() {
 
                       <div className="h-6 w-28 rounded-full bg-pink-100" />
 
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-24 rounded-full bg-yellow-100" />
-                        <span className="text-3xl text-yellow-400">
-                          ➜
-                        </span>
-                      </div>
+                      <div className="h-6 w-24 rounded-full bg-yellow-100" />
 
                       <div className="h-6 w-24 rounded-full bg-orange-100" />
 
@@ -214,50 +205,54 @@ export default function Page() {
 
             </div>
 
-            {/* LEFT COINS */}
-            <div className="absolute left-[-10px] top-[300px] text-[95px] rotate-[-8deg]">
-              🪙
+            {/* SIDE COINS */}
+            <div className="absolute left-[10px] top-[310px] flex h-24 w-24 rotate-[-10deg] items-center justify-center rounded-full bg-yellow-300 text-5xl shadow-xl ring-8 ring-yellow-400">
+              P
             </div>
 
-            <div className="absolute bottom-[15px] left-[0px] rotate-[8deg] text-[115px]">
-              🪙
+            <div className="absolute right-[-10px] top-[285px] flex h-24 w-24 rotate-[12deg] items-center justify-center rounded-full bg-yellow-300 text-5xl shadow-xl ring-8 ring-yellow-400">
+              P
             </div>
 
-            <div className="absolute bottom-[-5px] left-[120px] text-[160px]">
-              🪙
+            {/* COIN STACKS */}
+            <div className="absolute bottom-[55px] left-[60px]">
+
+              <div className="h-8 w-28 rounded-full bg-yellow-300 shadow-md ring-4 ring-yellow-400" />
+              <div className="-mt-2 h-8 w-28 rounded-full bg-yellow-300 shadow-md ring-4 ring-yellow-400" />
+              <div className="-mt-2 h-8 w-28 rounded-full bg-yellow-300 shadow-md ring-4 ring-yellow-400" />
+              <div className="-mt-2 h-8 w-28 rounded-full bg-yellow-300 shadow-md ring-4 ring-yellow-400" />
+
             </div>
 
-            <div className="absolute bottom-[10px] left-[280px] rotate-[10deg] text-[110px]">
-              🪙
+            <div className="absolute bottom-[35px] left-[190px] flex h-28 w-28 items-center justify-center rounded-full bg-yellow-300 text-6xl font-black text-orange-500 shadow-xl ring-8 ring-yellow-400">
+              P
             </div>
 
-            {/* RIGHT COINS */}
-            <div className="absolute right-[-20px] top-[300px] rotate-[8deg] text-[115px]">
-              🪙
+            <div className="absolute bottom-[45px] left-[310px] flex h-24 w-24 rotate-[12deg] items-center justify-center rounded-full bg-yellow-300 text-5xl font-black text-orange-500 shadow-xl ring-8 ring-yellow-400">
+              P
             </div>
 
-            <div className="absolute bottom-[40px] right-[30px] rotate-[12deg] text-[120px]">
-              🪙
-            </div>
+            {/* MONEY BOX */}
+            <div className="absolute bottom-[45px] right-[20px] h-40 w-56 rounded-[2rem] bg-pink-300 shadow-2xl">
 
-            {/* BOX */}
-            <div className="absolute bottom-[15px] right-[20px]">
-
-              {/* PINK BOX */}
-              <div className="relative h-40 w-56 rounded-[2rem] bg-pink-300 shadow-[0_30px_50px_rgba(0,0,0,0.16)]">
-
-                <div className="absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-yellow-100 text-5xl">
-                  🪙
-                </div>
-
+              <div className="absolute -top-8 left-8 flex h-20 w-20 rotate-[-12deg] items-center justify-center rounded-full bg-yellow-300 text-5xl font-black text-orange-500 shadow-xl ring-8 ring-yellow-400">
+                P
               </div>
 
-              {/* CASH */}
-              <div className="absolute bottom-[-20px] left-[-55px] h-20 w-52 rounded-2xl bg-green-200 shadow-2xl">
-
-                <div className="absolute left-1/2 top-1/2 h-6 w-full -translate-x-1/2 -translate-y-1/2 bg-white" />
-
+              <div className="absolute -top-10 right-8 flex h-20 w-20 rotate-[12deg] items-center justify-center rounded-full bg-yellow-300 text-5xl font-black text-orange-500 shadow-xl ring-8 ring-yellow-400">
+                P
               </div>
+
+              <div className="absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-yellow-100 text-5xl">
+                P
+              </div>
+
+            </div>
+
+            {/* CASH */}
+            <div className="absolute bottom-[20px] right-[180px] h-20 w-52 rounded-2xl bg-green-200 shadow-2xl">
+
+              <div className="absolute left-1/2 top-1/2 h-6 w-full -translate-x-1/2 -translate-y-1/2 bg-white" />
 
             </div>
 
@@ -266,11 +261,15 @@ export default function Page() {
               ✨
             </div>
 
-            <div className="absolute right-[0px] top-[355px] text-7xl">
+            <div className="absolute right-[10px] top-[360px] text-7xl">
               ✨
             </div>
 
-            <div className="absolute bottom-[120px] right-[140px] text-5xl">
+            <div className="absolute bottom-[110px] right-[170px] text-5xl">
+              ✨
+            </div>
+
+            <div className="absolute bottom-[40px] left-[360px] text-6xl">
               ✨
             </div>
 
@@ -283,7 +282,6 @@ export default function Page() {
       {/* MAIN */}
       <main className="mx-auto max-w-6xl px-4 py-10">
 
-        {/* HEADER */}
         <div className="mb-8 flex items-center justify-between">
 
           <h2 className="text-4xl font-black text-slate-800">
@@ -304,7 +302,7 @@ export default function Page() {
 
         </div>
 
-        {/* RANKING */}
+        {/* RANK */}
         <div className="space-y-5">
 
           {items.map((item, index) => (
@@ -373,7 +371,7 @@ export default function Page() {
 
                 </div>
 
-                {/* BUTTONS */}
+                {/* BUTTON */}
                 <div className="min-w-[240px]">
 
                   <button
