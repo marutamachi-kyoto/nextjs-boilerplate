@@ -17,7 +17,7 @@ type CategoryScore = {
   primary_site_name: string;
   primary_site_url: string;
   secondary_site_name?: string;
-  secondary_site_url?: string;
+ secondary_site_url?: string;
 };
 
 export default function Page() {
@@ -74,34 +74,35 @@ export default function Page() {
               🤖 AI分析中
             </div>
 
-            {/* SEO H1 */}
+            {/* TITLE */}
             <h1 className="mt-8 text-[86px] font-black leading-[0.95] tracking-[-0.05em] text-white drop-shadow-[0_5px_0_rgba(0,0,0,0.14)]">
               ポイ活
               <span className="text-[#FFF3A1]">
                 AI
               </span>
-              ランキング
+              判定
             </h1>
 
-            {/* SEO DESCRIPTION */}
+            {/* DESCRIPTION */}
             <div className="mt-10 max-w-[620px]">
 
               <p className="text-[24px] font-black leading-[1.7] text-[#34151B]">
-                クレジットカード・証券・回線など、
+                いま注目すべきポイ活ジャンルを、
                 <br />
-                いま稼ぎやすいポイ活案件をAIが毎日分析。
+                AIが毎日判定。クリックデータ・話題性・
                 <br />
-                クリックデータ・話題性・報酬レンジをもとに、
-                <br />
+                報酬レンジをもとに、
                 <span className="text-pink-600">
                   今やるべきポイ活
                 </span>
-                をランキング化しています。
+                を
+                <br />
+                ランキング化します。
               </p>
 
             </div>
 
-            {/* FEATURE */}
+            {/* FEATURE BOX */}
             <div className="mt-10 w-[430px] rounded-[2rem] bg-white/95 p-5 shadow-[0_25px_60px_rgba(0,0,0,0.12)]">
 
               <div className="grid grid-cols-2 gap-4">
@@ -136,7 +137,7 @@ export default function Page() {
 
               <div className="absolute left-1/2 top-8 h-[340px] w-[470px] -translate-x-1/2 overflow-hidden rounded-[2rem] bg-white">
 
-                {/* TOP */}
+                {/* TOP BAR */}
                 <div className="flex h-14 items-center justify-between bg-yellow-300 px-6">
 
                   <div className="flex gap-3">
@@ -154,10 +155,12 @@ export default function Page() {
                 {/* CONTENT */}
                 <div className="p-8">
 
+                  {/* TITLE */}
                   <div className="rounded-3xl bg-pink-100 px-6 py-6 text-center text-[44px] font-black whitespace-nowrap text-pink-600">
                     今やるべきポイ活
                   </div>
 
+                  {/* CATEGORY */}
                   <div className="mt-8 grid grid-cols-3 gap-4">
 
                     <div className="rounded-3xl bg-yellow-100 py-6 text-center text-4xl font-black text-orange-500">
@@ -174,6 +177,7 @@ export default function Page() {
 
                   </div>
 
+                  {/* TREND */}
                   <div className="mt-8">
 
                     <div className="flex items-center gap-3 text-3xl font-black text-pink-600">
@@ -196,11 +200,12 @@ export default function Page() {
 
               </div>
 
+              {/* STAND */}
               <div className="absolute bottom-[-18px] left-1/2 h-10 w-[300px] -translate-x-1/2 rounded-b-full bg-[#23262E]" />
 
             </div>
 
-            {/* COINS */}
+            {/* SIDE COINS */}
             <div className="absolute left-[10px] top-[310px] flex h-24 w-24 rotate-[-10deg] items-center justify-center rounded-full bg-yellow-300 text-5xl shadow-xl ring-8 ring-yellow-400">
               P
             </div>
@@ -209,6 +214,7 @@ export default function Page() {
               P
             </div>
 
+            {/* COIN STACKS */}
             <div className="absolute bottom-[55px] left-[60px]">
 
               <div className="h-8 w-28 rounded-full bg-yellow-300 shadow-md ring-4 ring-yellow-400" />
@@ -245,7 +251,9 @@ export default function Page() {
 
             {/* CASH */}
             <div className="absolute bottom-[20px] right-[180px] h-20 w-52 rounded-2xl bg-green-200 shadow-2xl">
+
               <div className="absolute left-1/2 top-1/2 h-6 w-full -translate-x-1/2 -translate-y-1/2 bg-white" />
+
             </div>
 
             {/* SPARKLES */}
@@ -274,11 +282,10 @@ export default function Page() {
       {/* MAIN */}
       <main className="mx-auto max-w-6xl px-4 py-10">
 
-        {/* SEO H2 */}
         <div className="mb-8 flex items-center justify-between">
 
           <h2 className="text-4xl font-black text-slate-800">
-            🔥 今日のポイ活おすすめランキング
+            🔥 AIランキング
           </h2>
 
           <div className="flex items-center gap-3">
@@ -306,6 +313,7 @@ export default function Page() {
 
               <div className="flex items-center justify-between gap-8">
 
+                {/* LEFT */}
                 <div className="flex items-start gap-6">
 
                   <div
