@@ -96,7 +96,7 @@ export default function Page() {
                   世間での話題性・クリックデータ・報酬レンジ
                 </span>
                 をもとに、今やるべきポイ活を、AIが判定し、              
-                <span className="text-[#FFF3A1]">自動的にランキング化</span>しています。
+                <span className="text-[#FFF3A1]">毎日自動的にランキング化</span>しています。
               </p>
 
             </div>
