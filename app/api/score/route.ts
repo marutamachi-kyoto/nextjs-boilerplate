@@ -252,21 +252,53 @@ function heatLevel(finalScore: number) {
 function createReason(
   genre: GenreConfig,
   trendKeyword: string,
-  trendScore: number
+  trendScore: number,
+  clickScore: number,
+  riseRate: number
 ) {
+  const reasons: string[] = [];
+
+  if (riseRate >= 150) {
+    reasons.push(
+      `${genre.category}は直近24時間のクリックが増えており、ユーザー人気が急上昇しています。`
+    );
+  }
+
+  if (clickScore >= 0.25) {
+    reasons.push(
+      `実際にこのジャンルを探すユーザーが増えているため、今チェックする価値が高いと判定しました。`
+    );
+  }
+
   if (trendScore >= 2) {
-    return `${trendKeyword}に関連する検索トレンドが上昇しています。${genre.category}系のポイ活は報酬レンジも比較的高く、今チェックする価値があります。`;
+    reasons.push(
+      `${trendKeyword}に関連する検索トレンドが上昇しており、外部の話題性も高まっています。`
+    );
   }
 
   if (genre.rewardMax >= 10000) {
-    return `${genre.category}は高額報酬になりやすいジャンルです。現在大きな急上昇は弱めですが、定期的に確認する価値があります。`;
+    reasons.push(
+      `想定報酬レンジが高く、高額ポイ活を狙いたい人に向いています。`
+    );
   }
 
   if (genre.difficulty === "低") {
-    return `${genre.category}は初心者でも始めやすいジャンルです。大きな報酬だけでなく、手軽さを重視する人に向いています。`;
+    reasons.push(
+      `難易度が低めなので、初心者でも始めやすいジャンルです。`
+    );
   }
 
-  return `${genre.category}は話題性・報酬・始めやすさを総合してAIが注目候補として判定しました。`;
+  if (genre.difficulty === "高") {
+    reasons.push(
+      `条件確認は必要ですが、報酬額が大きくなりやすいジャンルです。`
+    );
+  }
+
+  if (reasons.length === 0) {
+    return `${genre.category}は、報酬レンジ・始めやすさ・ユーザー行動を総合してAIが注目候補として判定しました。`;
+  }
+
+  return reasons.slice(0, 3).join("");
 }
 
 export async function GET() {
@@ -344,7 +376,13 @@ const finalScore =
         difficulty_score: difficultyScore,
         stability_score: stabilityScore,
         final_score: finalScore,
-        reason: createReason(genre, trend.keyword, trend.score),
+        reason: createReason(
+  genre,
+  trend.keyword,
+  trend.score,
+  clickScore,
+  riseRate
+),
         primary_site_name: genre.primarySiteName,
         primary_site_url: genre.primarySiteUrl,
         secondary_site_name: genre.secondarySiteName,
