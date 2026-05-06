@@ -355,9 +355,9 @@ const clickScore = Math.min(
 );
       
 const finalScore =
-  trend.score * 0.35 +
-  clickScore * 0.30 +
-  rewardScore * 0.20 +
+  trend.score * 0.40 +
+  clickScore * 0.25 +
+  rewardScore * 0.20 -
   difficultyScore * 0.05 +
   stabilityScore * 0.10;
 
