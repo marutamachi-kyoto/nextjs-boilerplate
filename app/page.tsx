@@ -88,7 +88,7 @@ export default function Page() {
                 いま注目すべきポイ活ジャンルを、
                 AIが判定。
                 <br />
-
+                <br />
                 <span className="text-[#FFF3A1]">
                   世間での話題性・クリックデータ・報酬レンジ
                 </span>
@@ -97,7 +97,7 @@ export default function Page() {
                 <span className="text-[#FFF3A1]">
                   今やるべきポイ活
                 </span>
-                を、AIがランキング化します。
+                を、AIが判定し、自動的にランキング化します。
               </p>
 
             </div>
