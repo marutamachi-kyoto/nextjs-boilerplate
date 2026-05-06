@@ -147,16 +147,36 @@ function normalizeText(text: string) {
 }
 
 async function getGoogleTrends() {
-  const res = await fetch(
-    "https://trends.google.com/trends/trendingsearches/daily/rss?geo=JP",
-    { cache: "no-store" }
-  );
+ try {
+    const res = await fetch(
+      "https://trends.google.com/trends/trendingsearches/daily/rss?geo=JP",
+      {
+        cache: "no-store",
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+        },
+      }
+    );
 
-  const xml = await res.text();
+    const xml = await res.text();
 
-  return [...xml.matchAll(/<title><!\[CDATA\[(.*?)\]\]><\/title>/g)]
-    .map((m) => m[1])
-    .slice(1);
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+    });
+
+    const json = parser.parse(xml);
+
+    const items = json?.rss?.channel?.item || [];
+
+    return items
+      .map((item: any) => item.title)
+      .filter(Boolean)
+      .slice(0, 20);
+
+  } catch (error) {
+    console.error("Google Trends fetch error:", error);
+    return [];
+  }
 }
 
 function calcTrendScore(genre: GenreConfig, trends: string[]) {
