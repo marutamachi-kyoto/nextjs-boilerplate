@@ -135,7 +135,7 @@ export default function Page() {
       <main className="mx-auto max-w-6xl px-4 py-8 lg:py-10">
         <div className="mb-6 flex flex-col gap-4 lg:mb-8 lg:flex-row lg:items-center lg:justify-between">
           <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
-            🔥 今日のポイ活おすすめランキング
+            🔥 ただいまのポイ活おすすめランキング
           </h2>
 
           <div className="w-fit rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-500 shadow">
