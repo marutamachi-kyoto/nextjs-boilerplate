@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 type CategoryScore = {
@@ -81,13 +82,13 @@ export default function Page() {
                 <span className="text-pink-600">
                   「世間での話題度」「クリック数」「報酬レンジ」
                 </span>
-                の各データをもとに、初心者の向けのポイ活を
+                の各データをもとに、初心者向けのポイ活を
                 <br />
                 AIが判定し、
                 <span className="text-pink-600">
                   １時間ごと（毎時０分）
                 </span>
-                に、ランキング反映しています。           
+                にランキング反映しています。
               </p>
             </div>
 
@@ -116,18 +117,18 @@ export default function Page() {
             </div>
           </div>
 
-          {/* RIGHT ILLUSTRATION */}
-          <div className="relative h-[360px] w-full lg:h-[620px] lg:w-[720px]">
-            <div className="absolute right-0 top-6 h-[250px] w-full rounded-[2rem] bg-[#303442] shadow-[0_35px_80px_rgba(31,41,55,0.22)] lg:top-20 lg:h-[400px] lg:w-[600px] lg:rounded-[3rem]">
-              <div className="mx-auto max-w-5xl px-4">
- 　　　　　　　　 <Image
-   　　　　　　　　 src="/hero.png"
-    　　　　　　　　alt="ポイ活AI判定"
-    　　　　　　　　width={1200}
-    　　　　　　　　height={900}
-    　　　　　　　　className="w-full h-auto"
-  　　　　　　　　　/>
-            </div>
+          {/* RIGHT IMAGE */}
+          <div className="w-full lg:w-[720px]">
+            <Image
+              src="/hero.png"
+              alt="ポイ活AI判定"
+              width={1200}
+              height={900}
+              className="w-full h-auto rounded-[2rem] shadow-[0_35px_80px_rgba(31,41,55,0.18)]"
+              priority
+            />
+          </div>
+        </div>
       </header>
 
       {/* MAIN */}
