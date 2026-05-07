@@ -77,20 +77,11 @@ export default function Page() {
             </h1>
 
             <div className="mt-8 space-y-6 text-[20px] font-black leading-[1.9] text-[#27313f] lg:text-[28px]">
-              <p className="text-pink-600">ポイ活初心者の方向けに</p>
-
-              <p>
-                今やるべきポイ活のジャンルを、
-                <span className="text-pink-600">AI</span>が判定。
-              </p>
-
               <p>
                 <span className="text-pink-600">
                   「世間での話題度」「クリック数」「報酬レンジ」
                 </span>
-                の
-                <br />
-                各データをもとに、初心者の方向けのポイ活を
+                の各データをもとに、初心者の方向けのポイ活を
                 <br />
                 <span className="text-pink-600">AI</span>が判定し、
                 <span className="text-pink-600">
