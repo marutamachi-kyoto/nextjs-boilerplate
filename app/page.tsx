@@ -83,7 +83,6 @@ export default function Page() {
                   「世間での話題度」「クリック数」「報酬レンジ」
                 </span>
                 の各データをもとに、初心者向けのポイ活を
-                <br />
                 AIが判定し、
                 <span className="text-pink-600">
                   １時間ごと（毎時０分）
