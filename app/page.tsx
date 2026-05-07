@@ -119,67 +119,15 @@ export default function Page() {
           {/* RIGHT ILLUSTRATION */}
           <div className="relative h-[360px] w-full lg:h-[620px] lg:w-[720px]">
             <div className="absolute right-0 top-6 h-[250px] w-full rounded-[2rem] bg-[#303442] shadow-[0_35px_80px_rgba(31,41,55,0.22)] lg:top-20 lg:h-[400px] lg:w-[600px] lg:rounded-[3rem]">
-              <div className="absolute left-1/2 top-5 h-[200px] w-[88%] -translate-x-1/2 overflow-hidden rounded-[1.5rem] bg-white lg:top-8 lg:h-[315px] lg:rounded-[2rem]">
-                <div className="flex h-12 items-center justify-between bg-gradient-to-r from-pink-300 to-pink-200 px-5 lg:h-16">
-                  <div className="flex gap-2">
-                    <span className="h-3 w-3 rounded-full bg-white lg:h-4 lg:w-4" />
-                    <span className="h-3 w-3 rounded-full bg-white lg:h-4 lg:w-4" />
-                    <span className="h-3 w-3 rounded-full bg-white lg:h-4 lg:w-4" />
-                  </div>
-
-                  <div className="rounded-full bg-white px-4 py-1 text-xs font-black text-pink-600 lg:text-base">
-                    AI分析中
-                  </div>
-                </div>
-
-                <div className="p-5 lg:p-8">
-                  <div className="rounded-3xl bg-pink-50 px-4 py-5 text-center text-[28px] font-black text-pink-600 shadow-sm lg:text-[46px]">
-                    今やるべきポイ活
-                  </div>
-
-                  <div className="mt-5 grid grid-cols-3 gap-3 lg:mt-8 lg:gap-5">
-                    <div className="rounded-2xl bg-yellow-50 py-4 text-center text-xl font-black text-orange-500 lg:text-4xl">
-                      クレカ
-                    </div>
-                    <div className="rounded-2xl bg-pink-50 py-4 text-center text-xl font-black text-pink-600 lg:text-4xl">
-                      証券
-                    </div>
-                    <div className="rounded-2xl bg-orange-50 py-4 text-center text-xl font-black text-orange-500 lg:text-4xl">
-                      回線
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <div className="mx-auto max-w-5xl px-4">
+ 　　　　　　　　 <Image
+   　　　　　　　　 src="/hero.png"
+    　　　　　　　　alt="ポイ活AI判定"
+    　　　　　　　　width={1200}
+    　　　　　　　　height={900}
+    　　　　　　　　className="w-full h-auto"
+  　　　　　　　　　/>
             </div>
-
-            {/* COINS */}
-            <div className="absolute bottom-[80px] left-[40px] hidden h-24 w-24 items-center justify-center rounded-full bg-yellow-300 text-5xl font-black text-orange-500 shadow-xl ring-8 ring-yellow-400 lg:flex">
-              P
-            </div>
-
-            <div className="absolute bottom-[70px] left-[160px] hidden lg:block">
-              <div className="h-8 w-28 rounded-full bg-yellow-300 shadow ring-4 ring-yellow-400" />
-              <div className="-mt-2 h-8 w-28 rounded-full bg-yellow-300 shadow ring-4 ring-yellow-400" />
-              <div className="-mt-2 h-8 w-28 rounded-full bg-yellow-300 shadow ring-4 ring-yellow-400" />
-              <div className="-mt-2 h-8 w-28 rounded-full bg-yellow-300 shadow ring-4 ring-yellow-400" />
-            </div>
-
-            <div className="absolute bottom-[40px] right-[10px] h-32 w-44 rounded-[2rem] bg-pink-300 shadow-2xl lg:bottom-[40px] lg:right-[0px] lg:h-48 lg:w-64">
-              <div className="absolute -top-9 left-8 flex h-20 w-20 items-center justify-center rounded-full bg-yellow-300 text-5xl font-black text-orange-500 shadow-xl ring-8 ring-yellow-400">
-                P
-              </div>
-              <div className="absolute -top-12 right-10 flex h-20 w-20 items-center justify-center rounded-full bg-yellow-300 text-5xl font-black text-orange-500 shadow-xl ring-8 ring-yellow-400">
-                P
-              </div>
-            </div>
-
-            <div className="absolute bottom-[25px] right-[180px] h-16 w-40 rotate-6 rounded-2xl bg-emerald-200 shadow-xl lg:bottom-[20px] lg:right-[230px] lg:h-24 lg:w-60">
-              <div className="absolute left-0 top-1/2 h-6 w-full -translate-y-1/2 bg-white lg:h-8" />
-              <div className="absolute bottom-3 left-5 h-2 w-10 rounded bg-white" />
-              <div className="absolute bottom-3 left-20 h-2 w-10 rounded bg-white" />
-            </div>
-          </div>
-        </div>
       </header>
 
       {/* MAIN */}
