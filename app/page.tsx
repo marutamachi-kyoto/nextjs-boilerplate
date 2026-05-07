@@ -152,12 +152,12 @@ export default function Page() {
                   <div
                     className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-2xl font-black text-white shadow-lg lg:h-16 lg:w-16 lg:text-3xl ${
                       index === 0
-                        ? "bg-gradient-to-br from-yellow-400 to-orange-500"
-                        : index === 1
-                        ? "bg-gradient-to-br from-slate-400 to-slate-500"
-                        : index === 2
-                        ? "bg-gradient-to-br from-orange-300 to-orange-500"
-                        : "bg-gradient-to-br from-pink-400 to-pink-500"
+  ? "bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 shadow-[0_8px_20px_rgba(255,200,0,0.45)]"
+  : index === 1
+  ? "bg-gradient-to-br from-slate-300 to-slate-600 shadow-[0_8px_20px_rgba(100,116,139,0.35)]"
+  : index === 2
+  ? "bg-gradient-to-br from-amber-600 via-orange-700 to-yellow-900 shadow-[0_8px_20px_rgba(180,83,9,0.45)]"
+  : "bg-gradient-to-br from-pink-400 to-pink-500"
                     }`}
                   >
                     {index + 1}
