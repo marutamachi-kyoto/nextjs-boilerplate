@@ -193,7 +193,7 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="flex w-full flex-col items-center justify-center gap-3 lg:w-[320px]">
+                <div className="flex w-full flex-col items-end justify-center gap-3 lg:w-[320px]">
   <button
     onClick={() =>
       trackClick(
