@@ -193,35 +193,35 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="flex w-full flex-col justify-center gap-3 lg:w-[320px]">
-                  <button
-                    onClick={() =>
-                      trackClick(
-                        item.category,
-                        item.primary_site_name,
-                        item.primary_site_url
-                      )
-                    }
-                    className="w-full rounded-2xl bg-gradient-to-r from-pink-500 to-orange-400 px-6 py-4 text-lg font-black text-white shadow-lg transition hover:scale-105"
-                  >
-                    {item.primary_site_name}で探す
-                  </button>
+                <div className="flex w-full flex-col items-center justify-center gap-3 lg:w-[320px]">
+  <button
+    onClick={() =>
+      trackClick(
+        item.category,
+        item.primary_site_name,
+        item.primary_site_url
+      )
+    }
+    className="flex h-16 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-400 px-6 text-center text-lg font-black text-white shadow-lg transition hover:scale-105 lg:w-[260px]"
+  >
+    {item.primary_site_name}で探す
+  </button>
 
-                  {item.secondary_site_name && item.secondary_site_url && (
-                    <button
-                      onClick={() =>
-                        trackClick(
-                          item.category,
-                          item.secondary_site_name!,
-                          item.secondary_site_url!
-                        )
-                      }
-                      className="w-full rounded-2xl bg-orange-50 px-6 py-4 text-lg font-black text-orange-500 shadow-sm transition hover:scale-105"
-                    >
-                      {item.secondary_site_name}も見る
-                    </button>
-                  )}
-                </div>
+  {item.secondary_site_name && item.secondary_site_url && (
+    <button
+      onClick={() =>
+        trackClick(
+          item.category,
+          item.secondary_site_name!,
+          item.secondary_site_url!
+        )
+      }
+      className="flex h-16 w-full items-center justify-center rounded-2xl bg-orange-50 px-6 text-center text-lg font-black text-orange-500 shadow-sm transition hover:scale-105 lg:w-[260px]"
+    >
+      {item.secondary_site_name}も見る
+    </button>
+  )}
+</div>
               </div>
             </article>
           ))}
