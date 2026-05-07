@@ -4,12 +4,21 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://poikatu-ai.vercel.app"),
+
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
+
   title: {
     default: "ポイ活AI判定｜今やるべきポイ活をAIがランキング",
     template: "%s｜ポイ活AI判定",
   },
+
   description:
     "ポイ活AI判定は、話題度・報酬レンジ・クリック数などをもとに、初心者向けのおすすめポイ活ジャンルをAIが自動判定するランキングサイトです。",
+
   keywords: [
     "ポイ活",
     "ポイントサイト",
@@ -21,6 +30,7 @@ export const metadata: Metadata = {
     "クレカ案件",
     "証券口座",
   ],
+
   openGraph: {
     title: "ポイ活AI判定｜今やるべきポイ活をAIがランキング",
     description:
@@ -38,6 +48,7 @@ export const metadata: Metadata = {
     locale: "ja_JP",
     type: "website",
   },
+
   twitter: {
     card: "summary_large_image",
     title: "ポイ活AI判定｜今やるべきポイ活をAIがランキング",
@@ -45,9 +56,11 @@ export const metadata: Metadata = {
       "話題度・報酬レンジ・クリック数をもとに、今おすすめのポイ活をAIが自動判定。",
     images: ["/hero.png.png"],
   },
+
   alternates: {
     canonical: "https://poikatu-ai.vercel.app",
   },
+
   robots: {
     index: true,
     follow: true,
