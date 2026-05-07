@@ -169,7 +169,7 @@ export default function Page() {
                     </h3>
 
                     <p className="mt-2 text-lg font-bold text-pink-500 lg:text-xl">
-                      注目案件：{item.trend_keyword}
+                      AI注目ワード：{item.trend_keyword}
                     </p>
 
                     <p className="mt-4 text-base leading-relaxed text-slate-500 lg:mt-6 lg:text-lg">
