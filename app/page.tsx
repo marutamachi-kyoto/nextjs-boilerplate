@@ -83,7 +83,7 @@ export default function Page() {
                 </span>
                 の各データをもとに、初心者の向けのポイ活を
                 <br />
-                AI<が判定し、
+                AIが判定し、
                 <span className="text-pink-600">
                   １時間ごと（毎時０分）
                 </span>
