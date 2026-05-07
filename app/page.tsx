@@ -120,7 +120,7 @@ export default function Page() {
           {/* RIGHT IMAGE */}
           <div className="w-full lg:w-[720px]">
             <Image
-              src="/hero.png"
+              src="/hero.png.png"
               alt="ポイ活AI判定"
               width={1200}
               height={900}
