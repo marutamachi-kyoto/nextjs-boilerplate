@@ -81,9 +81,9 @@ export default function Page() {
                 <span className="text-pink-600">
                   「世間での話題度」「クリック数」「報酬レンジ」
                 </span>
-                の各データをもとに、初心者の方向けのポイ活を
+                の各データをもとに、初心者の向けのポイ活を
                 <br />
-                <span className="text-pink-600">AI</span>が判定し、
+                AI<が判定し、
                 <span className="text-pink-600">
                   １時間ごと（毎時０分）
                 </span>
