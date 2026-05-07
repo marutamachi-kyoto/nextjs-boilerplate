@@ -87,9 +87,7 @@ export default function Page() {
                 <span className="text-pink-600">
                   １時間ごと（毎時０分）
                 </span>
-                に、
-                <br />
-                ランキング反映しています。
+                に、ランキング反映しています。           
               </p>
             </div>
 
