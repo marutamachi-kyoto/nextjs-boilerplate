@@ -11,7 +11,8 @@ export async function GET() {
     const { data, error } = await supabase
       .from("trends")
       .select("word, score, category")
-      .order("score", { ascending: false });
+      .order("score", { ascending: false })
+      .limit(30);
 
     if (error) {
       throw error;
