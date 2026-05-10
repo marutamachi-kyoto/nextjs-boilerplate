@@ -7,15 +7,26 @@ const supabase = createClient(
 );
 
 export async function GET() {
-  const { data, error } = await supabase
-    .from("trends")
-    .select("word, score")
-    .order("score", { ascending: false })
-    .limit(10);
+  try {
+    const { data, error } = await supabase
+      .from("trends")
+      .select("word, score, category")
+      .order("score", { ascending: false });
 
-  if (error) {
-    return NextResponse.json({ data: [], error: error.message }, { status: 500 });
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json({
+      data,
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: e.message,
+      },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({ data });
 }
