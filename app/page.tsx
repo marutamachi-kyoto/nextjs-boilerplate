@@ -25,19 +25,21 @@ export default function Page() {
   const [items, setItems] = useState<CategoryScore[]>([]);
   const [updatedAt, setUpdatedAt] = useState("");
   const [trendTags, setTrendTags] = useState<{ word: string; score: number }[]>([]);
-  useEffect(() =>
-    fetch("/api/trends")
-  　　.then((res) => res.json())
-  　　.then((json) => {
-    　setTrendTags(json.data || []);
-  　});
-    fetch("/api/score")
-      .then((res) => res.json())
-      .then((json) => {
-        setItems(json.data || []);
-        setUpdatedAt(new Date().toLocaleString("ja-JP"));
-      });
-  }, []);
+  
+  useEffect(() => {
+  fetch("/api/trends")
+    .then((res) => res.json())
+    .then((json) => {
+      setTrendTags(json.data || []);
+    });
+
+  fetch("/api/score")
+    .then((res) => res.json())
+    .then((json) => {
+      setItems(json.data || []);
+      setUpdatedAt(new Date().toLocaleString("ja-JP"));
+    });
+}, []);
 
   const trackClick = async (
     category: string,
