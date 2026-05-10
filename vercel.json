@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/update-rankings",
-      "schedule": "0 0 * * *"
+      "path": "/api/update-trends",
+      "schedule": "0 */3 * * *"
     }
   ]
 }
