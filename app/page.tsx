@@ -146,7 +146,7 @@ export default function Page() {
             </p>
 
             <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
-              🔍 ただいま話題のポイ活キーワード
+              🔍 ただいまGoogleで話題のポイ活キーワード
             </h2>
           </div>
 
@@ -183,7 +183,7 @@ export default function Page() {
             <div className="rounded-2xl bg-pink-50 p-4">
               <p className="text-xs font-black text-pink-400">判定基準</p>
               <p className="mt-1 font-bold text-slate-700">
-                「ポイ活 × 関連ワード」の検索上昇傾向
+                Googleで検索されているキーワード
               </p>
             </div>
 
