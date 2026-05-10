@@ -44,7 +44,7 @@ function extractRelatedQueries(json: any) {
 export async function GET() {
   try {
     const response = await fetch(
-      `https://serpapi.com/search.json?engine=google_trends&q=ポイ活&geo=JP&hl=ja&api_key=${SERPAPI_KEY}`,
+      `https://serpapi.com/search.json?engine=google_trends&q=ポイ活&geo=JP&hl=ja&data_type=RELATED_QUERIES&api_key=${SERPAPI_KEY}`
       { cache: "no-store" }
     );
 
