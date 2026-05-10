@@ -163,7 +163,7 @@ export default function Page() {
             <div className="rounded-2xl bg-pink-50 p-4">
               <p className="text-xs font-black text-pink-400">判定基準</p>
               <p className="mt-1 font-bold text-slate-700">
-                Googleでよく検索されているもの
+                Googleでよく検索されているキーワード
               </p>
             </div>
 
@@ -177,7 +177,7 @@ export default function Page() {
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs font-black text-slate-400">更新頻度</p>
               <p className="mt-1 font-bold text-slate-700">
-                1時間ごとにAI判定
+                3時間ごと
               </p>
             </div>
           </div>
