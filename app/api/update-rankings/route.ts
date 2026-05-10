@@ -482,7 +482,7 @@ export async function GET() {
         category: item.offer.category,
         score: item.score,
         final_score: item.score,
-        trend_keyword: item.trend.keyword,
+        trend_keyword: item.offer.offer_name,
         trend_traffic: item.trend.traffic ?? null,
         description: item.description,
         reason: item.description,
