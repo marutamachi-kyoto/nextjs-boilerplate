@@ -8,31 +8,72 @@ const supabase = createClient(
 
 const SERPAPI_KEY = process.env.SERPAPI_KEY!;
 
+function normalizeKeyword(query: string) {
+  return query
+    .replace(/ポイ活/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/[　]/g, " ")
+    .trim();
+}
+
+function extractRelatedQueries(json: any) {
+  const relatedQueries =
+    json?.related_queries?.rising ||
+    json?.related_queries?.top ||
+    json?.related_queries ||
+    [];
+
+  if (!Array.isArray(relatedQueries)) {
+    return [];
+  }
+
+  return relatedQueries
+    .map((item: any) => {
+      const query = item.query || item.title || item.text || "";
+      const value = item.value || item.extracted_value || 50;
+
+      return {
+        word: normalizeKeyword(query),
+        score: Number(value) || 50,
+      };
+    })
+    .filter((item: { word: string; score: number }) => item.word.length > 0)
+    .filter((item: { word: string; score: number }) => item.word !== "ポイ活");
+}
+
 export async function GET() {
   try {
     const response = await fetch(
-      `https://serpapi.com/search.json?engine=google_trends&q=ポイ活&api_key=${SERPAPI_KEY}`
+      `https://serpapi.com/search.json?engine=google_trends&q=ポイ活&geo=JP&hl=ja&api_key=${SERPAPI_KEY}`,
+      { cache: "no-store" }
     );
 
     const json = await response.json();
 
-    const keywords = [
-      "クレカ",
-      "証券口座",
-      "楽天カード",
-      "SBI証券",
-      "光回線",
-      "アプリ案件",
-      "楽天モバイル",
-      "ふるさと納税",
-    ];
+    let rows = extractRelatedQueries(json);
+
+    if (rows.length === 0) {
+      rows = [
+        { word: "クレカ", score: 100 },
+        { word: "証券口座", score: 94 },
+        { word: "楽天カード", score: 88 },
+        { word: "SBI証券", score: 82 },
+        { word: "光回線", score: 76 },
+        { word: "アプリ案件", score: 70 },
+        { word: "楽天モバイル", score: 64 },
+        { word: "ふるさと納税", score: 58 },
+      ];
+    }
+
+    rows = rows
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10)
+      .map((item, index) => ({
+        word: item.word,
+        score: Math.max(50, 100 - index * 6),
+      }));
 
     await supabase.from("trends").delete().neq("word", "");
-
-    const rows = keywords.map((word, index) => ({
-      word,
-      score: 100 - index * 6,
-    }));
 
     const { error } = await supabase.from("trends").insert(rows);
 
@@ -44,7 +85,6 @@ export async function GET() {
       success: true,
       inserted: rows.length,
       trends: rows,
-      serpapi: json,
     });
   } catch (e: any) {
     return NextResponse.json(
