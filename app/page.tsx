@@ -44,7 +44,6 @@ export default function Page() {
       .then((res) => res.json())
       .then((json) => {
         const data = json.data || [];
-
         setItems(data.slice(0, 30));
 
         if (data[0]?.updated_at) {
@@ -63,9 +62,7 @@ export default function Page() {
     try {
       await fetch("/api/click", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           category,
           site_name: siteName,
@@ -85,100 +82,40 @@ export default function Page() {
 
     if (category.includes("通信")) {
       return [
-        {
-          icon: "📈",
-          title: "高額ポイント",
-          text: "還元期待値が高い",
-        },
-        {
-          icon: "💗",
-          title: "SNSで話題",
-          text: "検索・投稿が増加",
-        },
-        {
-          icon: "🎁",
-          title: "条件が明確",
-          text: "比較しやすい案件",
-        },
+        { icon: "📈", title: "高額ポイント", text: "還元期待値が高い" },
+        { icon: "💗", title: "SNSで話題", text: "検索・投稿が増加" },
+        { icon: "🎁", title: "条件が明確", text: "比較しやすい案件" },
       ];
     }
 
     if (category.includes("ゲーム") || category.includes("アプリ")) {
       return [
-        {
-          icon: "🔍",
-          title: "検索急増",
-          text: "関連検索が上昇",
-        },
-        {
-          icon: "#",
-          title: "SNS話題化",
-          text: "投稿・共有が増加",
-        },
-        {
-          icon: "⏱",
-          title: "短期達成可",
-          text: "条件達成を狙える",
-        },
+        { icon: "🔍", title: "検索急増", text: "関連検索が上昇" },
+        { icon: "💗", title: "SNS話題化", text: "投稿・共有が増加" },
+        { icon: "⏱", title: "短期達成可", text: "条件達成を狙える" },
       ];
     }
 
     if (category.includes("カード") || category.includes("クレジット")) {
       return [
-        {
-          icon: "¥",
-          title: "高額還元",
-          text: "ポイント単価が高い",
-        },
-        {
-          icon: "⚡",
-          title: "即効性あり",
-          text: "成果につながりやすい",
-        },
-        {
-          icon: "👤",
-          title: "初心者向け",
-          text: "申込がシンプル",
-        },
+        { icon: "¥", title: "高額還元", text: "ポイント単価が高い" },
+        { icon: "⚡", title: "即効性あり", text: "成果につながりやすい" },
+        { icon: "👤", title: "初心者向け", text: "申込がシンプル" },
       ];
     }
 
     if (category.includes("証券") || category.includes("投資")) {
       return [
-        {
-          icon: "📈",
-          title: "投資需要",
-          text: "口座開設が増加",
-        },
-        {
-          icon: "🎁",
-          title: "高ポイント",
-          text: "還元額が大きい",
-        },
-        {
-          icon: "⏱",
-          title: "申込増加",
-          text: "注目度が上昇",
-        },
+        { icon: "📈", title: "投資需要", text: "口座開設が増加" },
+        { icon: "🎁", title: "高ポイント", text: "還元額が大きい" },
+        { icon: "⏱", title: "申込増加", text: "注目度が上昇" },
       ];
     }
 
     return [
-      {
-        icon: "📈",
-        title: "検索上昇",
-        text: "話題性が高い",
-      },
-      {
-        icon: "💗",
-        title: "注目度あり",
-        text: "関心が増加中",
-      },
-      {
-        icon: "🎁",
-        title: "案件向き",
-        text: "ポイ活と相性良好",
-      },
+      { icon: "📈", title: "検索上昇", text: "話題性が高い" },
+      { icon: "💗", title: "注目度あり", text: "関心が増加中" },
+      { icon: "🎁", title: "案件向き", text: "ポイ活と相性良好" },
     ];
   };
 
@@ -187,7 +124,6 @@ export default function Page() {
       {/* HERO */}
       <header className="overflow-hidden bg-gradient-to-r from-[#FFF2F7] via-[#FFF8FA] to-[#FFF4F7]">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-10 px-6 py-10 lg:flex-row lg:items-center lg:justify-between lg:px-12 lg:py-12">
-          {/* LEFT */}
           <div className="w-full lg:w-[680px]">
             <div className="inline-flex items-center gap-3 rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-[0_10px_30px_rgba(236,72,153,0.18)] lg:text-xl">
               <span>🤖</span>
@@ -202,7 +138,7 @@ export default function Page() {
               判定
             </h1>
 
-            <div className="mt-8 space-y-6 text-[20px] font-black leading-[1.9] text-[#27313f] lg:text-[28px]">
+            <div className="mt-8 text-[20px] font-black leading-[1.9] text-[#27313f] lg:text-[28px]">
               <p>
                 <span className="text-pink-600">「Googleでの話題度」</span>
                 のデータを中心に、初心者向けのポイ活をAIが判定し、
@@ -221,7 +157,6 @@ export default function Page() {
             </div>
           </div>
 
-          {/* RIGHT IMAGE */}
           <div className="w-full lg:w-[720px]">
             <Image
               src="/hero.png.png"
@@ -235,7 +170,6 @@ export default function Page() {
         </div>
       </header>
 
-      {/* MAIN */}
       <main className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10">
         {/* TREND SECTION */}
         <section className="mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
@@ -254,7 +188,7 @@ export default function Page() {
               {trendTags.map((tag) => (
                 <div
                   key={tag.word}
-                  className={`flex items-center gap-2 rounded-full font-black shadow-sm transition hover:scale-105 ${
+                  className={`flex items-center rounded-full font-black shadow-sm transition hover:scale-105 ${
                     tag.score >= 90
                       ? "bg-gradient-to-r from-pink-500 to-orange-400 px-6 py-3 text-xl text-white"
                       : tag.score >= 80
@@ -289,7 +223,7 @@ export default function Page() {
 
             return (
               <article
-                key={`${item.category}-${index}`}
+                key={`${item.rank}-${item.offer_name}-${index}`}
                 className="rounded-[2rem] bg-white p-4 shadow-lg ring-1 ring-pink-100 lg:p-6"
               >
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-[120px_1.4fr_1.2fr_250px] lg:items-center">
