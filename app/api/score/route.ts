@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { XMLParser } from "fast-xml-parser";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,10 +18,16 @@ type GenreConfig = {
   secondarySiteUrl: string;
 };
 
+type TrendRow = {
+  word: string;
+  score: number;
+  category?: string;
+};
+
 const GENRES: GenreConfig[] = [
   {
     category: "クレジットカード",
-    keywords: ["楽天カード", "三井住友カード", "JCBカード", "エポスカード", "PayPayカード", "クレカ", "カード"],
+    keywords: ["楽天カード", "三井住友カード", "JCBカード", "エポスカード", "PayPayカード", "クレカ", "カード", "メルカード"],
     rewardMin: 5000,
     rewardMax: 10000,
     difficulty: "低",
@@ -34,7 +39,7 @@ const GENRES: GenreConfig[] = [
   },
   {
     category: "証券口座",
-    keywords: ["SBI証券", "楽天証券", "松井証券", "NISA", "新NISA", "投資", "証券"],
+    keywords: ["SBI証券", "楽天証券", "松井証券", "NISA", "新NISA", "投資", "証券", "口座"],
     rewardMin: 8000,
     rewardMax: 15000,
     difficulty: "中",
@@ -46,7 +51,7 @@ const GENRES: GenreConfig[] = [
   },
   {
     category: "通信・回線",
-    keywords: ["NURO光", "ドコモ光", "auひかり", "ソフトバンク光", "WiMAX", "光回線", "回線"],
+    keywords: ["NURO光", "ドコモ光", "auひかり", "ソフトバンク光", "WiMAX", "光回線", "回線", "楽天モバイル", "ahamo", "docomo", "ドコモ"],
     rewardMin: 15000,
     rewardMax: 30000,
     difficulty: "高",
@@ -58,7 +63,7 @@ const GENRES: GenreConfig[] = [
   },
   {
     category: "アプリ・ゲーム",
-    keywords: ["ゲーム", "スマホゲーム", "アプリ", "TikTok Lite"],
+    keywords: ["ゲーム", "スマホゲーム", "アプリ", "TikTok Lite", "信長", "三国志", "キングダム", "ウォー", "英雄", "伝説", "育成"],
     rewardMin: 500,
     rewardMax: 5000,
     difficulty: "低",
@@ -146,87 +151,37 @@ function normalizeText(text: string) {
   return text.toLowerCase().replace(/\s/g, "");
 }
 
-async function getGoogleTrends() {
- try {
-    const res = await fetch(
-      "https://trends.google.com/trends/trendingsearches/daily/rss?geo=JP",
-      {
-        cache: "no-store",
-        headers: {
-          "User-Agent": "Mozilla/5.0",
-        },
-      }
-    );
+async function getTrendRows() {
+  const { data, error } = await supabase
+    .from("trends")
+    .select("word, score, category")
+    .order("score", { ascending: false })
+    .limit(100);
 
-    const xml = await res.text();
-
-    const parser = new XMLParser({
-      ignoreAttributes: false,
-    });
-
-    const json = parser.parse(xml);
-
-    const items = json?.rss?.channel?.item || [];
-
-    return items
-      .map((item: any) => item.title)
-      .filter(Boolean)
-      .slice(0, 20);
-
-  } catch (error) {
-    console.error("Google Trends fetch error:", error);
-    return [];
+  if (error) {
+    throw error;
   }
+
+  return (data || []) as TrendRow[];
 }
 
-function calcTrendScore(genre: GenreConfig, trends: string[]) {
-  let score = 0;
-  let matchedKeyword = "";
+function findTrendForGenre(genre: GenreConfig, trends: TrendRow[]) {
+  const found = trends.find((trend) => {
+    const normalizedTrend = normalizeText(trend.word);
 
-  for (const trend of trends) {
-    const normalizedTrend = normalizeText(trend);
-
-    for (const keyword of genre.keywords) {
+    return genre.keywords.some((keyword) => {
       const normalizedKeyword = normalizeText(keyword);
 
-      if (
+      return (
         normalizedTrend.includes(normalizedKeyword) ||
         normalizedKeyword.includes(normalizedTrend)
-      ) {
-        score += 2;
-        if (!matchedKeyword) matchedKeyword = keyword;
-      }
-    }
-
-    // ゆるいカテゴリ一致
-    if (
-      genre.category === "クレジットカード" &&
-      /カード|クレカ|visa|jcb|mastercard/i.test(trend)
-    ) {
-      score += 0.7;
-      if (!matchedKeyword) matchedKeyword = trend;
-    }
-
-    if (
-      genre.category === "証券口座" &&
-      /証券|投資|nisa|株|fx/i.test(trend)
-    ) {
-      score += 0.7;
-      if (!matchedKeyword) matchedKeyword = trend;
-    }
-
-    if (
-      genre.category === "通信・回線" &&
-      /光|回線|wifi|wimax|スマホ|携帯/i.test(trend)
-    ) {
-      score += 0.7;
-      if (!matchedKeyword) matchedKeyword = trend;
-    }
-  }
+      );
+    });
+  });
 
   return {
-    score: Math.min(score, 5),
-    keyword: matchedKeyword || genre.keywords[0],
+    keyword: found?.word || genre.keywords[0],
+    score: found ? Math.min(found.score / 20, 5) : 0.5,
   };
 }
 
@@ -270,9 +225,9 @@ function createReason(
     );
   }
 
-  if (trendScore >= 2) {
+  if (trendScore >= 1) {
     reasons.push(
-      `${trendKeyword}に関連する検索トレンドが上昇しており、外部の話題性も高まっています。`
+      `${trendKeyword}に関連する検索トレンドが見られ、外部の話題性も高まっています。`
     );
   }
 
@@ -303,70 +258,53 @@ function createReason(
 
 export async function GET() {
   try {
-    const trends = await getGoogleTrends();
+    const trends = await getTrendRows();
 
     const { data: clickData } = await supabase
-  .from("category_clicks")
-  .select("category");
+      .from("category_clicks")
+      .select("category");
 
     const yesterday = new Date();
-yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-const { data: recentClicks } = await supabase
-  .from("category_clicks")
-  .select("category, created_at")
-  .gte("created_at", yesterday.toISOString());
+    const { data: recentClicks } = await supabase
+      .from("category_clicks")
+      .select("category, created_at")
+      .gte("created_at", yesterday.toISOString());
 
-    
-const clickCounts: Record<string, number> = {};
+    const clickCounts: Record<string, number> = {};
 
-for (const row of clickData || []) {
-  clickCounts[row.category] =
-    (clickCounts[row.category] || 0) + 1;
-}
+    for (const row of clickData || []) {
+      clickCounts[row.category] = (clickCounts[row.category] || 0) + 1;
+    }
+
     const scored = GENRES.map((genre) => {
-    const trend = calcTrendScore(genre, trends);
-    const rewardScore = calcRewardScore(
-      genre.rewardMin,
-      genre.rewardMax
-    );
+      const trend = findTrendForGenre(genre, trends);
+      const rewardScore = calcRewardScore(genre.rewardMin, genre.rewardMax);
+      const difficultyScore = calcDifficultyScore(genre.difficulty);
+      const stabilityScore = genre.stability;
 
-const difficultyScore = calcDifficultyScore(
-  genre.difficulty
-);
+      const clicks = clickCounts[genre.category] || 0;
 
-const stabilityScore = genre.stability;
+      const recentCount =
+        recentClicks?.filter((c) => c.category === genre.category).length || 0;
 
-const clicks = clickCounts[genre.category] || 0;
+      const riseRate =
+        clicks > 0 ? Math.round((recentCount / clicks) * 100) : 0;
 
-const recentCount =
-  recentClicks?.filter(
-    (c) => c.category === genre.category
-  ).length || 0;
+      const clickScore = Math.min(Math.log10(clicks + 1) / 3, 1);
 
-const riseRate =
-  clicks > 0
-    ? Math.round((recentCount / clicks) * 100)
-    : 0;
-      
-const clickScore = Math.min(
-  Math.log10(clicks + 1) / 3,
-  1
-);
-      
-const finalScore =
-  trend.score * 0.40 +
-  clickScore * 0.25 +
-  rewardScore * 0.20 -
-  difficultyScore * 0.05 +
-  stabilityScore * 0.10;
+      const finalScore =
+        trend.score * 0.4 +
+        clickScore * 0.25 +
+        rewardScore * 0.2 -
+        difficultyScore * 0.05 +
+        stabilityScore * 0.1;
 
       return {
         category: genre.category,
         trend_keyword: trend.keyword,
-
         click_score: clickScore,
-        
         reward_min: genre.rewardMin,
         reward_max: genre.rewardMax,
         difficulty_label: genre.difficulty,
@@ -377,12 +315,12 @@ const finalScore =
         stability_score: stabilityScore,
         final_score: finalScore,
         reason: createReason(
-  genre,
-  trend.keyword,
-  trend.score,
-  clickScore,
-  riseRate
-),
+          genre,
+          trend.keyword,
+          trend.score,
+          clickScore,
+          riseRate
+        ),
         primary_site_name: genre.primarySiteName,
         primary_site_url: genre.primarySiteUrl,
         secondary_site_name: genre.secondarySiteName,
@@ -413,7 +351,7 @@ const finalScore =
     return Response.json({
       status: "ok",
       count: ranked.length,
-      trends,
+      trends_used: trends.length,
       data: ranked,
     });
   } catch (error: any) {
