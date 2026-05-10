@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const MOPPY_URL =
@@ -74,6 +75,18 @@ export default function Page() {
 
   const getOfferName = (item: CategoryScore) => {
     return item.offer_name || item.trend_keyword || item.category;
+  };
+
+  const getOfferSlug = (name: string) => {
+    const map: Record<string, string> = {
+      楽天モバイル: "rakuten-mobile",
+      "TikTok Lite": "tiktok-lite",
+      PayPayカード: "paypay-card",
+      "三井住友カード（NL）": "smbc-card-nl",
+      楽天証券: "rakuten-sec",
+    };
+
+    return map[name] || "";
   };
 
   const getAiReasons = (item: CategoryScore): AiReason[] => {
@@ -253,6 +266,8 @@ export default function Page() {
           <div className="space-y-4">
             {items.map((item, index) => {
               const reasons = getAiReasons(item);
+              const offerName = getOfferName(item);
+              const offerSlug = getOfferSlug(offerName);
 
               return (
                 <article
@@ -283,15 +298,32 @@ export default function Page() {
                         {item.category}
                       </div>
 
-                      <h3
-                        className={`font-black leading-tight text-slate-900 ${
-                          index < 3
-                            ? "text-3xl lg:text-5xl"
-                            : "text-2xl lg:text-3xl"
-                        }`}
-                      >
-                        {getOfferName(item)}
-                      </h3>
+                      {offerSlug ? (
+                        <Link
+                          href={`/offers/${offerSlug}`}
+                          className="block transition hover:opacity-80"
+                        >
+                          <h3
+                            className={`font-black leading-tight text-slate-900 transition hover:text-pink-500 ${
+                              index < 3
+                                ? "text-3xl lg:text-5xl"
+                                : "text-2xl lg:text-3xl"
+                            }`}
+                          >
+                            {offerName}
+                          </h3>
+                        </Link>
+                      ) : (
+                        <h3
+                          className={`font-black leading-tight text-slate-900 ${
+                            index < 3
+                              ? "text-3xl lg:text-5xl"
+                              : "text-2xl lg:text-3xl"
+                          }`}
+                        >
+                          {offerName}
+                        </h3>
+                      )}
 
                       <p className="mt-2 text-sm font-bold text-pink-500 lg:text-base">
                         AI注目ワード：{item.trend_keyword}
