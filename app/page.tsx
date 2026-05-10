@@ -19,6 +19,7 @@ type CategoryScore = {
   primary_site_url: string;
   secondary_site_name?: string;
   secondary_site_url?: string;
+  updated_at?: string;
 };
 
 type TrendTag = {
@@ -29,7 +30,7 @@ type TrendTag = {
 
 export default function Page() {
   const [items, setItems] = useState<CategoryScore[]>([]);
-  const [updatedAt, setUpdatedAt] = useState("");
+  const [updatedAt, setUpdatedAt] = useState("-");
   const [trendTags, setTrendTags] = useState<TrendTag[]>([]);
 
   useEffect(() => {
@@ -42,8 +43,16 @@ export default function Page() {
     fetch("/api/score")
       .then((res) => res.json())
       .then((json) => {
-        setItems(json.data || []);
-        setUpdatedAt(new Date().toLocaleString("ja-JP"));
+        const data = json.data || [];
+        setItems(data);
+
+        if (data[0]?.updated_at) {
+          setUpdatedAt(
+            new Date(data[0].updated_at).toLocaleDateString("ja-JP")
+          );
+        } else {
+          setUpdatedAt("-");
+        }
       });
   }, []);
 
@@ -94,9 +103,7 @@ export default function Page() {
               <p>
                 <span className="text-pink-600">「Googleでの話題度」</span>
                 のデータを中心に、初心者向けのポイ活をAIが判定し、
-                <span className="text-pink-600">
-                  毎日（０：００）
-                </span>
+                <span className="text-pink-600">毎日（０：００）</span>
                 にランキング反映しています。
               </p>
             </div>
@@ -190,10 +197,7 @@ export default function Page() {
           </h2>
 
           <div className="w-fit rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-500 shadow">
-            最終更新：
-              {rankings[0]?.updated_at
-　　　　　　　　? new Date(rankings[0].updated_at).toLocaleDateString("ja-JP")
-　　　　　　　　: "-"}
+            最終更新：{updatedAt}
           </div>
         </div>
 
@@ -263,21 +267,20 @@ export default function Page() {
                     {item.primary_site_name}で探す
                   </button>
 
-                  {item.secondary_site_name &&
-                    item.secondary_site_url && (
-                      <button
-                        onClick={() =>
-                          trackClick(
-                            item.category,
-                            item.secondary_site_name!,
-                            item.secondary_site_url!
-                          )
-                        }
-                        className="flex h-16 w-full items-center justify-center rounded-2xl bg-orange-50 px-6 text-center text-lg font-black text-orange-500 shadow-sm transition hover:scale-105 lg:w-[260px]"
-                      >
-                        {item.secondary_site_name}も見る
-                      </button>
-                    )}
+                  {item.secondary_site_name && item.secondary_site_url && (
+                    <button
+                      onClick={() =>
+                        trackClick(
+                          item.category,
+                          item.secondary_site_name!,
+                          item.secondary_site_url!
+                        )
+                      }
+                      className="flex h-16 w-full items-center justify-center rounded-2xl bg-orange-50 px-6 text-center text-lg font-black text-orange-500 shadow-sm transition hover:scale-105 lg:w-[260px]"
+                    >
+                      {item.secondary_site_name}も見る
+                    </button>
+                  )}
                 </div>
               </div>
             </article>
