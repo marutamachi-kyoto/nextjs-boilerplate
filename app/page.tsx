@@ -133,7 +133,6 @@ export default function Page() {
 
   return (
     <>
-      {/* JSON-LD */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -155,19 +154,25 @@ export default function Page() {
             "@context": "https://schema.org",
             "@type": "ItemList",
             name: "ポイ活おすすめランキング",
-            itemListElement: items.slice(0, 30).map((item, index) => ({
-              "@type": "ListItem",
-              position: index + 1,
-              name: item.offer_name || item.trend_keyword || item.category,
-              url: "https://poikatu-ai.vercel.app",
-              description: item.reason,
-            })),
+            itemListElement: items.slice(0, 30).map((item, index) => {
+              const offerName = item.offer_name || item.trend_keyword || item.category;
+              const offerSlug = getOfferSlug(offerName);
+
+              return {
+                "@type": "ListItem",
+                position: index + 1,
+                name: offerName,
+                url: offerSlug
+                  ? `https://poikatu-ai.vercel.app/offers/${offerSlug}`
+                  : "https://poikatu-ai.vercel.app",
+                description: item.reason,
+              };
+            }),
           }),
         }}
       />
 
       <div className="min-h-screen bg-[#fff8fb]">
-        {/* HERO */}
         <header className="overflow-hidden bg-gradient-to-r from-[#FFF2F7] via-[#FFF8FA] to-[#FFF4F7]">
           <div className="mx-auto flex max-w-[1500px] flex-col gap-10 px-6 py-10 lg:flex-row lg:items-center lg:justify-between lg:px-12 lg:py-12">
             <div className="w-full lg:w-[680px]">
@@ -217,7 +222,6 @@ export default function Page() {
         </header>
 
         <main className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10">
-          {/* TREND SECTION */}
           <section className="mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
             <div className="mb-6">
               <p className="text-sm font-black text-pink-500">
@@ -253,7 +257,6 @@ export default function Page() {
             </div>
           </section>
 
-          {/* RANKING TITLE */}
           <div className="mb-6 flex items-center gap-3">
             <span className="text-4xl">🔥</span>
 
@@ -262,7 +265,6 @@ export default function Page() {
             </h2>
           </div>
 
-          {/* RANKINGS */}
           <div className="space-y-4">
             {items.map((item, index) => {
               const reasons = getAiReasons(item);
@@ -275,7 +277,6 @@ export default function Page() {
                   className="rounded-[2rem] bg-white p-4 shadow-lg ring-1 ring-pink-100 lg:p-6"
                 >
                   <div className="grid grid-cols-1 gap-5 lg:grid-cols-[120px_1.4fr_1.2fr_290px] lg:items-center">
-                    {/* RANK */}
                     <div className="flex items-center justify-center">
                       <div
                         className={`flex items-center justify-center rounded-full font-black text-white shadow-lg ${
@@ -292,7 +293,6 @@ export default function Page() {
                       </div>
                     </div>
 
-                    {/* INFO */}
                     <div>
                       <div className="mb-2 inline-flex rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-500">
                         {item.category}
@@ -334,7 +334,6 @@ export default function Page() {
                       </p>
                     </div>
 
-                    {/* AI REASONS */}
                     <div>
                       <div className="mb-3 text-center text-sm font-black text-pink-500">
                         ー AIが評価した理由 ー
@@ -360,7 +359,6 @@ export default function Page() {
                       </div>
                     </div>
 
-                    {/* MOPPY BUTTON */}
                     <div className="flex items-center justify-center">
                       <button
                         onClick={() => trackMoppyClick(item.category)}
