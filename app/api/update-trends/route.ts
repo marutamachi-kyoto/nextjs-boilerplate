@@ -19,7 +19,9 @@ function normalizeKeyword(query: string) {
     .replace(/ポイ\s*活/g, "")
     .replace(/ポイ活/g, "")
     .replace(/\s+/g, "")
-    .replace(/[　]/g, "")
+    .replace(
+      /[^\p{L}\p{N}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー]/gu,
+      ""
     .trim();
 }
 
