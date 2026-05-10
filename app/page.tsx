@@ -3,6 +3,9 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+const MOPPY_URL =
+  "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
+
 type CategoryScore = {
   category: string;
   rank: number;
@@ -54,23 +57,19 @@ export default function Page() {
       });
   }, []);
 
-  const trackClick = async (
-    category: string,
-    siteName: string,
-    url: string
-  ) => {
+  const trackMoppyClick = async (category: string) => {
     try {
       await fetch("/api/click", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           category,
-          site_name: siteName,
+          site_name: "モッピー",
         }),
       });
     } catch (e) {}
 
-    window.open(url, "_blank");
+    window.open(MOPPY_URL, "_blank");
   };
 
   const getOfferName = (item: CategoryScore) => {
@@ -131,7 +130,7 @@ export default function Page() {
             name: "ポイ活AI判定",
             url: "https://poikatu-ai.vercel.app",
             description:
-              "Googleトレンド・検索動向・SNS話題度をAI分析し、おすすめポイ活案件を毎日ランキング化。",
+              "Googleトレンド・検索動向・SNS話題度をAI分析し、初心者向けのおすすめポイ活案件を毎日ランキング化。",
           }),
         }}
       />
@@ -161,7 +160,7 @@ export default function Page() {
             <div className="w-full lg:w-[680px]">
               <div className="inline-flex items-center gap-3 rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-[0_10px_30px_rgba(236,72,153,0.18)] lg:text-xl">
                 <span>🤖</span>
-                <span>AIが毎日（0:00）判定！</span>
+                <span>AIが毎日（０：００）更新！</span>
               </div>
 
               <h1 className="mt-8 text-[54px] font-black leading-[0.95] tracking-[-0.05em] text-pink-600 drop-shadow-[0_5px_0_rgba(255,255,255,0.9)] lg:text-[96px]">
@@ -175,8 +174,8 @@ export default function Page() {
               <div className="mt-8 text-[20px] font-black leading-[1.9] text-[#27313f] lg:text-[28px]">
                 <p>
                   <span className="text-pink-600">「Googleでの話題度」</span>
-                  のデータを中心に、おすすめのポイ活をAIが判定し、
-                  <span className="text-pink-600">毎日（0:00）</span>
+                  のデータを中心に、初心者向けのポイ活をAIが判定し、
+                  <span className="text-pink-600">毎日（０：００）</span>
                   にランキング反映しています。
                 </p>
               </div>
@@ -213,7 +212,7 @@ export default function Page() {
               </p>
 
               <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
-                🔍 いまGoogleで話題のポイ活関連キーワード
+                🔍 ただいまGoogleで話題のポイ活関連キーワード
               </h2>
             </div>
 
@@ -246,7 +245,7 @@ export default function Page() {
             <span className="text-4xl">🔥</span>
 
             <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-              いまおすすめのポイ活ランキング
+              ただいまのポイ活おすすめランキング
             </h2>
           </div>
 
@@ -260,7 +259,7 @@ export default function Page() {
                   key={`${item.rank}-${item.offer_name}-${index}`}
                   className="rounded-[2rem] bg-white p-4 shadow-lg ring-1 ring-pink-100 lg:p-6"
                 >
-                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-[120px_1.4fr_1.2fr_250px] lg:items-center">
+                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-[120px_1.4fr_1.2fr_290px] lg:items-center">
                     {/* RANK */}
                     <div className="flex items-center justify-center">
                       <div
@@ -329,41 +328,32 @@ export default function Page() {
                       </div>
                     </div>
 
-                    {/* BUTTONS */}
-                    <div className="flex flex-col gap-3">
+                    {/* MOPPY BUTTON */}
+                    <div className="flex items-center justify-center">
                       <button
-                        onClick={() =>
-                          trackClick(
-                            item.category,
-                            item.primary_site_name,
-                            item.primary_site_url
-                          )
-                        }
-                        className="flex h-14 items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 text-base font-black text-white shadow-lg transition hover:scale-105"
+                        onClick={() => trackMoppyClick(item.category)}
+                        className="group flex h-24 w-full max-w-[270px] flex-col items-center justify-center rounded-[1.5rem] bg-gradient-to-r from-pink-500 to-orange-500 px-6 text-center font-black text-white shadow-xl ring-8 ring-pink-50 transition hover:scale-105 lg:h-28"
                       >
-                        {item.primary_site_name}で探す
+                        <span className="text-2xl leading-none tracking-wide">
+                          moppy
+                        </span>
+                        <span className="mt-2 flex items-center text-2xl text-yellow-100">
+                          モッピーで探す
+                          <span className="ml-2 text-4xl leading-none transition group-hover:translate-x-1">
+                            ›
+                          </span>
+                        </span>
                       </button>
-
-                      {item.secondary_site_name && item.secondary_site_url && (
-                        <button
-                          onClick={() =>
-                            trackClick(
-                              item.category,
-                              item.secondary_site_name!,
-                              item.secondary_site_url!
-                            )
-                          }
-                          className="flex h-14 items-center justify-center rounded-2xl border-2 border-orange-200 bg-white px-5 text-base font-black text-orange-500 transition hover:scale-105"
-                        >
-                          {item.secondary_site_name}も見る
-                        </button>
-                      )}
                     </div>
                   </div>
                 </article>
               );
             })}
           </div>
+
+          <p className="mt-8 text-center text-xs font-bold text-slate-400 lg:text-sm">
+            ※ 本ランキングはAIによる分析結果をもとに作成しています。実際の成果やポイント獲得を保証するものではありません。
+          </p>
         </main>
       </div>
     </>
