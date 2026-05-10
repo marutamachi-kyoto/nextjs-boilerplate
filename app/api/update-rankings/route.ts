@@ -11,8 +11,8 @@ type Category =
   | "クレジットカード"
   | "証券・投資"
   | "ショッピング"
-  | "旅行・予約"
   | "サブスク"
+  | "サービス"
   | "その他";
 
 type TrendInfo = {
@@ -20,11 +20,320 @@ type TrendInfo = {
   traffic?: string;
 };
 
-function pickRandom<T>(items: T[]): T {
-  return items[Math.floor(Math.random() * items.length)];
-}
+type Offer = {
+  offer_name: string;
+  category: Category;
+  keywords: string[];
+  primary_site_name: string;
+  primary_site_url: string;
+  secondary_site_name: string;
+  secondary_site_url: string;
+  base_score: number;
+};
 
-// Google Trends取得
+const OFFERS: Offer[] = [
+  {
+    offer_name: "楽天モバイル",
+    category: "通信・回線",
+    keywords: ["楽天モバイル", "楽天", "三木谷", "スマホ", "sim"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ポイントインカム",
+    secondary_site_url: "https://pointi.jp/",
+    base_score: 92,
+  },
+  {
+    offer_name: "信長の野望 覇道",
+    category: "アプリ・ゲーム",
+    keywords: ["信長の野望", "信長", "覇道", "ゲーム"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ワラウ",
+    secondary_site_url: "https://www.warau.jp/",
+    base_score: 90,
+  },
+  {
+    offer_name: "三井住友カード（NL）",
+    category: "クレジットカード",
+    keywords: ["三井住友カード", "カード", "クレカ", "visa"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ハピタス",
+    secondary_site_url: "https://hapitas.jp/",
+    base_score: 89,
+  },
+  {
+    offer_name: "PayPayカード",
+    category: "クレジットカード",
+    keywords: ["paypay", "PayPayカード", "カード"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ハピタス",
+    secondary_site_url: "https://hapitas.jp/",
+    base_score: 87,
+  },
+  {
+    offer_name: "TikTok Lite",
+    category: "アプリ・ゲーム",
+    keywords: ["tiktok", "TikTok Lite", "アプリ"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ワラウ",
+    secondary_site_url: "https://www.warau.jp/",
+    base_score: 86,
+  },
+  {
+    offer_name: "楽天証券",
+    category: "証券・投資",
+    keywords: ["楽天証券", "証券", "nisa", "投資"],
+    primary_site_name: "ハピタス",
+    primary_site_url: "https://hapitas.jp/",
+    secondary_site_name: "ポイントインカム",
+    secondary_site_url: "https://pointi.jp/",
+    base_score: 85,
+  },
+  {
+    offer_name: "楽天市場",
+    category: "ショッピング",
+    keywords: ["楽天市場", "楽天", "買い物", "セール"],
+    primary_site_name: "ポイントインカム",
+    primary_site_url: "https://pointi.jp/",
+    secondary_site_name: "モッピー",
+    secondary_site_url: "https://pc.moppy.jp/",
+    base_score: 84,
+  },
+  {
+    offer_name: "住信SBIネット銀行",
+    category: "その他",
+    keywords: ["住信sbi", "銀行", "口座"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ワラウ",
+    secondary_site_url: "https://www.warau.jp/",
+    base_score: 83,
+  },
+  {
+    offer_name: "Amazon Prime",
+    category: "サブスク",
+    keywords: ["amazon", "prime", "プライム", "サブスク"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ポイントインカム",
+    secondary_site_url: "https://pointi.jp/",
+    base_score: 82,
+  },
+  {
+    offer_name: "マージマンション",
+    category: "アプリ・ゲーム",
+    keywords: ["マージマンション", "ゲーム", "アプリ"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ワラウ",
+    secondary_site_url: "https://www.warau.jp/",
+    base_score: 81,
+  },
+  {
+    offer_name: "U-NEXT",
+    category: "サブスク",
+    keywords: ["u-next", "動画", "配信", "サブスク"],
+    primary_site_name: "ハピタス",
+    primary_site_url: "https://hapitas.jp/",
+    secondary_site_name: "ワラウ",
+    secondary_site_url: "https://www.warau.jp/",
+    base_score: 80,
+  },
+  {
+    offer_name: "dカード GOLD",
+    category: "クレジットカード",
+    keywords: ["dカード", "ドコモ", "カード"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ポイントインカム",
+    secondary_site_url: "https://pointi.jp/",
+    base_score: 79,
+  },
+  {
+    offer_name: "セゾンカードインターナショナル",
+    category: "クレジットカード",
+    keywords: ["セゾンカード", "カード", "クレカ"],
+    primary_site_name: "ハピタス",
+    primary_site_url: "https://hapitas.jp/",
+    secondary_site_name: "ワラウ",
+    secondary_site_url: "https://www.warau.jp/",
+    base_score: 78,
+  },
+  {
+    offer_name: "auカブコム証券",
+    category: "証券・投資",
+    keywords: ["auカブコム", "証券", "投資"],
+    primary_site_name: "ポイントインカム",
+    primary_site_url: "https://pointi.jp/",
+    secondary_site_name: "モッピー",
+    secondary_site_url: "https://pc.moppy.jp/",
+    base_score: 77,
+  },
+  {
+    offer_name: "Pontaパス",
+    category: "サブスク",
+    keywords: ["ponta", "ポンタ", "サブスク"],
+    primary_site_name: "ワラウ",
+    primary_site_url: "https://www.warau.jp/",
+    secondary_site_name: "ハピタス",
+    secondary_site_url: "https://hapitas.jp/",
+    base_score: 76,
+  },
+  {
+    offer_name: "メルカリ",
+    category: "アプリ・ゲーム",
+    keywords: ["メルカリ", "フリマ", "アプリ"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ポイントインカム",
+    secondary_site_url: "https://pointi.jp/",
+    base_score: 75,
+  },
+  {
+    offer_name: "LINEマンガ",
+    category: "アプリ・ゲーム",
+    keywords: ["lineマンガ", "漫画", "アプリ"],
+    primary_site_name: "ハピタス",
+    primary_site_url: "https://hapitas.jp/",
+    secondary_site_name: "ワラウ",
+    secondary_site_url: "https://www.warau.jp/",
+    base_score: 74,
+  },
+  {
+    offer_name: "エポスカード",
+    category: "クレジットカード",
+    keywords: ["エポスカード", "カード"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ポイントインカム",
+    secondary_site_url: "https://pointi.jp/",
+    base_score: 73,
+  },
+  {
+    offer_name: "マネックス証券",
+    category: "証券・投資",
+    keywords: ["マネックス", "証券", "投資"],
+    primary_site_name: "ハピタス",
+    primary_site_url: "https://hapitas.jp/",
+    secondary_site_name: "ワラウ",
+    secondary_site_url: "https://www.warau.jp/",
+    base_score: 72,
+  },
+  {
+    offer_name: "イオンカード（WAON一体型）",
+    category: "クレジットカード",
+    keywords: ["イオンカード", "waon", "カード"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ポイントインカム",
+    secondary_site_url: "https://pointi.jp/",
+    base_score: 71,
+  },
+  {
+    offer_name: "ahamo",
+    category: "通信・回線",
+    keywords: ["ahamo", "ドコモ", "スマホ", "sim"],
+    primary_site_name: "ワラウ",
+    primary_site_url: "https://www.warau.jp/",
+    secondary_site_name: "ハピタス",
+    secondary_site_url: "https://hapitas.jp/",
+    base_score: 70,
+  },
+  {
+    offer_name: "YouTube Premium",
+    category: "サブスク",
+    keywords: ["youtube", "premium", "動画", "サブスク"],
+    primary_site_name: "ポイントインカム",
+    primary_site_url: "https://pointi.jp/",
+    secondary_site_name: "モッピー",
+    secondary_site_url: "https://pc.moppy.jp/",
+    base_score: 69,
+  },
+  {
+    offer_name: "マイナポイント（申請支援）",
+    category: "サービス",
+    keywords: ["マイナポイント", "マイナンバー", "申請"],
+    primary_site_name: "ワラウ",
+    primary_site_url: "https://www.warau.jp/",
+    secondary_site_name: "ハピタス",
+    secondary_site_url: "https://hapitas.jp/",
+    base_score: 68,
+  },
+  {
+    offer_name: "d払い",
+    category: "アプリ・ゲーム",
+    keywords: ["d払い", "決済", "アプリ"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ポイントインカム",
+    secondary_site_url: "https://pointi.jp/",
+    base_score: 67,
+  },
+  {
+    offer_name: "ヤフーカード",
+    category: "クレジットカード",
+    keywords: ["yahoo", "ヤフー", "カード"],
+    primary_site_name: "ハピタス",
+    primary_site_url: "https://hapitas.jp/",
+    secondary_site_name: "ワラウ",
+    secondary_site_url: "https://www.warau.jp/",
+    base_score: 66,
+  },
+  {
+    offer_name: "ソニー銀行",
+    category: "その他",
+    keywords: ["ソニー銀行", "銀行", "口座"],
+    primary_site_name: "ポイントインカム",
+    primary_site_url: "https://pointi.jp/",
+    secondary_site_name: "モッピー",
+    secondary_site_url: "https://pc.moppy.jp/",
+    base_score: 65,
+  },
+  {
+    offer_name: "七つの大罪 光と闇の交戦",
+    category: "アプリ・ゲーム",
+    keywords: ["七つの大罪", "ゲーム", "アプリ"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ハピタス",
+    secondary_site_url: "https://hapitas.jp/",
+    base_score: 64,
+  },
+  {
+    offer_name: "ブルーロック Project: World Champion",
+    category: "アプリ・ゲーム",
+    keywords: ["ブルーロック", "ゲーム", "アプリ"],
+    primary_site_name: "ワラウ",
+    primary_site_url: "https://www.warau.jp/",
+    secondary_site_name: "ポイントインカム",
+    secondary_site_url: "https://pointi.jp/",
+    base_score: 63,
+  },
+  {
+    offer_name: "トリマ",
+    category: "アプリ・ゲーム",
+    keywords: ["トリマ", "歩数", "アプリ"],
+    primary_site_name: "モッピー",
+    primary_site_url: "https://pc.moppy.jp/",
+    secondary_site_name: "ハピタス",
+    secondary_site_url: "https://hapitas.jp/",
+    base_score: 62,
+  },
+  {
+    offer_name: "Visa LINE Payクレジットカード",
+    category: "クレジットカード",
+    keywords: ["visa", "line pay", "カード"],
+    primary_site_name: "ポイントインカム",
+    primary_site_url: "https://pointi.jp/",
+    secondary_site_name: "ワラウ",
+    secondary_site_url: "https://www.warau.jp/",
+    base_score: 61,
+  },
+];
+
 async function getTrends(): Promise<TrendInfo[]> {
   const res = await fetch(
     "https://trends.google.com/trends/trendingsearches/daily/rss?geo=JP",
@@ -38,10 +347,7 @@ async function getTrends(): Promise<TrendInfo[]> {
     .map((match) => {
       const item = match[1];
 
-      const titleMatch = item.match(
-        /<title><!\[CDATA\[(.*?)\]\]><\/title>/
-      );
-
+      const titleMatch = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/);
       const trafficMatch = item.match(
         /<ht:approx_traffic><!\[CDATA\[(.*?)\]\]><\/ht:approx_traffic>/
       );
@@ -54,106 +360,6 @@ async function getTrends(): Promise<TrendInfo[]> {
     .filter((trend) => trend.keyword);
 }
 
-// カテゴリ判定
-function detectCategory(keyword: string): Category {
-  const text = keyword.toLowerCase();
-
-  if (
-    text.includes("ゲーム") ||
-    text.includes("アプリ") ||
-    text.includes("モンスト") ||
-    text.includes("パズドラ") ||
-    text.includes("信長") ||
-    text.includes("ドラクエ") ||
-    text.includes("ポケモン")
-  ) {
-    return "アプリ・ゲーム";
-  }
-
-  if (
-    text.includes("ドコモ") ||
-    text.includes("au") ||
-    text.includes("ソフトバンク") ||
-    text.includes("楽天モバイル") ||
-    text.includes("sim") ||
-    text.includes("光回線") ||
-    text.includes("wifi")
-  ) {
-    return "通信・回線";
-  }
-
-  if (
-    text.includes("カード") ||
-    text.includes("クレカ") ||
-    text.includes("visa") ||
-    text.includes("mastercard") ||
-    text.includes("jcb")
-  ) {
-    return "クレジットカード";
-  }
-
-  if (
-    text.includes("証券") ||
-    text.includes("投資") ||
-    text.includes("nisa") ||
-    text.includes("株") ||
-    text.includes("fx") ||
-    text.includes("仮想通貨") ||
-    text.includes("ビットコイン")
-  ) {
-    return "証券・投資";
-  }
-
-  if (
-    text.includes("楽天") ||
-    text.includes("amazon") ||
-    text.includes("セール") ||
-    text.includes("買い物") ||
-    text.includes("ショッピング")
-  ) {
-    return "ショッピング";
-  }
-
-  if (
-    text.includes("旅行") ||
-    text.includes("ホテル") ||
-    text.includes("航空券") ||
-    text.includes("じゃらん") ||
-    text.includes("楽天トラベル")
-  ) {
-    return "旅行・予約";
-  }
-
-  if (
-    text.includes("netflix") ||
-    text.includes("u-next") ||
-    text.includes("サブスク") ||
-    text.includes("動画") ||
-    text.includes("配信")
-  ) {
-    return "サブスク";
-  }
-
-  return "その他";
-}
-
-// カテゴリごとの基本スコア
-function getBaseScore(category: Category): number {
-  const scores: Record<Category, number> = {
-    "アプリ・ゲーム": 82,
-    "通信・回線": 88,
-    "クレジットカード": 90,
-    "証券・投資": 86,
-    "ショッピング": 76,
-    "旅行・予約": 78,
-    "サブスク": 74,
-    "その他": 65,
-  };
-
-  return scores[category];
-}
-
-// 検索規模から加点
 function getTrafficBonus(traffic?: string): number {
   if (!traffic) return 0;
 
@@ -168,112 +374,45 @@ function getTrafficBonus(traffic?: string): number {
   return 0;
 }
 
-// AI分析用プロフィール
-function getRewardProfile(category: string) {
-  const profiles: Record<
-    string,
-    {
-      reward: string;
-      difficulty: string;
-      userIntent: string;
-    }
-  > = {
-    "アプリ・ゲーム": {
-      reward: "中〜高単価になりやすい",
-      difficulty: "達成条件に差が出やすい",
-      userIntent: "短期間でポイントを増やしたいユーザー",
-    },
-    "通信・回線": {
-      reward: "高額還元につながりやすい",
-      difficulty: "申込ハードルはやや高め",
-      userIntent: "固定費を見直したいユーザー",
-    },
-    "クレジットカード": {
-      reward: "高単価案件が出やすい",
-      difficulty: "審査や発行条件の確認が必要",
-      userIntent: "まとまったポイントを狙うユーザー",
-    },
-    "証券・投資": {
-      reward: "高額ポイントを狙いやすい",
-      difficulty: "口座開設や本人確認が必要",
-      userIntent: "資産形成に関心があるユーザー",
-    },
-    "ショッピング": {
-      reward: "少額でも取り組みやすい",
-      difficulty: "参加ハードルが低い",
-      userIntent: "日常の買い物で得したいユーザー",
-    },
-    "旅行・予約": {
-      reward: "予約金額に応じて還元が伸びやすい",
-      difficulty: "利用タイミングに左右されやすい",
-      userIntent: "旅行やレジャー予定があるユーザー",
-    },
-    "サブスク": {
-      reward: "無料体験系で狙いやすい",
-      difficulty: "解約条件の確認が重要",
-      userIntent: "お試し利用でポイントを得たいユーザー",
-    },
-    "その他": {
-      reward: "案件ごとに還元差が大きい",
-      difficulty: "条件確認が重要",
-      userIntent: "話題性のある案件を探しているユーザー",
-    },
-  };
+function getMatchedTrend(offer: Offer, trends: TrendInfo[]) {
+  const matched = trends.find((trend) => {
+    const text = trend.keyword.toLowerCase();
+    return offer.keywords.some((keyword) =>
+      text.includes(keyword.toLowerCase())
+    );
+  });
 
-  return profiles[category] ?? profiles["その他"];
+  return matched ?? trends[0];
 }
 
-// AI解析文生成
 function generateAiDescription(params: {
-  category: Category;
+  offer: Offer;
   trend: TrendInfo;
   score: number;
-  rank: number;
 }) {
-  const { category, trend, score, rank } = params;
-  const profile = getRewardProfile(category);
+  const { offer, trend, score } = params;
 
   const trafficText = trend.traffic
-    ? `検索規模は「${trend.traffic}」として観測されており、`
-    : "";
+    ? `Google Trends上では検索規模「${trend.traffic}」として観測されています。`
+    : "Google Trends上で関連キーワードの動きが確認されています。";
 
-  const openings = [
-    `AI分析：Google Trendsでは「${trend.keyword}」関連の検索関心が上昇しています。`,
-    `AI分析：直近のGoogle Trends上で「${trend.keyword}」が急上昇ワードとして検出されています。`,
-    `AI分析：「${trend.keyword}」周辺の検索需要が伸びており、関連ジャンルへの関心が高まっています。`,
-  ];
+  if (offer.category === "通信・回線") {
+    return `${trafficText} 通信費の見直し需要と相性がよく、固定費削減を意識するユーザーからの関心が高まっています。AIは検索上昇度、還元期待値、申込需要を総合し、注目案件として評価しました。`;
+  }
 
-  const trendAnalysis = [
-    `${trafficText}短期的な話題性だけでなく、関連カテゴリへの流入増加も期待できる状態です。`,
-    `${trafficText}一時的なバズにとどまらず、比較・申込・利用検討につながる検索行動が発生しやすい局面です。`,
-    `${trafficText}検索ユーザーの関心が具体的な行動に移りやすく、ポイ活案件との相性が高いと判断しました。`,
-  ];
+  if (offer.category === "アプリ・ゲーム") {
+    return `${trafficText} アプリ・ゲーム案件は話題化したタイトルほど短期流入が増えやすく、条件達成型のポイ活と相性があります。AIは検索急増、参加しやすさ、獲得期待値を総合して評価しました。`;
+  }
 
-  const categoryAnalysis = [
-    `${category}カテゴリは${profile.reward}一方で、${profile.difficulty}という特徴があります。`,
-    `${category}案件は${profile.userIntent}との相性がよく、現在の検索トレンドと結びつきやすいジャンルです。`,
-    `${category}ジャンルでは、話題化したキーワードをきっかけに案件参加率が上がりやすい傾向があります。`,
-  ];
+  if (offer.category === "クレジットカード") {
+    return `${trafficText} クレジットカード案件は高還元になりやすく、申込意欲の高いユーザーと相性が良いジャンルです。AIは話題性、単価期待値、初心者の取り組みやすさをもとに評価しました。`;
+  }
 
-  const scoreAnalysis = [
-    `今回は検索上昇度、案件単価、参加ハードル、獲得期待値を総合し、AIスコア${score}点として評価しました。`,
-    `AIは「話題性」「収益性」「参加しやすさ」のバランスを重視し、スコア${score}点で判定しています。`,
-    `短期トレンドと還元期待値の両面を評価した結果、ランキング${rank}位相当の注目カテゴリと判断しました。`,
-  ];
+  if (offer.category === "証券・投資") {
+    return `${trafficText} 証券・投資系は口座開設需要と高額ポイントが結びつきやすい案件です。AIは資産形成への関心、検索動向、還元期待値を総合して注目度を判定しました。`;
+  }
 
-  const closing = [
-    `今チェックする価値が高いカテゴリです。`,
-    `条件が合えば、効率よくポイント獲得を狙えるタイミングです。`,
-    `特に今週は優先的に確認したいジャンルです。`,
-  ];
-
-  return [
-    pickRandom(openings),
-    pickRandom(trendAnalysis),
-    pickRandom(categoryAnalysis),
-    pickRandom(scoreAnalysis),
-    pickRandom(closing),
-  ].join("");
+  return `${trafficText} 関連する検索需要が伸びており、ポイ活案件としての注目度も上昇しています。AIは話題性、参加しやすさ、還元期待値を総合し、スコア${score}点で評価しました。`;
 }
 
 export async function GET() {
@@ -287,58 +426,49 @@ export async function GET() {
       );
     }
 
-    const categoryMap = new Map<
-      Category,
-      {
-        category: Category;
-        trend: TrendInfo;
-        score: number;
-      }
-    >();
+    const rankings = OFFERS.map((offer) => {
+      const trend = getMatchedTrend(offer, trends);
+      const score = Math.min(
+        100,
+        offer.base_score + getTrafficBonus(trend.traffic)
+      );
 
-    for (const trend of trends) {
-      const category = detectCategory(trend.keyword);
-      const baseScore = getBaseScore(category);
-      const trafficBonus = getTrafficBonus(trend.traffic);
-
-      const score = Math.min(100, baseScore + trafficBonus);
-
-      const existing = categoryMap.get(category);
-
-      if (!existing || score > existing.score) {
-        categoryMap.set(category, {
-          category,
-          trend,
-          score,
-        });
-      }
-    }
-
-    const rankings = [...categoryMap.values()]
+      return {
+        offer,
+        trend,
+        score,
+      };
+    })
       .sort((a, b) => b.score - a.score)
-      .slice(0, 8)
-      .map((item, index) => {
-        const rank = index + 1;
-
-        return {
-          rank,
-          category: item.category,
+      .slice(0, 30)
+      .map((item, index) => ({
+        rank: index + 1,
+        offer_name: item.offer.offer_name,
+        category: item.offer.category,
+        score: item.score,
+        final_score: item.score,
+        trend_keyword: item.trend.keyword,
+        trend_traffic: item.trend.traffic ?? null,
+        description: generateAiDescription({
+          offer: item.offer,
+          trend: item.trend,
           score: item.score,
-          trend_keyword: item.trend.keyword,
-          trend_traffic: item.trend.traffic ?? null,
-          description: generateAiDescription({
-            category: item.category,
-            trend: item.trend,
-            score: item.score,
-            rank,
-          }),
-          updated_at: new Date().toISOString(),
-        };
-      });
+        }),
+        reason: generateAiDescription({
+          offer: item.offer,
+          trend: item.trend,
+          score: item.score,
+        }),
+        primary_site_name: item.offer.primary_site_name,
+        primary_site_url: item.offer.primary_site_url,
+        secondary_site_name: item.offer.secondary_site_name,
+        secondary_site_url: item.offer.secondary_site_url,
+        updated_at: new Date().toISOString(),
+      }));
 
-    const { error } = await supabase.from("rankings").upsert(rankings, {
-      onConflict: "category",
-    });
+    await supabase.from("rankings").delete().neq("rank", 0);
+
+    const { error } = await supabase.from("rankings").insert(rankings);
 
     if (error) {
       console.error(error);
@@ -349,7 +479,7 @@ export async function GET() {
     }
 
     return Response.json({
-      message: "ランキングを更新しました",
+      message: "案件ランキングを更新しました",
       count: rankings.length,
       rankings,
     });
