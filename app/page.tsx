@@ -325,24 +325,19 @@ export default function Page() {
                       {offerSlug ? (
                         <Link
                           href={`/offers/${offerSlug}`}
-                          className="group inline-block"
-  　　　　　　　　　　　　>
-    　　　　　　　　　　　　<h3
-      　　　　　　　　　　　　className={`font-black leading-tight text-slate-900 underline decoration-pink-300 decoration-4 underline-offset-8 transition group-hover:text-pink-500 ${
-        　　　　　　　　　　　　index < 3
-          　　　　　　　　　　　　? "text-3xl lg:text-5xl"
-          　　　　　　　　　　　　: "text-2xl lg:text-3xl"
-      　　　　　　　　　　　　}`}
-    　　　　　　　　　　　　>
-      　　　　　　　　　　　　{offerName}　　　　　　　　
-    　　　　　　　　　　　　　</h3>　　　　　　　　　
-
-    　　　　　　　　　　　　　<div className="mt-3 inline-flex items-center rounded-full bg-pink-50 px-4 py-1.5 text-sm font-black text-pink-500 ring-1 ring-pink-100 transition group-hover:bg-pink-500 group-hover:text-white">
-      　　　　　　　　　　　　　詳細ページを見る
-      　　　　　　　　　　　　　<span className="ml-1 text-lg leading-none">›</span>
-    　　　　　　　　　　　　　</div>
-  　　　　　　　　　　　　　　</Link>　　　　
-　　　　　　　　　　　　　　　) :　(
+                          className="block transition hover:opacity-80"
+                        >
+                          <h3
+                            className={`font-black leading-tight text-slate-900 transition hover:text-pink-500 ${
+                              index < 3
+                                ? "text-3xl lg:text-5xl"
+                                : "text-2xl lg:text-3xl"
+                            }`}
+                          >
+                            {offerName}
+                          </h3>
+                        </Link>
+                      ) : (
                         <h3
                           className={`font-black leading-tight text-slate-900 ${
                             index < 3
