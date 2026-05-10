@@ -44,7 +44,9 @@ function extractRelatedQueries(json: any) {
 export async function GET() {
   try {
     const response = await fetch(
-      `https://serpapi.com/search.json?engine=google_trends&q=ポイ活&geo=JP&hl=ja&data_type=RELATED_QUERIES&api_key=${SERPAPI_KEY}`
+      `https://serpapi.com/search.json?engine=google_trends&q=${encodeURIComponent(
+        "ポイ活"
+      )}&geo=JP&hl=ja&data_type=RELATED_QUERIES&api_key=${SERPAPI_KEY}`,
       { cache: "no-store" }
     );
 
@@ -82,13 +84,13 @@ export async function GET() {
     }
 
     return NextResponse.json({
-  success: true,
-  inserted: rows.length,
-  trends: rows,
-  serpapi_keys: Object.keys(json),
-  related_queries: json.related_queries || null,
-  raw_sample: json,
-});
+      success: true,
+      inserted: rows.length,
+      trends: rows,
+      serpapi_keys: Object.keys(json),
+      related_queries: json.related_queries || null,
+      raw_sample: json,
+    });
   } catch (e: any) {
     return NextResponse.json(
       {
