@@ -1,66 +1,57 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://poikatu-ai.vercel.app"),
-
-  icons: {
-    icon: "/favicon.png",
-    shortcut: "/favicon.png",
-    apple: "/favicon.png",
-  },
-
   title: {
-    default: "ポイ活AI判定｜今やるべきポイ活をAIがランキング",
+    default:
+      "ポイ活AI判定｜GoogleトレンドからAIが毎日おすすめ案件をランキング",
     template: "%s｜ポイ活AI判定",
   },
-
   description:
-    "ポイ活AI判定は、話題度・報酬レンジ・クリック数などをもとに、初心者向けのおすすめポイ活ジャンルをAIが自動判定するランキングサイトです。",
-
+    "Googleトレンド・検索動向・話題性をもとに、AIが初心者向けのおすすめポイ活案件を毎日ランキング化。モッピー、ハピタス、ポイントインカムなどの案件探しに役立ちます。",
   keywords: [
     "ポイ活",
-    "ポイントサイト",
     "ポイ活 おすすめ",
-    "ポイントサイト おすすめ",
-    "AIランキング",
+    "ポイ活 ランキング",
+    "ポイントサイト",
+    "モッピー",
+    "ハピタス",
+    "ポイントインカム",
+    "Googleトレンド",
+    "AI判定",
     "副業",
     "お小遣い稼ぎ",
-    "クレカ案件",
-    "証券口座",
   ],
-
   openGraph: {
-    title: "ポイ活AI判定｜今やるべきポイ活をAIがランキング",
+    title:
+      "ポイ活AI判定｜GoogleトレンドからAIが毎日おすすめ案件をランキング",
     description:
-      "話題度・報酬レンジ・クリック数をもとに、今おすすめのポイ活をAIが自動判定。",
+      "Googleトレンド・検索動向・話題性をもとに、AIが初心者向けのおすすめポイ活案件を毎日ランキング化。",
     url: "https://poikatu-ai.vercel.app",
     siteName: "ポイ活AI判定",
+    locale: "ja_JP",
+    type: "website",
     images: [
       {
         url: "/hero.png.png",
         width: 1200,
-        height: 900,
+        height: 630,
         alt: "ポイ活AI判定",
       },
     ],
-    locale: "ja_JP",
-    type: "website",
   },
-
   twitter: {
     card: "summary_large_image",
-    title: "ポイ活AI判定｜今やるべきポイ活をAIがランキング",
+    title:
+      "ポイ活AI判定｜GoogleトレンドからAIが毎日おすすめ案件をランキング",
     description:
-      "話題度・報酬レンジ・クリック数をもとに、今おすすめのポイ活をAIが自動判定。",
+      "Googleトレンド・検索動向・話題性をもとに、AIが初心者向けのおすすめポイ活案件を毎日ランキング化。",
     images: ["/hero.png.png"],
   },
-
   alternates: {
     canonical: "https://poikatu-ai.vercel.app",
   },
-
   robots: {
     index: true,
     follow: true,
@@ -69,15 +60,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="ja">
-      <body>
-        {children}
-        <Analytics />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
