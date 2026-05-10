@@ -8,6 +8,12 @@ const supabase = createClient(
 
 const SERPAPI_KEY = process.env.SERPAPI_KEY!;
 
+type TrendRow = {
+  word: string;
+  score: number;
+  category?: string;
+};
+
 function normalizeKeyword(query: string) {
   return query
     .replace(/ポイ\s*活/g, "")
@@ -47,11 +53,10 @@ function classifyKeyword(word: string) {
   return "一般";
 }
 
-function extractRelatedQueries(json: any) {
+function extractRelatedQueries(json: any): TrendRow[] {
   const relatedQueries =
     json?.related_queries?.rising ||
     json?.related_queries?.top ||
-    json?.related_queries ||
     [];
 
   if (!Array.isArray(relatedQueries)) {
@@ -59,31 +64,89 @@ function extractRelatedQueries(json: any) {
   }
 
   return relatedQueries
-    .map((item: any) => {
+    .map((item: any, index: number) => {
       const query = item.query || item.title || item.text || "";
-      const value = item.extracted_value || item.value || 50;
+      const value = item.extracted_value || item.value || 100 - index * 3;
 
       return {
         word: normalizeKeyword(query),
-        score: Number(value) || 50,
+        score: Math.max(70, Math.min(100, Number(value) || 70)),
       };
     })
-    .filter((item: { word: string; score: number }) => item.word.length > 0)
-    .filter((item: { word: string; score: number }) => item.word !== "ポイ活");
+    .filter((item) => item.word.length > 0);
+}
+
+async function fetchAutocomplete(query: string): Promise<TrendRow[]> {
+  try {
+    const url = `https://suggestqueries.google.com/complete/search?client=firefox&hl=ja&q=${encodeURIComponent(
+      query
+    )}`;
+
+    const res = await fetch(url, { cache: "no-store" });
+    const json = await res.json();
+
+    const suggestions = Array.isArray(json?.[1]) ? json[1] : [];
+
+    return suggestions
+      .map((text: string, index: number) => ({
+        word: normalizeKeyword(text),
+        score: Math.max(40, 76 - index * 2),
+      }))
+      .filter((item: TrendRow) => item.word.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+function mergeRows(rows: TrendRow[]) {
+  const map = new Map<string, TrendRow>();
+
+  for (const row of rows) {
+    if (!row.word) continue;
+
+    const existing = map.get(row.word);
+
+    if (!existing || row.score > existing.score) {
+      map.set(row.word, row);
+    }
+  }
+
+  return Array.from(map.values());
 }
 
 export async function GET() {
   try {
-    const response = await fetch(
+    const trendsResponse = await fetch(
       `https://serpapi.com/search.json?engine=google_trends&q=${encodeURIComponent(
         "ポイ活"
       )}&geo=JP&hl=ja&data_type=RELATED_QUERIES&api_key=${SERPAPI_KEY}`,
       { cache: "no-store" }
     );
 
-    const json = await response.json();
+    const trendsJson = await trendsResponse.json();
 
-    let rows = extractRelatedQueries(json);
+    const relatedRows = extractRelatedQueries(trendsJson);
+
+    const autocompleteQueries = [
+      "ポイ活",
+      "ポイ活 おすすめ",
+      "ポイ活 アプリ",
+      "ポイ活 ゲーム",
+      "ポイ活 paypay",
+      "ポイ活 楽天",
+      "ポイ活 クレカ",
+      "ポイントサイト",
+      "モッピー",
+      "ハピタス",
+    ];
+
+    const autocompleteResults = await Promise.all(
+      autocompleteQueries.map((query) => fetchAutocomplete(query))
+    );
+
+    const autocompleteRows = autocompleteResults.flat();
+
+    let rows = mergeRows([...relatedRows, ...autocompleteRows]);
 
     if (rows.length === 0) {
       rows = [
@@ -119,6 +182,10 @@ export async function GET() {
       success: true,
       inserted: rows.length,
       trends: rows,
+      sources: {
+        related_queries: relatedRows.length,
+        autocomplete: autocompleteRows.length,
+      },
     });
   } catch (e: any) {
     return NextResponse.json(
