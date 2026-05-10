@@ -195,7 +195,7 @@ export default function Page() {
     </div>
   </div>
 </section>
-        <div className="mb-6 flex flex-col gap-4 lg:mb-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mt-12 mb-6 flex flex-col gap-4 lg:mt-16 lg:mb-8 lg:flex-row lg:items-center lg:justify-between">
           <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
             🔥 ただいまのポイ活おすすめランキング
           </h2>
