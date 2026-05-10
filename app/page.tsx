@@ -130,6 +130,74 @@ export default function Page() {
       </header>
 
       {/* MAIN */}
+      <section className="mb-8 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
+  <div className="mb-6">
+    <p className="text-sm font-black text-pink-500">
+      Googleトレンド分析
+    </p>
+
+    <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
+      🔍 ただいま話題のポイ活キーワード
+    </h2>
+  </div>
+
+  <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
+    <div className="flex flex-wrap items-center gap-3 lg:gap-4">
+      {[
+        { word: "クレカ", score: 98 },
+        { word: "証券口座", score: 92 },
+        { word: "楽天カード", score: 88 },
+        { word: "SBI証券", score: 84 },
+        { word: "光回線", score: 78 },
+        { word: "アプリ案件", score: 72 },
+        { word: "ふるさと納税", score: 65 },
+        { word: "楽天モバイル", score: 61 },
+        { word: "ポイントサイト", score: 58 },
+        { word: "即日", score: 54 },
+      ].map((tag) => (
+        <span
+          key={tag.word}
+          className={`rounded-full font-black shadow-sm transition hover:scale-105 ${
+            tag.score >= 90
+              ? "bg-gradient-to-r from-pink-500 to-orange-400 px-7 py-4 text-3xl text-white"
+              : tag.score >= 80
+              ? "bg-pink-100 px-6 py-4 text-2xl text-pink-600"
+              : tag.score >= 70
+              ? "bg-orange-100 px-6 py-3 text-xl text-orange-600"
+              : tag.score >= 60
+              ? "bg-yellow-50 px-5 py-3 text-lg text-orange-500"
+              : "bg-slate-100 px-4 py-2 text-base text-slate-600"
+          }`}
+        >
+          #{tag.word}
+        </span>
+      ))}
+    </div>
+  </div>
+
+  <div className="mt-5 grid gap-3 lg:grid-cols-3">
+    <div className="rounded-2xl bg-pink-50 p-4">
+      <p className="text-xs font-black text-pink-400">判定基準</p>
+      <p className="mt-1 font-bold text-slate-700">
+        「ポイ活 × 関連ワード」の検索上昇傾向
+      </p>
+    </div>
+
+    <div className="rounded-2xl bg-orange-50 p-4">
+      <p className="text-xs font-black text-orange-400">表示ルール</p>
+      <p className="mt-1 font-bold text-slate-700">
+        話題度が高いほど大きく表示
+      </p>
+    </div>
+
+    <div className="rounded-2xl bg-slate-50 p-4">
+      <p className="text-xs font-black text-slate-400">更新頻度</p>
+      <p className="mt-1 font-bold text-slate-700">
+        1時間ごとにAI判定
+      </p>
+    </div>
+  </div>
+</section>
       <main className="mx-auto max-w-6xl px-4 py-8 lg:py-10">
         <div className="mb-6 flex flex-col gap-4 lg:mb-8 lg:flex-row lg:items-center lg:justify-between">
           <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
