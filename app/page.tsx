@@ -165,7 +165,7 @@ export default function Page() {
                       : "bg-slate-100 px-4 py-2 text-sm text-slate-600 lg:text-base"
                   }`}
                 >
-                  <span>#{tag.word}</span>
+                  <span>{tag.word}</span>
 
                   {tag.category === "ゲーム案件" && (
                     <span className="rounded-full bg-white/80 px-2 py-1 text-xs font-black text-orange-600">
