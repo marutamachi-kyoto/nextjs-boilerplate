@@ -335,33 +335,52 @@ const OFFERS: Offer[] = [
 ];
 
 async function getTrends(): Promise<TrendInfo[]> {
-  const res = await fetch(
-    "https://trends.google.com/trends/trendingsearches/daily/rss?geo=JP",
-    { cache: "no-store" }
-  );
+  try {
+    const res = await fetch(
+      "https://trends.google.com/trends/trendingsearches/daily/rss?geo=JP",
+      {
+        cache: "no-store",
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
+        },
+      }
+    );
 
-  const xml = await res.text();
-  const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+    if (!res.ok) {
+      console.error("Google Trends fetch failed:", res.status);
+      return [];
+    }
 
-  return items
-    .map((match) => {
-      const item = match[1];
+    const xml = await res.text();
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
 
-      const titleMatch = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/);
-      const trafficMatch = item.match(
-        /<ht:approx_traffic><!\[CDATA\[(.*?)\]\]><\/ht:approx_traffic>/
-      );
+    return items
+      .map((match) => {
+        const item = match[1];
 
-      return {
-        keyword: titleMatch?.[1] ?? "",
-        traffic: trafficMatch?.[1],
-      };
-    })
-    .filter((trend) => trend.keyword);
+        const titleMatch = item.match(
+          /<title><!\[CDATA\[(.*?)\]\]><\/title>/
+        );
+
+        const trafficMatch = item.match(
+          /<ht:approx_traffic><!\[CDATA\[(.*?)\]\]><\/ht:approx_traffic>/
+        );
+
+        return {
+          keyword: titleMatch?.[1] ?? "",
+          traffic: trafficMatch?.[1],
+        };
+      })
+      .filter((trend) => trend.keyword);
+  } catch (error) {
+    console.error("Google Trends error:", error);
+    return [];
+  }
 }
 
 function getTrafficBonus(traffic?: string): number {
-  if (!traffic) return 0;
+  if (!traffic || traffic === "取得中") return 0;
 
   const number = Number(traffic.replace(/[^\d]/g, ""));
 
@@ -377,12 +396,18 @@ function getTrafficBonus(traffic?: string): number {
 function getMatchedTrend(offer: Offer, trends: TrendInfo[]) {
   const matched = trends.find((trend) => {
     const text = trend.keyword.toLowerCase();
+
     return offer.keywords.some((keyword) =>
       text.includes(keyword.toLowerCase())
     );
   });
 
-  return matched ?? trends[0];
+  return (
+    matched ?? {
+      keyword: offer.offer_name,
+      traffic: "取得中",
+    }
+  );
 }
 
 function generateAiDescription(params: {
@@ -392,16 +417,17 @@ function generateAiDescription(params: {
 }) {
   const { offer, trend, score } = params;
 
-  const trafficText = trend.traffic
-    ? `Google Trends上では検索規模「${trend.traffic}」として観測されています。`
-    : "Google Trends上で関連キーワードの動きが確認されています。";
+  const trafficText =
+    trend.traffic && trend.traffic !== "取得中"
+      ? `Google Trends上では「${trend.keyword}」が検索規模「${trend.traffic}」として観測されています。`
+      : `Google Trendsの取得が一時的に不安定なため、現在は「${offer.offer_name}」の案件特性と過去の検索傾向をもとにAIが評価しています。`;
 
   if (offer.category === "通信・回線") {
-    return `${trafficText} 通信費の見直し需要と相性がよく、固定費削減を意識するユーザーからの関心が高まっています。AIは検索上昇度、還元期待値、申込需要を総合し、注目案件として評価しました。`;
+    return `${trafficText} 通信費の見直し需要と相性がよく、固定費削減を意識するユーザーからの関心が高まりやすい案件です。AIは検索動向、還元期待値、申込需要を総合し、注目案件として判定しました。`;
   }
 
   if (offer.category === "アプリ・ゲーム") {
-    return `${trafficText} アプリ・ゲーム案件は話題化したタイトルほど短期流入が増えやすく、条件達成型のポイ活と相性があります。AIは検索急増、参加しやすさ、獲得期待値を総合して評価しました。`;
+    return `${trafficText} アプリ・ゲーム案件は話題化したタイトルほど短期流入が増えやすく、条件達成型のポイ活と相性があります。AIは話題性、参加しやすさ、獲得期待値を総合して評価しました。`;
   }
 
   if (offer.category === "クレジットカード") {
@@ -412,31 +438,40 @@ function generateAiDescription(params: {
     return `${trafficText} 証券・投資系は口座開設需要と高額ポイントが結びつきやすい案件です。AIは資産形成への関心、検索動向、還元期待値を総合して注目度を判定しました。`;
   }
 
-  return `${trafficText} 関連する検索需要が伸びており、ポイ活案件としての注目度も上昇しています。AIは話題性、参加しやすさ、還元期待値を総合し、スコア${score}点で評価しました。`;
+  return `${trafficText} 関連する検索需要が伸びやすく、ポイ活案件としての注目度も高いと判断しました。AIは話題性、参加しやすさ、還元期待値を総合し、スコア${score}点で評価しました。`;
 }
 
 export async function GET() {
   try {
     const trends = await getTrends();
 
-    if (trends.length === 0) {
-      return Response.json(
-        { error: "Google Trendsの取得に失敗しました" },
-        { status: 500 }
-      );
-    }
+    const safeTrends =
+      trends.length > 0
+        ? trends
+        : OFFERS.map((offer) => ({
+            keyword: offer.offer_name,
+            traffic: "取得中",
+          }));
 
     const rankings = OFFERS.map((offer) => {
-      const trend = getMatchedTrend(offer, trends);
+      const trend = getMatchedTrend(offer, safeTrends);
+
       const score = Math.min(
         100,
         offer.base_score + getTrafficBonus(trend.traffic)
       );
 
+      const description = generateAiDescription({
+        offer,
+        trend,
+        score,
+      });
+
       return {
         offer,
         trend,
         score,
+        description,
       };
     })
       .sort((a, b) => b.score - a.score)
@@ -449,16 +484,8 @@ export async function GET() {
         final_score: item.score,
         trend_keyword: item.trend.keyword,
         trend_traffic: item.trend.traffic ?? null,
-        description: generateAiDescription({
-          offer: item.offer,
-          trend: item.trend,
-          score: item.score,
-        }),
-        reason: generateAiDescription({
-          offer: item.offer,
-          trend: item.trend,
-          score: item.score,
-        }),
+        description: item.description,
+        reason: item.description,
         primary_site_name: item.offer.primary_site_name,
         primary_site_url: item.offer.primary_site_url,
         secondary_site_name: item.offer.secondary_site_name,
@@ -472,14 +499,19 @@ export async function GET() {
 
     if (error) {
       console.error(error);
+
       return Response.json(
-        { error: "Supabaseへの保存に失敗しました" },
+        {
+          error: "Supabaseへの保存に失敗しました",
+          details: error.message,
+        },
         { status: 500 }
       );
     }
 
     return Response.json({
       message: "案件ランキングを更新しました",
+      trends_source: trends.length > 0 ? "google_trends" : "fallback",
       count: rankings.length,
       rankings,
     });
