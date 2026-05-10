@@ -44,14 +44,13 @@ export default function Page() {
       .then((res) => res.json())
       .then((json) => {
         const data = json.data || [];
+
         setItems(data);
 
         if (data[0]?.updated_at) {
           setUpdatedAt(
             new Date(data[0].updated_at).toLocaleDateString("ja-JP")
           );
-        } else {
-          setUpdatedAt("-");
         }
       });
   }, []);
@@ -103,9 +102,21 @@ export default function Page() {
               <p>
                 <span className="text-pink-600">「Googleでの話題度」</span>
                 のデータを中心に、初心者向けのポイ活をAIが判定し、
-                <span className="text-pink-600">毎日（０：００）</span>
+                <span className="text-pink-600">
+                  毎日（０：００）
+                </span>
                 にランキング反映しています。
               </p>
+            </div>
+
+            {/* UPDATE */}
+            <div className="mt-8">
+              <div className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
+                最終更新：
+                <span className="ml-2 text-base text-slate-600">
+                  {updatedAt}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -175,7 +186,9 @@ export default function Page() {
             </div>
 
             <div className="rounded-2xl bg-orange-50 p-4">
-              <p className="text-xs font-black text-orange-400">表示ルール</p>
+              <p className="text-xs font-black text-orange-400">
+                表示ルール
+              </p>
               <p className="mt-1 font-bold text-slate-700">
                 話題度が高いほど大きく表示
               </p>
@@ -191,14 +204,10 @@ export default function Page() {
         </section>
 
         {/* RANKING */}
-        <div className="mt-12 mb-6 flex flex-col gap-4 lg:mt-16 lg:mb-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mb-6 lg:mb-8">
           <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
             🔥 ただいまのポイ活おすすめランキング
           </h2>
-
-          <div className="w-fit rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-500 shadow">
-            最終更新：{updatedAt}
-          </div>
         </div>
 
         <div className="space-y-5">
@@ -229,7 +238,7 @@ export default function Page() {
                     </h3>
 
                     <p className="mt-2 text-lg font-bold text-pink-500 lg:text-xl">
-                      ポイントサイトでのおすすめ検索キーワード：{item.trend_keyword}
+                      AI注目ワード：{item.trend_keyword}
                     </p>
 
                     <p className="mt-4 text-base leading-relaxed text-slate-500 lg:mt-6 lg:text-lg">
@@ -267,20 +276,21 @@ export default function Page() {
                     {item.primary_site_name}で探す
                   </button>
 
-                  {item.secondary_site_name && item.secondary_site_url && (
-                    <button
-                      onClick={() =>
-                        trackClick(
-                          item.category,
-                          item.secondary_site_name!,
-                          item.secondary_site_url!
-                        )
-                      }
-                      className="flex h-16 w-full items-center justify-center rounded-2xl bg-orange-50 px-6 text-center text-lg font-black text-orange-500 shadow-sm transition hover:scale-105 lg:w-[260px]"
-                    >
-                      {item.secondary_site_name}も見る
-                    </button>
-                  )}
+                  {item.secondary_site_name &&
+                    item.secondary_site_url && (
+                      <button
+                        onClick={() =>
+                          trackClick(
+                            item.category,
+                            item.secondary_site_name!,
+                            item.secondary_site_url!
+                          )
+                        }
+                        className="flex h-16 w-full items-center justify-center rounded-2xl bg-orange-50 px-6 text-center text-lg font-black text-orange-500 shadow-sm transition hover:scale-105 lg:w-[260px]"
+                      >
+                        {item.secondary_site_name}も見る
+                      </button>
+                    )}
                 </div>
               </div>
             </article>
