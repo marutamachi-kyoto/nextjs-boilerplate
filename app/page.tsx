@@ -1,41 +1,125 @@
-return (
-  <>
-    {/* JSON-LD */}
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: "ポイ活AI判定",
-          url: "https://poikatu-ai.vercel.app",
-          description:
-            "Googleトレンド・検索動向・SNS話題度をAI分析し、初心者向けのおすすめポイ活案件を毎日ランキング化。",
-        }),
-      }}
-    />
+"use client";
 
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{
-        __html: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "ItemList",
-          name: "ポイ活おすすめランキング",
-          itemListElement: items.slice(0, 30).map((item, index) => ({
-            "@type": "ListItem",
-            position: index + 1,
-            name:
-              item.offer_name ||
-              item.trend_keyword ||
-              item.category,
-            url: "https://poikatu-ai.vercel.app",
-            description: item.reason,
-          })),
-        }),
-      }}
-    />
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
+type CategoryScore = {
+  category: string;
+  rank: number;
+  trend_keyword: string;
+  offer_name?: string;
+  reason: string;
+  primary_site_name: string;
+  primary_site_url: string;
+  secondary_site_name?: string;
+  secondary_site_url?: string;
+  updated_at?: string;
+};
+
+type TrendTag = {
+  word: string;
+  score: number;
+  category?: string;
+};
+
+type AiReason = {
+  icon: string;
+  title: string;
+  text: string;
+};
+
+export default function Page() {
+  const [items, setItems] = useState<CategoryScore[]>([]);
+  const [updatedAt, setUpdatedAt] = useState("-");
+  const [trendTags, setTrendTags] = useState<TrendTag[]>([]);
+
+  useEffect(() => {
+    fetch("/api/trends")
+      .then((res) => res.json())
+      .then((json) => {
+        setTrendTags(json.data || []);
+      });
+
+    fetch("/api/score")
+      .then((res) => res.json())
+      .then((json) => {
+        const data = json.data || [];
+        setItems(data.slice(0, 30));
+
+        if (data[0]?.updated_at) {
+          setUpdatedAt(
+            new Date(data[0].updated_at).toLocaleDateString("ja-JP")
+          );
+        }
+      });
+  }, []);
+
+  const trackClick = async (
+    category: string,
+    siteName: string,
+    url: string
+  ) => {
+    try {
+      await fetch("/api/click", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category,
+          site_name: siteName,
+        }),
+      });
+    } catch (e) {}
+
+    window.open(url, "_blank");
+  };
+
+  const getOfferName = (item: CategoryScore) => {
+    return item.offer_name || item.trend_keyword || item.category;
+  };
+
+  const getAiReasons = (item: CategoryScore): AiReason[] => {
+    const category = item.category;
+
+    if (category.includes("通信")) {
+      return [
+        { icon: "📈", title: "高額ポイント", text: "還元期待値が高い" },
+        { icon: "💗", title: "SNSで話題", text: "検索・投稿が増加" },
+        { icon: "🎁", title: "条件が明確", text: "比較しやすい案件" },
+      ];
+    }
+
+    if (category.includes("ゲーム") || category.includes("アプリ")) {
+      return [
+        { icon: "🔍", title: "検索急増", text: "関連検索が上昇" },
+        { icon: "💗", title: "SNS話題化", text: "投稿・共有が増加" },
+        { icon: "⏱", title: "短期達成可", text: "条件達成を狙える" },
+      ];
+    }
+
+    if (category.includes("カード") || category.includes("クレジット")) {
+      return [
+        { icon: "¥", title: "高額還元", text: "ポイント単価が高い" },
+        { icon: "⚡", title: "即効性あり", text: "成果につながりやすい" },
+        { icon: "👤", title: "初心者向け", text: "申込がシンプル" },
+      ];
+    }
+
+    if (category.includes("証券") || category.includes("投資")) {
+      return [
+        { icon: "📈", title: "投資需要", text: "口座開設が増加" },
+        { icon: "🎁", title: "高ポイント", text: "還元額が大きい" },
+        { icon: "⏱", title: "申込増加", text: "注目度が上昇" },
+      ];
+    }
+
+    return [
+      { icon: "📈", title: "検索上昇", text: "話題性が高い" },
+      { icon: "💗", title: "注目度あり", text: "関心が増加中" },
+      { icon: "🎁", title: "案件向き", text: "ポイ活と相性良好" },
+    ];
+  };
+
+  return (
     <div className="min-h-screen bg-[#fff8fb]">
       {/* HERO */}
       <header className="overflow-hidden bg-gradient-to-r from-[#FFF2F7] via-[#FFF8FA] to-[#FFF4F7]">
@@ -56,13 +140,9 @@ return (
 
             <div className="mt-8 text-[20px] font-black leading-[1.9] text-[#27313f] lg:text-[28px]">
               <p>
-                <span className="text-pink-600">
-                  「Googleでの話題度」
-                </span>
+                <span className="text-pink-600">「Googleでの話題度」</span>
                 のデータを中心に、初心者向けのポイ活をAIが判定し、
-                <span className="text-pink-600">
-                  毎日（０：００）
-                </span>
+                <span className="text-pink-600">毎日（０：００）</span>
                 にランキング反映しています。
               </p>
             </div>
@@ -253,5 +333,5 @@ return (
         </div>
       </main>
     </div>
-  </>
-);
+  );
+}
