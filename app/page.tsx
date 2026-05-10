@@ -82,7 +82,7 @@ export default function Page() {
                 <span className="text-pink-600">
                   「世間での話題度」
                 </span>
-                のデータを中心、初心者向けのポイ活をAIが判定し、
+                のデータを中心に、初心者向けのポイ活をAIが判定し、
                 <span className="text-pink-600">
                 １時間ごと（毎時０分）
                 </span>
@@ -94,12 +94,12 @@ export default function Page() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-4 rounded-2xl bg-pink-50 px-4 py-5 text-center text-base font-black text-pink-600 lg:text-xl">
                   <span className="text-4xl">🏆</span>
-                  <span>世間での話題度分析</span>
+                  <span>世間での話題度を分析</span>
                 </div>
 
                 <div className="flex items-center gap-4 rounded-2xl bg-yellow-50 px-4 py-5 text-center text-base font-black text-orange-500 lg:text-xl">
                   <span className="text-4xl">📈</span>
-                  <span>クリック数分析応</span>
+                  <span>クリック数も分析</span>
                 </div>
 
                 <div className="flex items-center gap-4 rounded-2xl bg-pink-50 px-4 py-5 text-center text-base font-black text-pink-600 lg:text-xl">
@@ -109,7 +109,7 @@ export default function Page() {
 
                 <div className="flex items-center gap-4 rounded-2xl bg-yellow-50 px-4 py-5 text-center text-base font-black text-orange-500 lg:text-xl">
                   <span className="text-4xl">🟠</span>
-                  <span>報酬レンジ分析</span>
+                  <span>報酬レンジも分析</span>
                 </div>
               </div>
             </div>
