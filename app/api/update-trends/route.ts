@@ -10,10 +10,41 @@ const SERPAPI_KEY = process.env.SERPAPI_KEY!;
 
 function normalizeKeyword(query: string) {
   return query
+    .replace(/ポイ\s*活/g, "")
     .replace(/ポイ活/g, "")
-    .replace(/\s+/g, " ")
-    .replace(/[　]/g, " ")
+    .replace(/\s+/g, "")
+    .replace(/[　]/g, "")
     .trim();
+}
+
+function classifyKeyword(word: string) {
+  const gameWords = [
+    "ゲーム",
+    "戦",
+    "三国志",
+    "信長",
+    "キングダム",
+    "ウォー",
+    "英雄",
+    "伝説",
+    "育成",
+    "マージ",
+    "ディフェンス",
+    "ブラウザ",
+    "フェイト",
+    "トップウォー",
+    "グルメジャーニー",
+    "モーマンタイム",
+    "天地英雄伝",
+    "神剣",
+    "大江戸",
+  ];
+
+  if (gameWords.some((keyword) => word.includes(keyword))) {
+    return "ゲーム案件";
+  }
+
+  return "一般";
 }
 
 function extractRelatedQueries(json: any) {
@@ -30,7 +61,7 @@ function extractRelatedQueries(json: any) {
   return relatedQueries
     .map((item: any) => {
       const query = item.query || item.title || item.text || "";
-      const value = item.value || item.extracted_value || 50;
+      const value = item.extracted_value || item.value || 50;
 
       return {
         word: normalizeKeyword(query),
@@ -73,6 +104,7 @@ export async function GET() {
       .map((item, index) => ({
         word: item.word,
         score: Math.max(50, 100 - index * 6),
+        category: classifyKeyword(item.word),
       }));
 
     await supabase.from("trends").delete().neq("word", "");
@@ -87,9 +119,6 @@ export async function GET() {
       success: true,
       inserted: rows.length,
       trends: rows,
-      serpapi_keys: Object.keys(json),
-      related_queries: json.related_queries || null,
-      raw_sample: json,
     });
   } catch (e: any) {
     return NextResponse.json(
