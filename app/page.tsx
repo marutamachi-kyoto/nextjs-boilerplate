@@ -181,7 +181,7 @@ export default function Page() {
             <div className="rounded-2xl bg-pink-50 p-4">
               <p className="text-xs font-black text-pink-400">判定基準</p>
               <p className="mt-1 font-bold text-slate-700">
-                いまGoogleでよく検索されているキーワード
+                いまGoogleでよく検索されているワード
               </p>
             </div>
 
@@ -238,7 +238,7 @@ export default function Page() {
                     </h3>
 
                     <p className="mt-2 text-lg font-bold text-pink-500 lg:text-xl">
-                      AI注目ワード：{item.trend_keyword}
+                      ポイントサイトでのおすすめ検索ワード：{item.trend_keyword}
                     </p>
 
                     <p className="mt-4 text-base leading-relaxed text-slate-500 lg:mt-6 lg:text-lg">
