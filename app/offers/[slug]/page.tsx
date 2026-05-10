@@ -361,14 +361,67 @@ export async function generateMetadata({
   if (!offer) {
     return {
       title: "案件が見つかりません｜ポイ活AI判定",
+      description:
+        "ポイ活AI判定で掲載中の案件ページです。現在この案件は見つかりませんでした。",
+      alternates: {
+        canonical: "https://poikatu-ai.vercel.app/offers",
+      },
+      robots: {
+        index: false,
+        follow: true,
+      },
     };
   }
 
+  const title = `【2026年最新】${offer.title}はポイ活で稼げる？｜AIおすすめ度・還元比較`;
+
+  const description =
+    `${offer.title}のポイ活案件をAI分析。` +
+    `${offer.category}ジャンルの注目案件として、` +
+    `おすすめ理由・話題性・Googleトレンド・ポイント獲得の魅力を詳しく解説しています。`;
+
+  const url = `https://poikatu-ai.vercel.app/offers/${offer.slug}`;
+
   return {
-    title: `${offer.title}のポイ活案件をAI判定｜ポイ活AI判定`,
-    description: `${offer.title}のポイ活案件をAIが分析。おすすめ理由、Googleトレンド、モッピーで探す導線をまとめています。`,
+    title,
+    description,
+    keywords: [
+      `${offer.title} ポイ活`,
+      `${offer.title} モッピー`,
+      `${offer.title} ポイントサイト`,
+      `${offer.title} 案件`,
+      `${offer.title} 還元`,
+      `${offer.category} ポイ活`,
+      "ポイ活",
+      "モッピー",
+      "ポイントサイト",
+      "AI判定",
+    ],
     alternates: {
-      canonical: `https://poikatu-ai.vercel.app/offers/${offer.slug}`,
+      canonical: url,
+    },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "ポイ活AI判定",
+      locale: "ja_JP",
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
   };
 }
@@ -423,18 +476,14 @@ export default async function OfferPage({
 
               <div className="mt-8 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-pink-50 p-4">
-                  <p className="text-xs font-black text-slate-500">
-                    AI評価
-                  </p>
+                  <p className="text-xs font-black text-slate-500">AI評価</p>
                   <p className="mt-1 text-2xl font-black text-pink-500">
                     注目案件
                   </p>
                 </div>
 
                 <div className="rounded-2xl bg-pink-50 p-4">
-                  <p className="text-xs font-black text-slate-500">
-                    更新頻度
-                  </p>
+                  <p className="text-xs font-black text-slate-500">更新頻度</p>
                   <p className="mt-1 text-2xl font-black text-slate-800">
                     毎日更新
                   </p>
