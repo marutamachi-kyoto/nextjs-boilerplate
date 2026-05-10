@@ -95,7 +95,7 @@ export default function Page() {
                 <span className="text-pink-600">「世間での話題度」</span>
                 のデータを中心に、初心者向けのポイ活をAIが判定し、
                 <span className="text-pink-600">
-                  １時間ごと（毎時０分）
+                  毎日（０：００）
                 </span>
                 にランキング反映しています。
               </p>
@@ -126,7 +126,7 @@ export default function Page() {
             </p>
 
             <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
-              🔍 ただいまGoogleで話題のポイ活キーワード
+              🔍 ただいまGoogleで話題のポイ活関連キーワード
             </h2>
           </div>
 
@@ -163,7 +163,7 @@ export default function Page() {
             <div className="rounded-2xl bg-pink-50 p-4">
               <p className="text-xs font-black text-pink-400">判定基準</p>
               <p className="mt-1 font-bold text-slate-700">
-                Googleでよく検索されているキーワード
+                いまGoogleでよく検索されているキーワード
               </p>
             </div>
 
@@ -177,7 +177,7 @@ export default function Page() {
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs font-black text-slate-400">更新頻度</p>
               <p className="mt-1 font-bold text-slate-700">
-                3時間ごと
+                毎日（０：００）
               </p>
             </div>
           </div>
