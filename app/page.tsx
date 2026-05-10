@@ -131,7 +131,7 @@ export default function Page() {
             name: "ポイ活AI判定",
             url: "https://poikatu-ai.vercel.app",
             description:
-              "Googleトレンド・検索動向・SNS話題度をAI分析し、初心者向けのおすすめポイ活案件を毎日ランキング化。",
+              "Googleトレンド・検索動向・SNS話題度をAI分析し、おすすめポイ活案件を毎日ランキング化。",
           }),
         }}
       />
@@ -161,7 +161,7 @@ export default function Page() {
             <div className="w-full lg:w-[680px]">
               <div className="inline-flex items-center gap-3 rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-[0_10px_30px_rgba(236,72,153,0.18)] lg:text-xl">
                 <span>🤖</span>
-                <span>AIが毎日（０：００）更新！</span>
+                <span>AIが毎日（0:00）判定！</span>
               </div>
 
               <h1 className="mt-8 text-[54px] font-black leading-[0.95] tracking-[-0.05em] text-pink-600 drop-shadow-[0_5px_0_rgba(255,255,255,0.9)] lg:text-[96px]">
@@ -175,8 +175,8 @@ export default function Page() {
               <div className="mt-8 text-[20px] font-black leading-[1.9] text-[#27313f] lg:text-[28px]">
                 <p>
                   <span className="text-pink-600">「Googleでの話題度」</span>
-                  のデータを中心に、初心者向けのポイ活をAIが判定し、
-                  <span className="text-pink-600">毎日（０：００）</span>
+                  のデータを中心に、おすすめのポイ活をAIが判定し、
+                  <span className="text-pink-600">毎日（0:00）</span>
                   にランキング反映しています。
                 </p>
               </div>
@@ -213,7 +213,7 @@ export default function Page() {
               </p>
 
               <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
-                🔍 ただいまGoogleで話題のポイ活関連キーワード
+                🔍 いまGoogleで話題のポイ活関連キーワード
               </h2>
             </div>
 
@@ -246,7 +246,7 @@ export default function Page() {
             <span className="text-4xl">🔥</span>
 
             <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-              ただいまのポイ活おすすめランキング
+              いまおすすめのポイ活ランキング
             </h2>
           </div>
 
