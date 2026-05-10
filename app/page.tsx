@@ -24,8 +24,13 @@ type CategoryScore = {
 export default function Page() {
   const [items, setItems] = useState<CategoryScore[]>([]);
   const [updatedAt, setUpdatedAt] = useState("");
-
-  useEffect(() => {
+  const [trendTags, setTrendTags] = useState<{ word: string; score: number }[]>([]);
+  useEffect(() =>
+    fetch("/api/trends")
+  　　.then((res) => res.json())
+  　　.then((json) => {
+    　setTrendTags(json.data || []);
+  　});
     fetch("/api/score")
       .then((res) => res.json())
       .then((json) => {
@@ -142,18 +147,7 @@ export default function Page() {
 
   <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
     <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-      {[
-        { word: "クレカ", score: 98 },
-        { word: "証券口座", score: 92 },
-        { word: "楽天カード", score: 88 },
-        { word: "SBI証券", score: 84 },
-        { word: "光回線", score: 78 },
-        { word: "アプリ案件", score: 72 },
-        { word: "ふるさと納税", score: 65 },
-        { word: "楽天モバイル", score: 61 },
-        { word: "ポイントサイト", score: 58 },
-        { word: "即日", score: 54 },
-      ].map((tag) => (
+      {trendTags.map((tag) => (
         <span
           key={tag.word}
           className={`rounded-full font-black shadow-sm transition hover:scale-105 ${
