@@ -98,5 +98,112 @@ export default function Page() {
               </p>
             </div>
 
-            <div className="mt-8 w-full rounded-[2rem] bg-white/90 p-4 shadow-[0_25px_60px_rgba(236,72,153,0.12)]
+            <div className="mt-8 w-full rounded-[2rem] bg-white/90 p-4 shadow-[0_25px_60px_rgba(236,72,153,0.12)] lg:w-[610px] lg:p-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-4 rounded-2xl bg-pink-50 px-4 py-5 text-center text-base font-black text-pink-600 lg:text-xl">
+                  <span className="text-4xl">🏆</span>
+                  <span>世間での話題度を分析</span>
+                </div>
+
+                <div className="flex items-center gap-4 rounded-2xl bg-yellow-50 px-4 py-5 text-center text-base font-black text-orange-500 lg:text-xl">
+                  <span className="text-4xl">📈</span>
+                  <span>クリック数も分析</span>
+                </div>
+
+                <div className="flex items-center gap-4 rounded-2xl bg-pink-50 px-4 py-5 text-center text-base font-black text-pink-600 lg:text-xl">
+                  <span className="text-4xl">📍</span>
+                  <span>主要ポイントサイトへ案内</span>
+                </div>
+
+                <div className="flex items-center gap-4 rounded-2xl bg-yellow-50 px-4 py-5 text-center text-base font-black text-orange-500 lg:text-xl">
+                  <span className="text-4xl">🟠</span>
+                  <span>報酬レンジも分析</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT IMAGE */}
+          <div className="w-full lg:w-[720px]">
+            <Image
+              src="/hero.png.png"
+              alt="ポイ活AI判定"
+              width={1200}
+              height={900}
+              className="h-auto w-full rounded-[2rem] shadow-[0_35px_80px_rgba(31,41,55,0.18)]"
+              priority
+            />
+          </div>
+        </div>
+      </header>
+
+      {/* MAIN */}
+      <main className="mx-auto max-w-6xl px-4 py-8 lg:py-10">
+        <section className="mb-8 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
+          <div className="mb-6">
+            <p className="text-sm font-black text-pink-500">
+              Googleトレンド分析
+            </p>
+
+            <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
+              🔍 ただいま話題のポイ活キーワード
+            </h2>
+          </div>
+
+          <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
+            <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+              {trendTags.map((tag) => (
+                <div
+                  key={tag.word}
+                  className={`flex items-center gap-2 rounded-full font-black shadow-sm transition hover:scale-105 ${
+                    tag.score >= 90
+                      ? "bg-gradient-to-r from-pink-500 to-orange-400 px-6 py-3 text-xl text-white lg:text-2xl"
+                      : tag.score >= 80
+                      ? "bg-pink-100 px-5 py-3 text-lg text-pink-600 lg:text-xl"
+                      : tag.score >= 70
+                      ? "bg-orange-100 px-5 py-2.5 text-lg text-orange-600 lg:text-xl"
+                      : tag.score >= 60
+                      ? "bg-yellow-50 px-4 py-2 text-base text-orange-500 lg:text-lg"
+                      : "bg-slate-100 px-4 py-2 text-sm text-slate-600 lg:text-base"
+                  }`}
+                >
+                  <span>#{tag.word}</span>
+
+                  {tag.category === "ゲーム案件" && (
+                    <span className="rounded-full bg-white/80 px-2 py-1 text-xs font-black text-orange-600">
+                      GAME
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
+            <div className="rounded-2xl bg-pink-50 p-4">
+              <p className="text-xs font-black text-pink-400">判定基準</p>
+              <p className="mt-1 font-bold text-slate-700">
+                「ポイ活 × 関連ワード」の検索上昇傾向
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-orange-50 p-4">
+              <p className="text-xs font-black text-orange-400">表示ルール</p>
+              <p className="mt-1 font-bold text-slate-700">
+                話題度が高いほど大きく表示
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-xs font-black text-slate-400">更新頻度</p>
+              <p className="mt-1 font-bold text-slate-700">
+                1時間ごとにAI判定
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
 ```
