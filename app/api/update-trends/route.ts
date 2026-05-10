@@ -82,10 +82,13 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      success: true,
-      inserted: rows.length,
-      trends: rows,
-    });
+  success: true,
+  inserted: rows.length,
+  trends: rows,
+  serpapi_keys: Object.keys(json),
+  related_queries: json.related_queries || null,
+  raw_sample: json,
+});
   } catch (e: any) {
     return NextResponse.json(
       {
