@@ -1,3 +1,4 @@
+```tsx
 "use client";
 
 import Image from "next/image";
@@ -24,22 +25,24 @@ type CategoryScore = {
 export default function Page() {
   const [items, setItems] = useState<CategoryScore[]>([]);
   const [updatedAt, setUpdatedAt] = useState("");
-  const [trendTags, setTrendTags] = useState<{ word: string; score: number }[]>([]);
-  
-  useEffect(() => {
-  fetch("/api/trends")
-    .then((res) => res.json())
-    .then((json) => {
-      setTrendTags(json.data || []);
-    });
+  const [trendTags, setTrendTags] = useState<
+    { word: string; score: number; category?: string }[]
+  >([]);
 
-  fetch("/api/score")
-    .then((res) => res.json())
-    .then((json) => {
-      setItems(json.data || []);
-      setUpdatedAt(new Date().toLocaleString("ja-JP"));
-    });
-}, []);
+  useEffect(() => {
+    fetch("/api/trends")
+      .then((res) => res.json())
+      .then((json) => {
+        setTrendTags(json.data || []);
+      });
+
+    fetch("/api/score")
+      .then((res) => res.json())
+      .then((json) => {
+        setItems(json.data || []);
+        setUpdatedAt(new Date().toLocaleString("ja-JP"));
+      });
+  }, []);
 
   const trackClick = async (
     category: string,
@@ -86,207 +89,14 @@ export default function Page() {
 
             <div className="mt-8 space-y-6 text-[20px] font-black leading-[1.9] text-[#27313f] lg:text-[28px]">
               <p>
-                <span className="text-pink-600">
-                  「世間での話題度」
-                </span>
+                <span className="text-pink-600">「世間での話題度」</span>
                 のデータを中心に、初心者向けのポイ活をAIが判定し、
                 <span className="text-pink-600">
-                １時間ごと（毎時０分）
+                  １時間ごと（毎時０分）
                 </span>
                 にランキング反映しています。
               </p>
             </div>
 
-            <div className="mt-8 w-full rounded-[2rem] bg-white/90 p-4 shadow-[0_25px_60px_rgba(236,72,153,0.12)] lg:w-[610px] lg:p-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-4 rounded-2xl bg-pink-50 px-4 py-5 text-center text-base font-black text-pink-600 lg:text-xl">
-                  <span className="text-4xl">🏆</span>
-                  <span>世間での話題度を分析</span>
-                </div>
-
-                <div className="flex items-center gap-4 rounded-2xl bg-yellow-50 px-4 py-5 text-center text-base font-black text-orange-500 lg:text-xl">
-                  <span className="text-4xl">📈</span>
-                  <span>クリック数も分析</span>
-                </div>
-
-                <div className="flex items-center gap-4 rounded-2xl bg-pink-50 px-4 py-5 text-center text-base font-black text-pink-600 lg:text-xl">
-                  <span className="text-4xl">📍</span>
-                  <span>主要ポイントサイトへ案内</span>
-                </div>
-
-                <div className="flex items-center gap-4 rounded-2xl bg-yellow-50 px-4 py-5 text-center text-base font-black text-orange-500 lg:text-xl">
-                  <span className="text-4xl">🟠</span>
-                  <span>報酬レンジも分析</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT IMAGE */}
-          <div className="w-full lg:w-[720px]">
-            <Image
-              src="/hero.png.png"
-              alt="ポイ活AI判定"
-              width={1200}
-              height={900}
-              className="w-full h-auto rounded-[2rem] shadow-[0_35px_80px_rgba(31,41,55,0.18)]"
-              priority
-            />
-          </div>
-        </div>
-      </header>
-
-      {/* MAIN */}
-      <main className="mx-auto max-w-6xl px-4 py-8 lg:py-10">
-        <section className="mb-8 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
-  <div className="mb-6">
-    <p className="text-sm font-black text-pink-500">Googleトレンド分析</p>
-
-    <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
-      🔍 ただいま話題のポイ活キーワード
-    </h2>
-  </div>
-
-  <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
-    <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-      {trendTags.map((tag) => (
-        <span
-          key={tag.word}
-          className={`rounded-full font-black shadow-sm transition hover:scale-105 ${
-            tag.score >= 90
-              ? "bg-gradient-to-r from-pink-500 to-orange-400 px-6 py-3 text-xl text-white lg:text-2xl"
-              : tag.score >= 80
-              ? "bg-pink-100 px-5 py-3 text-lg text-pink-600 lg:text-xl"
-              : tag.score >= 70
-              ? "bg-orange-100 px-5 py-2.5 text-lg text-orange-600 lg:text-xl"
-              : tag.score >= 60
-              ? "bg-yellow-50 px-4 py-2 text-base text-orange-500 lg:text-lg"
-              : "bg-slate-100 px-4 py-2 text-sm text-slate-600 lg:text-base"
-          }`}
-        >
-          #{tag.word}
-        </span>
-      ))}
-    </div>
-  </div>
-
-  <div className="mt-5 grid gap-3 lg:grid-cols-3">
-    <div className="rounded-2xl bg-pink-50 p-4">
-      <p className="text-xs font-black text-pink-400">判定基準</p>
-      <p className="mt-1 font-bold text-slate-700">
-        「ポイ活 × 関連ワード」の検索上昇傾向
-      </p>
-    </div>
-
-    <div className="rounded-2xl bg-orange-50 p-4">
-      <p className="text-xs font-black text-orange-400">表示ルール</p>
-      <p className="mt-1 font-bold text-slate-700">
-        話題度が高いほど大きく表示
-      </p>
-    </div>
-
-    <div className="rounded-2xl bg-slate-50 p-4">
-      <p className="text-xs font-black text-slate-400">更新頻度</p>
-      <p className="mt-1 font-bold text-slate-700">1時間ごとにAI判定</p>
-    </div>
-  </div>
-</section>
-        <div className="mt-12 mb-6 flex flex-col gap-4 lg:mt-16 lg:mb-8 lg:flex-row lg:items-center lg:justify-between">
-          <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
-            🔥 ただいまのポイ活おすすめランキング
-          </h2>
-
-          <div className="w-fit rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-500 shadow">
-            最終更新：{updatedAt}
-          </div>
-        </div>
-
-        <div className="space-y-5">
-          {items.map((item, index) => (
-            <article
-              key={item.category}
-              className="rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-orange-100 lg:p-8"
-            >
-              <div className="flex flex-col gap-6 lg:flex-row lg:justify-between lg:gap-8">
-                <div className="flex gap-4 lg:gap-6">
-                  <div
-                    className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-2xl font-black text-white shadow-lg lg:h-16 lg:w-16 lg:text-3xl ${
-                      index === 0
-  ? "bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 shadow-[0_8px_20px_rgba(255,200,0,0.45)]"
-  : index === 1
-  ? "bg-gradient-to-br from-slate-300 to-slate-600 shadow-[0_8px_20px_rgba(100,116,139,0.35)]"
-  : index === 2
-  ? "bg-gradient-to-br from-amber-600 via-orange-700 to-yellow-900 shadow-[0_8px_20px_rgba(180,83,9,0.45)]"
-  : "bg-gradient-to-br from-pink-400 to-pink-500"
-                    }`}
-                  >
-                    {index + 1}
-                  </div>
-
-                  <div className="min-w-0">
-                    <h3 className="text-3xl font-black leading-tight text-slate-800 lg:text-5xl">
-                      {item.category}
-                    </h3>
-
-                    <p className="mt-2 text-lg font-bold text-pink-500 lg:text-xl">
-                      AI注目ワード：{item.trend_keyword}
-                    </p>
-
-                    <p className="mt-4 text-base leading-relaxed text-slate-500 lg:mt-6 lg:text-lg">
-                      {item.reason}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs font-black lg:mt-5 lg:gap-3 lg:text-sm">
-                      <span className="rounded-full bg-orange-50 px-3 py-2 text-orange-500 lg:px-4">
-                        報酬 {item.reward_min.toLocaleString()}〜
-                        {item.reward_max.toLocaleString()}円
-                      </span>
-
-                      <span className="rounded-full bg-pink-50 px-3 py-2 text-pink-500 lg:px-4">
-                        AI注目度 {stars(item.heat_level)}
-                      </span>
-
-                      <span className="rounded-full bg-slate-100 px-3 py-2 text-slate-600 lg:px-4">
-                        難易度 {item.difficulty_label}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex w-full flex-col items-end justify-center gap-3 lg:w-[320px]">
-  <button
-    onClick={() =>
-      trackClick(
-        item.category,
-        item.primary_site_name,
-        item.primary_site_url
-      )
-    }
-    className="flex h-16 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-400 px-6 text-center text-lg font-black text-white shadow-lg transition hover:scale-105 lg:w-[260px]"
-  >
-    {item.primary_site_name}で探す
-  </button>
-
-  {item.secondary_site_name && item.secondary_site_url && (
-    <button
-      onClick={() =>
-        trackClick(
-          item.category,
-          item.secondary_site_name!,
-          item.secondary_site_url!
-        )
-      }
-      className="flex h-16 w-full items-center justify-center rounded-2xl bg-orange-50 px-6 text-center text-lg font-black text-orange-500 shadow-sm transition hover:scale-105 lg:w-[260px]"
-    >
-      {item.secondary_site_name}も見る
-    </button>
-  )}
-</div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </main>
-    </div>
-  );
-}
+            <div className="mt-8 w-full rounded-[2rem] bg-white/90 p-4 shadow-[0_25px_60px_rgba(236,72,153,0.12)]
+```
