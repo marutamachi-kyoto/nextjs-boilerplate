@@ -79,7 +79,7 @@ export default function Page() {
           <div className="w-full lg:w-[680px]">
             <div className="inline-flex items-center gap-3 rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-[0_10px_30px_rgba(236,72,153,0.18)] lg:text-xl">
               <span>🤖</span>
-              <span>AIが１時間ごと（毎時０分）にランキング反映！</span>
+              <span>AIが毎日（０：００）にランキング反映！</span>
             </div>
 
             <h1 className="mt-8 text-[54px] font-black leading-[0.95] tracking-[-0.05em] text-pink-600 drop-shadow-[0_5px_0_rgba(255,255,255,0.9)] lg:text-[96px]">
