@@ -7,13 +7,7 @@ type CategoryScore = {
   category: string;
   rank: number;
   trend_keyword: string;
-  reward_min: number;
-  reward_max: number;
-  difficulty_label: string;
-  heat_level: number;
-  final_score: number;
-  rise_rate?: number;
-  click_score?: number;
+  offer_name?: string;
   reason: string;
   primary_site_name: string;
   primary_site_url: string;
@@ -26,6 +20,12 @@ type TrendTag = {
   word: string;
   score: number;
   category?: string;
+};
+
+type AiReason = {
+  icon: string;
+  title: string;
+  text: string;
 };
 
 export default function Page() {
@@ -45,7 +45,7 @@ export default function Page() {
       .then((json) => {
         const data = json.data || [];
 
-        setItems(data);
+        setItems(data.slice(0, 30));
 
         if (data[0]?.updated_at) {
           setUpdatedAt(
@@ -76,7 +76,111 @@ export default function Page() {
     window.open(url, "_blank");
   };
 
-  const stars = (n: number) => "★".repeat(n);
+  const getOfferName = (item: CategoryScore) => {
+    return item.offer_name || item.trend_keyword || item.category;
+  };
+
+  const getAiReasons = (item: CategoryScore): AiReason[] => {
+    const category = item.category;
+
+    if (category.includes("通信")) {
+      return [
+        {
+          icon: "📈",
+          title: "高額ポイント",
+          text: "還元期待値が高い",
+        },
+        {
+          icon: "💗",
+          title: "SNSで話題",
+          text: "検索・投稿が増加",
+        },
+        {
+          icon: "🎁",
+          title: "条件が明確",
+          text: "比較しやすい案件",
+        },
+      ];
+    }
+
+    if (category.includes("ゲーム") || category.includes("アプリ")) {
+      return [
+        {
+          icon: "🔍",
+          title: "検索急増",
+          text: "関連検索が上昇",
+        },
+        {
+          icon: "#",
+          title: "SNS話題化",
+          text: "投稿・共有が増加",
+        },
+        {
+          icon: "⏱",
+          title: "短期達成可",
+          text: "条件達成を狙える",
+        },
+      ];
+    }
+
+    if (category.includes("カード") || category.includes("クレジット")) {
+      return [
+        {
+          icon: "¥",
+          title: "高額還元",
+          text: "ポイント単価が高い",
+        },
+        {
+          icon: "⚡",
+          title: "即効性あり",
+          text: "成果につながりやすい",
+        },
+        {
+          icon: "👤",
+          title: "初心者向け",
+          text: "申込がシンプル",
+        },
+      ];
+    }
+
+    if (category.includes("証券") || category.includes("投資")) {
+      return [
+        {
+          icon: "📈",
+          title: "投資需要",
+          text: "口座開設が増加",
+        },
+        {
+          icon: "🎁",
+          title: "高ポイント",
+          text: "還元額が大きい",
+        },
+        {
+          icon: "⏱",
+          title: "申込増加",
+          text: "注目度が上昇",
+        },
+      ];
+    }
+
+    return [
+      {
+        icon: "📈",
+        title: "検索上昇",
+        text: "話題性が高い",
+      },
+      {
+        icon: "💗",
+        title: "注目度あり",
+        text: "関心が増加中",
+      },
+      {
+        icon: "🎁",
+        title: "案件向き",
+        text: "ポイ活と相性良好",
+      },
+    ];
+  };
 
   return (
     <div className="min-h-screen bg-[#fff8fb]">
@@ -102,14 +206,11 @@ export default function Page() {
               <p>
                 <span className="text-pink-600">「Googleでの話題度」</span>
                 のデータを中心に、初心者向けのポイ活をAIが判定し、
-                <span className="text-pink-600">
-                  毎日（０：００）
-                </span>
+                <span className="text-pink-600">毎日（０：００）</span>
                 にランキング反映しています。
               </p>
             </div>
 
-            {/* UPDATE */}
             <div className="mt-8">
               <div className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
                 最終更新：
@@ -135,9 +236,9 @@ export default function Page() {
       </header>
 
       {/* MAIN */}
-      <main className="mx-auto max-w-6xl px-4 py-8 lg:py-10">
+      <main className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10">
         {/* TREND SECTION */}
-        <section className="mb-8 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
+        <section className="mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
           <div className="mb-6">
             <p className="text-sm font-black text-pink-500">
               Googleトレンド分析
@@ -149,152 +250,152 @@ export default function Page() {
           </div>
 
           <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
-            <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+            <div className="flex flex-wrap items-center gap-3">
               {trendTags.map((tag) => (
                 <div
                   key={tag.word}
                   className={`flex items-center gap-2 rounded-full font-black shadow-sm transition hover:scale-105 ${
                     tag.score >= 90
-                      ? "bg-gradient-to-r from-pink-500 to-orange-400 px-6 py-3 text-xl text-white lg:text-2xl"
+                      ? "bg-gradient-to-r from-pink-500 to-orange-400 px-6 py-3 text-xl text-white"
                       : tag.score >= 80
-                      ? "bg-pink-100 px-5 py-3 text-lg text-pink-600 lg:text-xl"
+                      ? "bg-pink-100 px-5 py-3 text-lg text-pink-600"
                       : tag.score >= 70
-                      ? "bg-orange-100 px-5 py-2.5 text-lg text-orange-600 lg:text-xl"
+                      ? "bg-orange-100 px-5 py-2.5 text-lg text-orange-600"
                       : tag.score >= 60
-                      ? "bg-yellow-50 px-4 py-2 text-base text-orange-500 lg:text-lg"
-                      : "bg-slate-100 px-4 py-2 text-sm text-slate-600 lg:text-base"
+                      ? "bg-yellow-50 px-4 py-2 text-base text-orange-500"
+                      : "bg-slate-100 px-4 py-2 text-sm text-slate-600"
                   }`}
                 >
                   <span>{tag.word}</span>
-
-                  {tag.category === "ゲーム案件" && (
-                    <span className="rounded-full bg-white/80 px-2 py-1 text-xs font-black text-orange-600">
-                      GAME
-                    </span>
-                  )}
                 </div>
               ))}
             </div>
           </div>
-
-          <div className="mt-5 grid gap-3 lg:grid-cols-3">
-            <div className="rounded-2xl bg-pink-50 p-4">
-              <p className="text-xs font-black text-pink-400">判定基準</p>
-              <p className="mt-1 font-bold text-slate-700">
-                いまGoogleでよく検索されているワード
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-orange-50 p-4">
-              <p className="text-xs font-black text-orange-400">
-                表示ルール
-              </p>
-              <p className="mt-1 font-bold text-slate-700">
-                話題度が高いほど大きく表示
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <p className="text-xs font-black text-slate-400">更新頻度</p>
-              <p className="mt-1 font-bold text-slate-700">
-                毎日（０：００）
-              </p>
-            </div>
-          </div>
         </section>
 
-        {/* RANKING */}
-        <div className="mb-6 lg:mb-8">
-          <h2 className="text-3xl font-black text-slate-800 lg:text-4xl">
-            🔥 ただいまのポイ活おすすめランキング
+        {/* RANKING TITLE */}
+        <div className="mb-6 flex items-center gap-3">
+          <span className="text-4xl">🔥</span>
+
+          <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
+            ただいまのポイ活おすすめランキング
           </h2>
         </div>
 
-        <div className="space-y-5">
-          {items.map((item, index) => (
-            <article
-              key={item.category}
-              className="rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-orange-100 lg:p-8"
-            >
-              <div className="flex flex-col gap-6 lg:flex-row lg:justify-between lg:gap-8">
-                <div className="flex gap-4 lg:gap-6">
-                  <div
-                    className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-2xl font-black text-white shadow-lg lg:h-16 lg:w-16 lg:text-3xl ${
-                      index === 0
-                        ? "bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500"
-                        : index === 1
-                        ? "bg-gradient-to-br from-slate-300 to-slate-600"
-                        : index === 2
-                        ? "bg-gradient-to-br from-amber-600 via-orange-700 to-yellow-900"
-                        : "bg-gradient-to-br from-pink-400 to-pink-500"
-                    }`}
-                  >
-                    {index + 1}
-                  </div>
+        {/* RANKINGS */}
+        <div className="space-y-4">
+          {items.map((item, index) => {
+            const reasons = getAiReasons(item);
 
-                  <div className="min-w-0">
-                    <h3 className="text-3xl font-black leading-tight text-slate-800 lg:text-5xl">
-                      {item.category}
-                    </h3>
-
-                    <p className="mt-2 text-lg font-bold text-pink-500 lg:text-xl">
-                      ポイントサイトでのおすすめ検索ワード：{item.trend_keyword}
-                    </p>
-
-                    <p className="mt-4 text-base leading-relaxed text-slate-500 lg:mt-6 lg:text-lg">
-                      {item.reason}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs font-black lg:mt-5 lg:gap-3 lg:text-sm">
-                      <span className="rounded-full bg-orange-50 px-3 py-2 text-orange-500 lg:px-4">
-                        報酬 {item.reward_min.toLocaleString()}〜
-                        {item.reward_max.toLocaleString()}円
-                      </span>
-
-                      <span className="rounded-full bg-pink-50 px-3 py-2 text-pink-500 lg:px-4">
-                        AI注目度 {stars(item.heat_level)}
-                      </span>
-
-                      <span className="rounded-full bg-slate-100 px-3 py-2 text-slate-600 lg:px-4">
-                        難易度 {item.difficulty_label}
-                      </span>
+            return (
+              <article
+                key={`${item.category}-${index}`}
+                className="rounded-[2rem] bg-white p-4 shadow-lg ring-1 ring-pink-100 lg:p-6"
+              >
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[120px_1.4fr_1.2fr_250px] lg:items-center">
+                  {/* RANK */}
+                  <div className="flex items-center justify-center">
+                    <div
+                      className={`flex items-center justify-center rounded-full font-black text-white shadow-lg ${
+                        index === 0
+                          ? "h-24 w-24 bg-gradient-to-br from-yellow-300 to-amber-500 text-5xl"
+                          : index === 1
+                          ? "h-24 w-24 bg-gradient-to-br from-slate-300 to-slate-500 text-5xl"
+                          : index === 2
+                          ? "h-24 w-24 bg-gradient-to-br from-orange-400 to-orange-700 text-5xl"
+                          : "h-16 w-16 bg-gradient-to-br from-pink-400 to-pink-500 text-3xl"
+                      }`}
+                    >
+                      {index + 1}
                     </div>
                   </div>
-                </div>
 
-                <div className="flex w-full flex-col items-end justify-center gap-3 lg:w-[320px]">
-                  <button
-                    onClick={() =>
-                      trackClick(
-                        item.category,
-                        item.primary_site_name,
-                        item.primary_site_url
-                      )
-                    }
-                    className="flex h-16 w-full items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-400 px-6 text-center text-lg font-black text-white shadow-lg transition hover:scale-105 lg:w-[260px]"
-                  >
-                    {item.primary_site_name}で探す
-                  </button>
+                  {/* INFO */}
+                  <div>
+                    <div className="mb-2 inline-flex rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-500">
+                      {item.category}
+                    </div>
 
-                  {item.secondary_site_name &&
-                    item.secondary_site_url && (
-                      <button
-                        onClick={() =>
-                          trackClick(
-                            item.category,
-                            item.secondary_site_name!,
-                            item.secondary_site_url!
-                          )
-                        }
-                        className="flex h-16 w-full items-center justify-center rounded-2xl bg-orange-50 px-6 text-center text-lg font-black text-orange-500 shadow-sm transition hover:scale-105 lg:w-[260px]"
-                      >
-                        {item.secondary_site_name}も見る
-                      </button>
-                    )}
+                    <h3
+                      className={`font-black leading-tight text-slate-900 ${
+                        index < 3
+                          ? "text-3xl lg:text-5xl"
+                          : "text-2xl lg:text-3xl"
+                      }`}
+                    >
+                      {getOfferName(item)}
+                    </h3>
+
+                    <p className="mt-2 text-sm font-bold text-pink-500 lg:text-base">
+                      AI注目ワード：{item.trend_keyword}
+                    </p>
+
+                    <p className="mt-3 text-sm leading-relaxed text-slate-600 lg:text-base">
+                      {item.reason}
+                    </p>
+                  </div>
+
+                  {/* AI REASONS */}
+                  <div>
+                    <div className="mb-3 text-center text-sm font-black text-pink-500">
+                      ー AIが評価した理由 ー
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      {reasons.map((reason) => (
+                        <div
+                          key={reason.title}
+                          className="rounded-2xl bg-pink-50/70 px-3 py-3 text-center"
+                        >
+                          <div className="text-3xl">{reason.icon}</div>
+
+                          <div className="mt-1 text-sm font-black text-slate-900">
+                            {reason.title}
+                          </div>
+
+                          <div className="mt-1 text-xs font-bold leading-snug text-slate-600">
+                            {reason.text}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* BUTTONS */}
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={() =>
+                        trackClick(
+                          item.category,
+                          item.primary_site_name,
+                          item.primary_site_url
+                        )
+                      }
+                      className="flex h-14 items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 text-base font-black text-white shadow-lg transition hover:scale-105"
+                    >
+                      {item.primary_site_name}で探す
+                    </button>
+
+                    {item.secondary_site_name &&
+                      item.secondary_site_url && (
+                        <button
+                          onClick={() =>
+                            trackClick(
+                              item.category,
+                              item.secondary_site_name!,
+                              item.secondary_site_url!
+                            )
+                          }
+                          className="flex h-14 items-center justify-center rounded-2xl border-2 border-orange-200 bg-white px-5 text-base font-black text-orange-500 transition hover:scale-105"
+                        >
+                          {item.secondary_site_name}も見る
+                        </button>
+                      )}
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       </main>
     </div>
