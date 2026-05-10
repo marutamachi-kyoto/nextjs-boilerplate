@@ -40,9 +40,7 @@ export default function Page() {
   useEffect(() => {
     fetch("/api/trends")
       .then((res) => res.json())
-      .then((json) => {
-        setTrendTags(json.data || []);
-      });
+      .then((json) => setTrendTags(json.data || []));
 
     fetch("/api/score")
       .then((res) => res.json())
@@ -80,10 +78,35 @@ export default function Page() {
   const getOfferSlug = (name: string) => {
     const map: Record<string, string> = {
       楽天モバイル: "rakuten-mobile",
-      "TikTok Lite": "tiktok-lite",
-      PayPayカード: "paypay-card",
+      "信長の野望 覇道": "nobunaga-hadou",
       "三井住友カード（NL）": "smbc-card-nl",
+      PayPayカード: "paypay-card",
+      "TikTok Lite": "tiktok-lite",
       楽天証券: "rakuten-sec",
+      楽天市場: "rakuten-market",
+      住信SBIネット銀行: "sbi-sumishin-bank",
+      "Amazon Prime": "amazon-prime",
+      マージマンション: "merge-mansion",
+      "U-NEXT": "u-next",
+      "dカード GOLD": "d-card-gold",
+      セゾンカードインターナショナル: "saison-card-international",
+      auカブコム証券: "au-kabucom-sec",
+      Pontaパス: "ponta-pass",
+      メルカリ: "mercari",
+      LINEマンガ: "line-manga",
+      エポスカード: "epos-card",
+      マネックス証券: "monex-sec",
+      "イオンカード（WAON一体型）": "aeon-card-waon",
+      ahamo: "ahamo",
+      "YouTube Premium": "youtube-premium",
+      "マイナポイント（申請支援）": "mynapoint-support",
+      d払い: "dbarai",
+      ヤフーカード: "yahoo-card",
+      ソニー銀行: "sony-bank",
+      "七つの大罪 光と闇の交戦": "nanatsu-grand-cross",
+      "ブルーロック Project: World Champion": "bluelock-pwc",
+      トリマ: "trima",
+      "Visa LINE Payクレジットカード": "visa-line-pay-card",
     };
 
     return map[name] || "";
@@ -155,7 +178,8 @@ export default function Page() {
             "@type": "ItemList",
             name: "ポイ活おすすめランキング",
             itemListElement: items.slice(0, 30).map((item, index) => {
-              const offerName = item.offer_name || item.trend_keyword || item.category;
+              const offerName =
+                item.offer_name || item.trend_keyword || item.category;
               const offerSlug = getOfferSlug(offerName);
 
               return {
