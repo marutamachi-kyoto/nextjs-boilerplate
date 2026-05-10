@@ -100,10 +100,10 @@ export async function GET() {
 
     rows = rows
       .sort((a, b) => b.score - a.score)
-      .slice(0, 10)
+      .slice(0, 30)
       .map((item, index) => ({
         word: item.word,
-        score: Math.max(50, 100 - index * 6),
+        score: Math.max(40, 100 - index * 3),
         category: classifyKeyword(item.word),
       }));
 
