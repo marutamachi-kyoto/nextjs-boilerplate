@@ -190,7 +190,10 @@ export default function Page() {
           </h2>
 
           <div className="w-fit rounded-full bg-white px-5 py-2 text-sm font-bold text-slate-500 shadow">
-            最終更新：{updatedAt}
+            最終更新：
+              {rankings[0]?.updated_at
+　　　　　　　　? new Date(rankings[0].updated_at).toLocaleDateString("ja-JP")
+　　　　　　　　: "-"}
           </div>
         </div>
 
