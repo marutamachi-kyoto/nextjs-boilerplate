@@ -211,7 +211,7 @@ export default function Page() {
               <div className="mt-8 text-[20px] font-black leading-[1.9] text-[#27313f] lg:text-[28px]">
                 <p>
                   <span className="text-pink-600">「Googleでの話題度」</span>
-                  のデータを中心に、おすすめのポイ活をAIが判定し、
+                  のデータを中心に、AIがおすすめのポイ活を判定し、
                   <span className="text-pink-600">毎日（0:00～1:00頃）</span>
                   にランキングに反映しています。
                 </p>
