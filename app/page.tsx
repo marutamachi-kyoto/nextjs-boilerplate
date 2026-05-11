@@ -280,7 +280,7 @@ export default function Page() {
             </div>
           </section>
 
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="mt-12 mb-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="text-4xl">🔥</span>
 
