@@ -157,11 +157,21 @@ async function getTrends(): Promise<TrendInfo[]> {
       }
     );
 
-    if (!res.ok) return [];
+    if (!res.ok) {
+      return [
+        {
+          keyword: `HTTP_ERROR_${res.status}`,
+          traffic: "0",
+        },
+      ];
+    }
 
     const xml = await res.text();
+
+    console.log(xml);
+
     const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-　　console.log(xml);
+
     return items
       .map((match) => {
         const item = match[1];
@@ -180,8 +190,13 @@ async function getTrends(): Promise<TrendInfo[]> {
         };
       })
       .filter((trend) => trend.keyword);
-  } catch {
-    return [];
+  } catch (e: any) {
+    return [
+      {
+        keyword: `FETCH_ERROR_${e.message}`,
+        traffic: "0",
+      },
+    ];
   }
 }
 
@@ -289,6 +304,7 @@ export async function GET() {
       count: rankings.length,
       trends_count: trendRows.length,
       trends_source: trends.length > 0 ? "google_trends" : "not_updated",
+      trends_debug: trends[0]?.keyword ?? null,
     });
   } catch {
     return Response.json(
