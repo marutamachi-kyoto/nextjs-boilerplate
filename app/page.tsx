@@ -78,13 +78,35 @@ export default function Page() {
   const getOfferSlug = (name: string) => {
     const map: Record<string, string> = {
       楽天モバイル: "rakuten-mobile",
-      "U-NEXT": "u-next",
+      "信長の野望 覇道": "nobunaga-hadou",
+      "三井住友カード（NL）": "smbc-card-nl",
       PayPayカード: "paypay-card",
+      "TikTok Lite": "tiktok-lite",
       楽天証券: "rakuten-sec",
       楽天市場: "rakuten-market",
+      住信SBIネット銀行: "sbi-sumishin-bank",
+      "Amazon Prime": "amazon-prime",
+      マージマンション: "merge-mansion",
+      "U-NEXT": "u-next",
+      "dカード GOLD": "d-card-gold",
+      セゾンカードインターナショナル: "saison-card-international",
+      auカブコム証券: "au-kabucom-sec",
+      Pontaパス: "ponta-pass",
       メルカリ: "mercari",
+      LINEマンガ: "line-manga",
+      エポスカード: "epos-card",
+      マネックス証券: "monex-sec",
+      "イオンカード（WAON一体型）": "aeon-card-waon",
       ahamo: "ahamo",
+      "YouTube Premium": "youtube-premium",
+      "マイナポイント（申請支援）": "mynapoint-support",
+      d払い: "dbarai",
+      ヤフーカード: "yahoo-card",
+      ソニー銀行: "sony-bank",
+      "七つの大罪 光と闇の交戦": "nanatsu-grand-cross",
+      "ブルーロック Project: World Champion": "bluelock-pwc",
       トリマ: "trima",
+      "Visa LINE Payクレジットカード": "visa-line-pay-card",
     };
 
     return map[name] || "";
@@ -101,11 +123,27 @@ export default function Page() {
       ];
     }
 
-    if (category.includes("カード")) {
+    if (category.includes("ゲーム") || category.includes("アプリ")) {
+      return [
+        { icon: "🔍", title: "検索急増", text: "関連検索が上昇" },
+        { icon: "💗", title: "SNS話題化", text: "投稿・共有が増加" },
+        { icon: "⏱", title: "短期達成可", text: "条件達成を狙える" },
+      ];
+    }
+
+    if (category.includes("カード") || category.includes("クレジット")) {
       return [
         { icon: "¥", title: "高額還元", text: "ポイント単価が高い" },
         { icon: "⚡", title: "即効性あり", text: "成果につながりやすい" },
         { icon: "👤", title: "初心者向け", text: "申込がシンプル" },
+      ];
+    }
+
+    if (category.includes("証券") || category.includes("投資")) {
+      return [
+        { icon: "📈", title: "投資需要", text: "口座開設が増加" },
+        { icon: "🎁", title: "高ポイント", text: "還元額が大きい" },
+        { icon: "⏱", title: "申込増加", text: "注目度が上昇" },
       ];
     }
 
@@ -115,6 +153,41 @@ export default function Page() {
       { icon: "🎁", title: "案件向き", text: "ポイ活と相性良好" },
     ];
   };
+
+  const getRankStyle = (index: number) => {
+    if (index === 0) {
+      return {
+        crown: "👑",
+        badge: "from-yellow-300 to-amber-500",
+        ring: "ring-yellow-100",
+      };
+    }
+
+    if (index === 1) {
+      return {
+        crown: "♛",
+        badge: "from-slate-300 to-slate-500",
+        ring: "ring-slate-100",
+      };
+    }
+
+    if (index === 2) {
+      return {
+        crown: "♛",
+        badge: "from-orange-400 to-orange-700",
+        ring: "ring-orange-100",
+      };
+    }
+
+    return {
+      crown: "",
+      badge: "from-white to-white",
+      ring: "ring-slate-100",
+    };
+  };
+
+  const topItems = items.slice(0, 3);
+  const listItems = items.slice(3, 30);
 
   return (
     <>
@@ -140,7 +213,7 @@ export default function Page() {
                   <span className="text-pink-600">「Googleでの話題度」</span>
                   のデータを中心に、おすすめのポイ活をAIが判定し、
                   <span className="text-pink-600">毎日（0:00～1:00頃）</span>
-                  にランキングにへ反映しています。
+                  にランキングに反映しています。
                 </p>
               </div>
 
@@ -192,18 +265,15 @@ export default function Page() {
                 {trendTags.map((tag) => (
                   <div
                     key={tag.word}
-                    className={`
-  　　　　　　　　　　　rounded-full bg-pink-100 px-5 py-3 font-black text-pink-600 transition hover:scale-105
-  　　　　　　　　　　　${
-    　　　　　　　　　　　tag.score >= 90
-      　　　　　　　　　　　? "text-3xl"
-      　　　　　　　　　　　: tag.score >= 70
-      　　　　　　　　　　　? "text-2xl"
-      　　　　　　　　　　　: tag.score >= 50
-      　　　　　　　　　　　? "text-xl"
-      　　　　　　　　　　　: "text-base"
-  　　　　　　　　　　　}
-　　　　　　　　　　　`}
+                    className={`rounded-full bg-pink-100 px-5 py-3 font-black text-pink-600 transition hover:scale-105 ${
+                      tag.score >= 90
+                        ? "text-3xl"
+                        : tag.score >= 70
+                        ? "text-2xl"
+                        : tag.score >= 50
+                        ? "text-xl"
+                        : "text-base"
+                    }`}
                   >
                     {tag.word}
                   </div>
@@ -212,57 +282,72 @@ export default function Page() {
             </div>
           </section>
 
-          <div className="mb-6 flex items-center gap-3">
-            <span className="text-4xl">🔥</span>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">🔥</span>
 
-            <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-              いまおすすめのポイ活ランキング
-            </h2>
+              <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
+                ただいまのポイ活おすすめランキング
+              </h2>
+            </div>
+
+            <div className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
+              最終更新：
+              <span className="text-slate-700">{updatedAt}</span>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            {items.map((item, index) => {
+          <section className="space-y-4">
+            {topItems.map((item, index) => {
               const reasons = getAiReasons(item);
               const offerName = getOfferName(item);
               const offerSlug = getOfferSlug(offerName);
+              const rankStyle = getRankStyle(index);
 
               return (
                 <article
                   key={`${item.rank}-${item.offer_name}-${index}`}
-                  className="rounded-[2rem] bg-white p-4 shadow-lg ring-1 ring-pink-100 lg:p-6"
+                  className={`rounded-[2rem] bg-white p-5 shadow-lg ring-1 ${rankStyle.ring} lg:p-7`}
                 >
-                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-[120px_1.4fr_1.2fr_290px] lg:items-center">
-                    <div className="flex items-center justify-center">
-                      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-pink-500 text-5xl font-black text-white shadow-lg">
-                        {index + 1}
+                  <div className="grid gap-6 lg:grid-cols-[120px_1.5fr_1.2fr_260px] lg:items-center">
+                    <div className="flex items-center justify-center lg:block">
+                      <div className="text-center">
+                        <div className="text-4xl leading-none">
+                          {rankStyle.crown}
+                        </div>
+                        <div
+                          className={`mx-auto mt-1 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br ${rankStyle.badge} text-5xl font-black text-white shadow-xl`}
+                        >
+                          {index + 1}
+                        </div>
                       </div>
                     </div>
 
                     <div>
-                      <div className="mb-2 inline-flex rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-500">
+                      <div className="mb-3 inline-flex rounded-full bg-pink-50 px-4 py-1.5 text-xs font-black text-pink-500">
                         {item.category}
                       </div>
 
                       {offerSlug ? (
                         <Link
                           href={`/offers/${offerSlug}`}
-                          className="block transition hover:opacity-80"
+                          className="group inline-block"
                         >
-                          <h3 className="text-3xl font-black leading-tight text-slate-900 hover:text-pink-500 lg:text-5xl">
+                          <h3 className="text-3xl font-black leading-tight text-slate-900 transition group-hover:text-pink-500 lg:text-4xl">
                             {offerName}
                           </h3>
                         </Link>
                       ) : (
-                        <h3 className="text-3xl font-black leading-tight text-slate-900 lg:text-5xl">
+                        <h3 className="text-3xl font-black leading-tight text-slate-900 lg:text-4xl">
                           {offerName}
                         </h3>
                       )}
 
-                      <p className="mt-2 text-sm font-bold text-pink-500 lg:text-base">
+                      <p className="mt-3 text-base font-black text-pink-500">
                         AI注目ワード：{item.trend_keyword}
                       </p>
 
-                      <p className="mt-3 text-sm leading-relaxed text-slate-600 lg:text-base">
+                      <p className="mt-3 text-sm leading-7 text-slate-600 lg:text-base">
                         {item.reason}
                       </p>
                     </div>
@@ -272,18 +357,16 @@ export default function Page() {
                         ー AIが評価した理由 ー
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-3 gap-3">
                         {reasons.map((reason) => (
                           <div
                             key={reason.title}
-                            className="rounded-2xl bg-pink-50/70 px-3 py-3 text-center"
+                            className="rounded-2xl bg-pink-50/80 px-3 py-4 text-center"
                           >
                             <div className="text-3xl">{reason.icon}</div>
-
-                            <div className="mt-1 text-sm font-black text-slate-900">
+                            <div className="mt-2 text-sm font-black text-slate-900">
                               {reason.title}
                             </div>
-
                             <div className="mt-1 text-xs font-bold leading-snug text-slate-600">
                               {reason.text}
                             </div>
@@ -292,24 +375,97 @@ export default function Page() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-center">
+                    <div className="flex justify-center lg:justify-end">
                       <button
                         onClick={() => trackMoppyClick(item.category)}
-                        className="group flex h-24 w-full max-w-[270px] flex-col items-center justify-center rounded-[1.5rem] bg-gradient-to-r from-pink-500 to-orange-500 px-6 text-center font-black text-white shadow-xl ring-8 ring-pink-50 transition hover:scale-105 lg:h-28"
+                        className="flex h-20 w-full max-w-[260px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-6 text-center text-xl font-black text-white shadow-xl transition hover:scale-105"
                       >
-                        <span className="text-2xl leading-none tracking-wide">
-                          moppy
-                        </span>
-                        <span className="mt-2 flex items-center text-2xl text-yellow-100">
-                          モッピーで探す
-                        </span>
+                        モッピーで探す
+                        <span className="ml-3 text-3xl leading-none">›</span>
                       </button>
                     </div>
                   </div>
                 </article>
               );
             })}
-          </div>
+          </section>
+
+          <section className="mt-6 overflow-hidden rounded-[2rem] bg-white shadow-lg ring-1 ring-pink-100">
+            <div className="divide-y divide-pink-100">
+              {listItems.map((item, listIndex) => {
+                const index = listIndex + 3;
+                const reasons = getAiReasons(item);
+                const offerName = getOfferName(item);
+                const offerSlug = getOfferSlug(offerName);
+
+                return (
+                  <article
+                    key={`${item.rank}-${item.offer_name}-${index}`}
+                    className="grid gap-3 p-4 transition hover:bg-pink-50/40 lg:grid-cols-[58px_150px_1.2fr_1.8fr_1.4fr_210px] lg:items-center lg:gap-4"
+                  >
+                    <div className="flex items-center gap-3 lg:justify-center">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg font-black text-slate-900 shadow-sm ring-1 ring-slate-200">
+                        {index + 1}
+                      </div>
+                      <div className="inline-flex rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-500 lg:hidden">
+                        {item.category}
+                      </div>
+                    </div>
+
+                    <div className="hidden lg:block">
+                      <div className="inline-flex rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-500">
+                        {item.category}
+                      </div>
+                    </div>
+
+                    <div>
+                      {offerSlug ? (
+                        <Link href={`/offers/${offerSlug}`} className="group">
+                          <h3 className="text-xl font-black text-slate-900 transition group-hover:text-pink-500">
+                            {offerName}
+                          </h3>
+                        </Link>
+                      ) : (
+                        <h3 className="text-xl font-black text-slate-900">
+                          {offerName}
+                        </h3>
+                      )}
+                    </div>
+
+                    <p className="line-clamp-2 text-sm font-bold leading-6 text-slate-600">
+                      {item.reason}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      {reasons.map((reason) => (
+                        <span
+                          key={reason.title}
+                          className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-600"
+                        >
+                          <span>{reason.icon}</span>
+                          {reason.title}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex lg:justify-end">
+                      <button
+                        onClick={() => trackMoppyClick(item.category)}
+                        className="flex h-11 w-full max-w-[210px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-sm font-black text-white shadow-md transition hover:scale-105"
+                      >
+                        モッピーで探す
+                        <span className="ml-2 text-xl leading-none">›</span>
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <p className="mt-8 text-center text-xs font-bold text-slate-400 lg:text-sm">
+            ※ 本ランキングはAIによる分析結果をもとに作成しています。実際の成果やポイント獲得を保証するものではありません。
+          </p>
         </main>
       </div>
     </>
