@@ -255,7 +255,7 @@ export default function Page() {
                 Googleトレンド分析
               </p>
 
-              <h2 className="text-3xl font-black text-slate-900 lg:text-4xl">
+              <h2 className="text-4xl font-black text-slate-900 lg:text-6xl">
                 🔍 いまGoogleで話題のポイ活関連キーワード
               </h2>
             </div>
