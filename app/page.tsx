@@ -251,11 +251,9 @@ export default function Page() {
         <main className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10">
           <section className="mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
             <div className="mb-6">
-              <p className="text-sm font-black text-pink-500">
-                Googleトレンド分析
-              </p>
 
-              <h2 className="text-4xl font-black text-slate-900 lg:text-6xl">
+
+              <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
                 🔍 いまGoogleで話題のポイ活関連キーワード
               </h2>
             </div>
