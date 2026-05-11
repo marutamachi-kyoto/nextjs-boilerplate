@@ -147,7 +147,7 @@ const OFFERS: Offer[] = [
 async function getTrends(): Promise<TrendInfo[]> {
   try {
     const res = await fetch(
-      "https://trends.google.com/trends/trendingsearches/daily/rss?geo=JP",
+      "https://trends.google.com/trending/rss?geo=JP",
       {
         cache: "no-store",
         headers: {
