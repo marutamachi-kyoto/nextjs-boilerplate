@@ -1,6 +1,3 @@
-# app/page.tsx（全文コピペ用）
-
-```tsx
 "use client";
 
 import Image from "next/image";
@@ -307,4 +304,3 @@ export default function Page() {
     </>
   );
 }
-```
