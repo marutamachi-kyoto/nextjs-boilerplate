@@ -168,27 +168,17 @@ async function getTrends(): Promise<TrendInfo[]> {
 
     const xml = await res.text();
 
-    return [
-  {
-    keyword: xml.slice(0, 500),
-    traffic: "0",
-  },
-];
-
     const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
 
     return items
       .map((match) => {
         const item = match[1];
 
-        const titleMatch = item.match(
-          /<title><!\[CDATA\[(.*?)\]\]><\/title>/
-        );
+        const titleMatch = item.match(/<title>(.*?)<\/title>/);
 
-        const trafficMatch = item.match(
-          /<ht:approx_traffic><!\[CDATA\[(.*?)\]\]><\/ht:approx_traffic>/
-        );
-
+　　　　　const trafficMatch = item.match(
+ 　　　　　 /<ht:approx_traffic>(.*?)<\/ht:approx_traffic>/
+　　　　　);
         return {
           keyword: titleMatch?.[1] ?? "",
           traffic: trafficMatch?.[1],
