@@ -226,18 +226,18 @@ export default function Page() {
   　　　　　　　　<div className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
     　　　　　　　　最終更新：
     　　　　　　　　<span className="ml-2 text-base text-slate-600">
-      　　　　　　　　{updatedAt}
-    　　　　　　　　</span>
-  　　　　　　　　</div>　　　　　　　
+      　　　　　　　　{updatedAt}　　　　　　
+    　　　　　　　　</span>　
+  　　　　　　　　　</div>　　　　　
 
-  <Link
-    href="/about-poikatsu"
-    className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-green-600 shadow-lg ring-2 ring-green-200 transition hover:scale-105 hover:bg-green-50 lg:text-base"
-  >
-    <span className="mr-2 text-xl">🔰</span>
-    ポイ活とは？
-  </Link>
-</div>
+  　　　　　　　　　<Link
+    　　　　　　　　　href="/about-poikatsu"
+    　　　　　　　　　className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-green-600 shadow-lg ring-2 ring-green-200 transition hover:scale-105 hover:bg-green-50 lg:text-base"
+  　　　　　　　　　>
+    　　　　　　　　　<span className="mr-2 text-xl">🔰</span>
+    　　　　　　　　　ポイ活とは？
+  　　　　　　　　　</Link>　　　　　　
+　　　　　　　　　</div>　　　　　　　　　
 
             <div className="w-full lg:w-[720px]">
               <Image
