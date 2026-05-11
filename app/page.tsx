@@ -192,7 +192,18 @@ export default function Page() {
                 {trendTags.map((tag) => (
                   <div
                     key={tag.word}
-                    className="rounded-full bg-pink-100 px-5 py-3 text-lg font-black text-pink-600"
+                    className={`
+  　　　　　　　　　　　rounded-full bg-pink-100 px-5 py-3 font-black text-pink-600 transition hover:scale-105
+  　　　　　　　　　　　${
+    　　　　　　　　　　　tag.score >= 90
+      　　　　　　　　　　　? "text-3xl"
+      　　　　　　　　　　　: tag.score >= 70
+      　　　　　　　　　　　? "text-2xl"
+      　　　　　　　　　　　: tag.score >= 50
+      　　　　　　　　　　　? "text-xl"
+      　　　　　　　　　　　: "text-base"
+  　　　　　　　　　　　}
+　　　　　　　　　　　`}
                   >
                     {tag.word}
                   </div>
