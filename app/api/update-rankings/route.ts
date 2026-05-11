@@ -242,96 +242,6 @@ const OFFERS: Offer[] = [
     secondary_site_url: "https://hapitas.jp/",
     base_score: 70,
   },
-  {
-    offer_name: "YouTube Premium",
-    category: "サブスク",
-    keywords: ["youtube", "premium", "動画", "サブスク"],
-    primary_site_name: "ポイントインカム",
-    primary_site_url: "https://pointi.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 69,
-  },
-  {
-    offer_name: "マイナポイント（申請支援）",
-    category: "サービス",
-    keywords: ["マイナポイント", "マイナンバー", "申請"],
-    primary_site_name: "ワラウ",
-    primary_site_url: "https://www.warau.jp/",
-    secondary_site_name: "ハピタス",
-    secondary_site_url: "https://hapitas.jp/",
-    base_score: 68,
-  },
-  {
-    offer_name: "d払い",
-    category: "アプリ・ゲーム",
-    keywords: ["d払い", "決済", "アプリ"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 67,
-  },
-  {
-    offer_name: "ヤフーカード",
-    category: "クレジットカード",
-    keywords: ["yahoo", "ヤフー", "カード"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 66,
-  },
-  {
-    offer_name: "ソニー銀行",
-    category: "その他",
-    keywords: ["ソニー銀行", "銀行", "口座"],
-    primary_site_name: "ポイントインカム",
-    primary_site_url: "https://pointi.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 65,
-  },
-  {
-    offer_name: "七つの大罪 光と闇の交戦",
-    category: "アプリ・ゲーム",
-    keywords: ["七つの大罪", "ゲーム", "アプリ"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ハピタス",
-    secondary_site_url: "https://hapitas.jp/",
-    base_score: 64,
-  },
-  {
-    offer_name: "ブルーロック Project: World Champion",
-    category: "アプリ・ゲーム",
-    keywords: ["ブルーロック", "ゲーム", "アプリ"],
-    primary_site_name: "ワラウ",
-    primary_site_url: "https://www.warau.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 63,
-  },
-  {
-    offer_name: "トリマ",
-    category: "アプリ・ゲーム",
-    keywords: ["トリマ", "歩数", "アプリ"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ハピタス",
-    secondary_site_url: "https://hapitas.jp/",
-    base_score: 62,
-  },
-  {
-    offer_name: "Visa LINE Payクレジットカード",
-    category: "クレジットカード",
-    keywords: ["visa", "line pay", "カード"],
-    primary_site_name: "ポイントインカム",
-    primary_site_url: "https://pointi.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 61,
-  },
 ];
 
 async function getTrends(): Promise<TrendInfo[]> {
@@ -348,23 +258,23 @@ async function getTrends(): Promise<TrendInfo[]> {
     );
 
     if (!res.ok) {
-      console.error("Google Trends fetch failed:", res.status);
       return [];
     }
 
     const xml = await res.text();
-    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+
+    const items = [...xml.matchAll(/<item>([\\s\\S]*?)<\\/item>/g)];
 
     return items
       .map((match) => {
         const item = match[1];
 
         const titleMatch = item.match(
-          /<title><!\[CDATA\[(.*?)\]\]><\/title>/
+          /<title><!\\[CDATA\\[(.*?)\\]\\]><\\/title>/
         );
 
         const trafficMatch = item.match(
-          /<ht:approx_traffic><!\[CDATA\[(.*?)\]\]><\/ht:approx_traffic>/
+          /<ht:approx_traffic><!\\[CDATA\\[(.*?)\\]\\]><\\/ht:approx_traffic>/
         );
 
         return {
@@ -373,16 +283,15 @@ async function getTrends(): Promise<TrendInfo[]> {
         };
       })
       .filter((trend) => trend.keyword);
-  } catch (error) {
-    console.error("Google Trends error:", error);
+  } catch {
     return [];
   }
 }
 
 function getTrafficBonus(traffic?: string): number {
-  if (!traffic || traffic === "取得中") return 0;
+  if (!traffic) return 0;
 
-  const number = Number(traffic.replace(/[^\d]/g, ""));
+  const number = Number(traffic.replace(/[^\\d]/g, ""));
 
   if (number >= 50000) return 10;
   if (number >= 20000) return 8;
@@ -410,49 +319,6 @@ function getMatchedTrend(offer: Offer, trends: TrendInfo[]) {
   );
 }
 
-function generateAiDescription(params: {
-  offer: Offer;
-  trend: TrendInfo;
-  score: number;
-}) {
-  const { offer, trend, score } = params;
-
-  const trendText =
-    trend.traffic && trend.traffic !== "取得中"
-      ? `Google Trends上では「${trend.keyword}」が検索規模「${trend.traffic}」として観測されています。`
-      : `「${offer.offer_name}」は、案件ジャンル・検索されやすい関連ワード・過去の注目傾向をもとにAIが評価しています。`;
-
-  if (offer.category === "通信・回線") {
-    return `${trendText} 通信費の見直しや乗り換え需要と相性がよく、固定費削減を意識するユーザーから注目されやすい案件です。AIは還元期待値、申込需要、初心者の比較しやすさを総合し、注目案件として判定しました。`;
-  }
-
-  if (offer.category === "アプリ・ゲーム") {
-    return `${trendText} アプリ・ゲーム案件は、スマホだけで始めやすく、条件達成型のポイ活と相性があります。AIは話題性、参加しやすさ、短期達成の狙いやすさを総合して評価しました。`;
-  }
-
-  if (offer.category === "クレジットカード") {
-    return `${trendText} クレジットカード案件は、ポイ活の中でも高還元を狙いやすいジャンルです。AIは申込需要、ポイント単価の期待値、初心者の比較しやすさをもとに高評価と判定しました。`;
-  }
-
-  if (offer.category === "証券・投資") {
-    return `${trendText} 証券・投資系は、NISAや資産形成への関心と相性がよく、口座開設需要と高額ポイントが結びつきやすい案件です。AIは検索需要、還元期待値、長期的な注目度を総合して評価しました。`;
-  }
-
-  if (offer.category === "ショッピング") {
-    return `${trendText} ショッピング系案件は、日常の買い物とポイ活を組み合わせやすく、継続利用につながりやすいジャンルです。AIは利用頻度、ポイント還元との相性、検索需要を総合して評価しました。`;
-  }
-
-  if (offer.category === "サブスク") {
-    return `${trendText} サブスク案件は、動画・音楽・生活サービスなどの利用ニーズと相性がよく、初回登録や無料体験と組み合わせて検討されやすい案件です。AIは登録しやすさ、話題性、継続利用ニーズを総合して評価しました。`;
-  }
-
-  if (offer.category === "サービス") {
-    return `${trendText} サービス系案件は、申請・登録・利用開始などの行動とポイント獲得が結びつきやすいジャンルです。AIは参加しやすさ、需要の安定性、案件としての分かりやすさを総合して評価しました。`;
-  }
-
-  return `${trendText} ポイ活案件としての相性が高く、検索需要・話題性・参加しやすさのバランスが良いと判断しました。AIは還元期待値、初心者の取り組みやすさ、注目度を総合し、スコア${score}点で評価しました。`;
-}
-
 export async function GET() {
   try {
     const trends = await getTrends();
@@ -473,45 +339,45 @@ export async function GET() {
         offer.base_score + getTrafficBonus(trend.traffic)
       );
 
-      const description = generateAiDescription({
-        offer,
-        trend,
-        score,
-      });
-
       return {
-        offer,
-        trend,
+        rank: 0,
+        offer_name: offer.offer_name,
+        category: offer.category,
         score,
-        description,
+        final_score: score,
+        trend_keyword: trend.keyword,
+        trend_traffic: trend.traffic ?? null,
+        reason: `${offer.offer_name} は現在注目度が高く、ポイ活案件として評価されています。`,
+        primary_site_name: offer.primary_site_name,
+        primary_site_url: offer.primary_site_url,
+        secondary_site_name: offer.secondary_site_name,
+        secondary_site_url: offer.secondary_site_url,
+        updated_at: new Date().toISOString(),
       };
     })
       .sort((a, b) => b.score - a.score)
       .slice(0, 30)
       .map((item, index) => ({
+        ...item,
         rank: index + 1,
-        offer_name: item.offer.offer_name,
-        category: item.offer.category,
-        score: item.score,
-        final_score: item.score,
-        trend_keyword: item.offer.offer_name,
-        trend_traffic: item.trend.traffic ?? null,
-        description: item.description,
-        reason: item.description,
-        primary_site_name: item.offer.primary_site_name,
-        primary_site_url: item.offer.primary_site_url,
-        secondary_site_name: item.offer.secondary_site_name,
-        secondary_site_url: item.offer.secondary_site_url,
-        updated_at: new Date().toISOString(),
       }));
 
     await supabase.from("rankings").delete().neq("rank", 0);
 
     const { error } = await supabase.from("rankings").insert(rankings);
 
-    if (error) {
-      console.error(error);
+    // trends テーブル更新
+    const trendRows = safeTrends.slice(0, 30).map((trend, index) => ({
+      word: trend.keyword,
+      score: Math.max(100 - index * 3, 40),
+      category: "一般",
+    }));
 
+    await supabase.from("trends").delete().neq("word", "");
+
+    await supabase.from("trends").insert(trendRows);
+
+    if (error) {
       return Response.json(
         {
           error: "Supabaseへの保存に失敗しました",
@@ -522,16 +388,15 @@ export async function GET() {
     }
 
     return Response.json({
-      message: "案件ランキングを更新しました",
-      trends_source: trends.length > 0 ? "google_trends" : "fallback",
+      message: "ランキング更新完了",
       count: rankings.length,
-      rankings,
+      trends_count: trendRows.length,
     });
   } catch (error) {
-    console.error(error);
-
     return Response.json(
-      { error: "ランキング更新中にエラーが発生しました" },
+      {
+        error: "ランキング更新中にエラーが発生しました",
+      },
       { status: 500 }
     );
   }
