@@ -94,7 +94,7 @@ export default function AboutPoikatsuPage() {
 
         <section className="mt-6 rounded-[2rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-8 text-center shadow-lg ring-1 ring-pink-100 lg:p-12">
           <div className="inline-flex rounded-full bg-pink-500 px-5 py-2 text-sm font-black text-white">
-            ポイ活はメリットいっぱい！
+            ポイ活サイト最大手！
           </div>
 
           <h2 className="mt-5 text-4xl font-black lg:text-5xl">
@@ -102,7 +102,7 @@ export default function AboutPoikatsuPage() {
           </h2>
 
           <p className="mx-auto mt-6 max-w-3xl text-lg font-bold leading-9 text-slate-700 lg:text-xl">
-            モッピーは、広告利用・アプリ利用・ショッピング利用などで簡単にポイントを貯められる大手ポイントサイトです。
+            モッピーは、広告利用・アプリ利用・ショッピング利用などで簡単にポイントを貯められる最大手ポイントサイトです。
             初心者にも使いやすく、まず最初にチェックしたい定番サービスです。
           </p>
 
