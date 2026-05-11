@@ -124,7 +124,7 @@ export default function Page() {
             <div className="w-full lg:w-[680px]">
               <div className="inline-flex items-center gap-3 rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-[0_10px_30px_rgba(236,72,153,0.18)] lg:text-xl">
                 <span>🤖</span>
-                <span>AIが毎日（0:00）更新！</span>
+                <span>AIが毎日判定！</span>
               </div>
 
               <h1 className="mt-8 text-[54px] font-black leading-[0.95] tracking-[-0.05em] text-pink-600 lg:text-[96px]">
@@ -139,8 +139,8 @@ export default function Page() {
                 <p>
                   <span className="text-pink-600">「Googleでの話題度」</span>
                   のデータを中心に、おすすめのポイ活をAIが判定し、
-                  <span className="text-pink-600">毎日（0:00）</span>
-                  にランキング反映しています。
+                  <span className="text-pink-600">毎日（0:00～1:00頃）</span>
+                  にランキングにへ反映しています。
                 </p>
               </div>
 
