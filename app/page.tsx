@@ -402,13 +402,13 @@ export default function Page() {
               {index + 1}
             </div>
 
-            <div className="inline-flex rounded-full bg-pink-50 px-4 py-1.5 text-xm font-black text-pink-500 lg:hidden">
+            <div className="inline-flex rounded-full bg-pink-50 px-4 py-1.5 text-sm font-black text-pink-500 lg:hidden">
               {item.category}
             </div>
           </div>
 
           <div className="hidden lg:block">
-            <div className="inline-flex rounded-full bg-pink-50 px-4 py-1.5 text-xm font-black text-pink-500">
+            <div className="inline-flex rounded-full bg-pink-50 px-4 py-1.5 text-sm font-black text-pink-500">
               {item.category}
             </div>
           </div>
