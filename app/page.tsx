@@ -341,10 +341,6 @@ export default function Page() {
                         </h3>
                       )}
 
-                      <p className="mt-3 text-base font-black text-pink-500">
-                        AI注目ワード：{item.trend_keyword}
-                      </p>
-
                       <p className="mt-3 text-sm leading-7 text-slate-600 lg:text-base">
                         {item.reason}
                       </p>
