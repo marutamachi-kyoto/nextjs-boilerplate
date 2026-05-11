@@ -1,3 +1,6 @@
+# app/page.tsx（全文コピペ用）
+
+```tsx
 "use client";
 
 import Image from "next/image";
@@ -78,35 +81,13 @@ export default function Page() {
   const getOfferSlug = (name: string) => {
     const map: Record<string, string> = {
       楽天モバイル: "rakuten-mobile",
-      "信長の野望 覇道": "nobunaga-hadou",
-      "三井住友カード（NL）": "smbc-card-nl",
+      "U-NEXT": "u-next",
       PayPayカード: "paypay-card",
-      "TikTok Lite": "tiktok-lite",
       楽天証券: "rakuten-sec",
       楽天市場: "rakuten-market",
-      住信SBIネット銀行: "sbi-sumishin-bank",
-      "Amazon Prime": "amazon-prime",
-      マージマンション: "merge-mansion",
-      "U-NEXT": "u-next",
-      "dカード GOLD": "d-card-gold",
-      セゾンカードインターナショナル: "saison-card-international",
-      auカブコム証券: "au-kabucom-sec",
-      Pontaパス: "ponta-pass",
       メルカリ: "mercari",
-      LINEマンガ: "line-manga",
-      エポスカード: "epos-card",
-      マネックス証券: "monex-sec",
-      "イオンカード（WAON一体型）": "aeon-card-waon",
       ahamo: "ahamo",
-      "YouTube Premium": "youtube-premium",
-      "マイナポイント（申請支援）": "mynapoint-support",
-      d払い: "dbarai",
-      ヤフーカード: "yahoo-card",
-      ソニー銀行: "sony-bank",
-      "七つの大罪 光と闇の交戦": "nanatsu-grand-cross",
-      "ブルーロック Project: World Champion": "bluelock-pwc",
       トリマ: "trima",
-      "Visa LINE Payクレジットカード": "visa-line-pay-card",
     };
 
     return map[name] || "";
@@ -123,27 +104,11 @@ export default function Page() {
       ];
     }
 
-    if (category.includes("ゲーム") || category.includes("アプリ")) {
-      return [
-        { icon: "🔍", title: "検索急増", text: "関連検索が上昇" },
-        { icon: "💗", title: "SNS話題化", text: "投稿・共有が増加" },
-        { icon: "⏱", title: "短期達成可", text: "条件達成を狙える" },
-      ];
-    }
-
-    if (category.includes("カード") || category.includes("クレジット")) {
+    if (category.includes("カード")) {
       return [
         { icon: "¥", title: "高額還元", text: "ポイント単価が高い" },
         { icon: "⚡", title: "即効性あり", text: "成果につながりやすい" },
         { icon: "👤", title: "初心者向け", text: "申込がシンプル" },
-      ];
-    }
-
-    if (category.includes("証券") || category.includes("投資")) {
-      return [
-        { icon: "📈", title: "投資需要", text: "口座開設が増加" },
-        { icon: "🎁", title: "高ポイント", text: "還元額が大きい" },
-        { icon: "⏱", title: "申込増加", text: "注目度が上昇" },
       ];
     }
 
@@ -156,46 +121,6 @@ export default function Page() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            name: "ポイ活AI判定",
-            url: "https://poikatu-ai.vercel.app",
-            description:
-              "Googleトレンド・検索動向・SNS話題度をAI分析し、おすすめポイ活案件を毎日ランキング化。",
-          }),
-        }}
-      />
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "ItemList",
-            name: "ポイ活おすすめランキング",
-            itemListElement: items.slice(0, 30).map((item, index) => {
-              const offerName =
-                item.offer_name || item.trend_keyword || item.category;
-              const offerSlug = getOfferSlug(offerName);
-
-              return {
-                "@type": "ListItem",
-                position: index + 1,
-                name: offerName,
-                url: offerSlug
-                  ? `https://poikatu-ai.vercel.app/offers/${offerSlug}`
-                  : "https://poikatu-ai.vercel.app",
-                description: item.reason,
-              };
-            }),
-          }),
-        }}
-      />
-
       <div className="min-h-screen bg-[#fff8fb]">
         <header className="overflow-hidden bg-gradient-to-r from-[#FFF2F7] via-[#FFF8FA] to-[#FFF4F7]">
           <div className="mx-auto flex max-w-[1500px] flex-col gap-10 px-6 py-10 lg:flex-row lg:items-center lg:justify-between lg:px-12 lg:py-12">
@@ -205,7 +130,7 @@ export default function Page() {
                 <span>AIが毎日（0:00）更新！</span>
               </div>
 
-              <h1 className="mt-8 text-[54px] font-black leading-[0.95] tracking-[-0.05em] text-pink-600 drop-shadow-[0_5px_0_rgba(255,255,255,0.9)] lg:text-[96px]">
+              <h1 className="mt-8 text-[54px] font-black leading-[0.95] tracking-[-0.05em] text-pink-600 lg:text-[96px]">
                 ポイ活
                 <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
                   AI
@@ -223,21 +148,22 @@ export default function Page() {
               </div>
 
               <div className="mt-8 flex flex-wrap items-center gap-6">
-  　　　　　　　　<div className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
-    　　　　　　　　最終更新：
-    　　　　　　　　<span className="ml-2 text-base text-slate-600">
-      　　　　　　　　{updatedAt}　　　　　　
-    　　　　　　　　</span>　
-  　　　　　　　　　</div>　　　　　
+                <div className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
+                  最終更新：
+                  <span className="ml-2 text-base text-slate-600">
+                    {updatedAt}
+                  </span>
+                </div>
 
-  　　　　　　　　　<Link
-    　　　　　　　　　href="/about-poikatsu"
-    　　　　　　　　　className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-green-600 shadow-lg ring-2 ring-green-200 transition hover:scale-105 hover:bg-green-50 lg:text-base"
-  　　　　　　　　　>
-    　　　　　　　　　<span className="mr-2 text-xl">🔰</span>
-    　　　　　　　　　ポイ活とは？
-  　　　　　　　　　</Link>　　　　　　
-　　　　　　　　　</div>　　　　　　　　　
+                <Link
+                  href="/about-poikatsu"
+                  className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-green-600 shadow-lg ring-2 ring-green-200 transition hover:scale-105 hover:bg-green-50 lg:text-base"
+                >
+                  <span className="mr-2 text-xl">🔰</span>
+                  ポイ活とは？
+                </Link>
+              </div>
+            </div>
 
             <div className="w-full lg:w-[720px]">
               <Image
@@ -269,19 +195,9 @@ export default function Page() {
                 {trendTags.map((tag) => (
                   <div
                     key={tag.word}
-                    className={`flex items-center rounded-full font-black shadow-sm transition hover:scale-105 ${
-                      tag.score >= 90
-                        ? "bg-gradient-to-r from-pink-500 to-orange-400 px-6 py-3 text-xl text-white"
-                        : tag.score >= 80
-                        ? "bg-pink-100 px-5 py-3 text-lg text-pink-600"
-                        : tag.score >= 70
-                        ? "bg-orange-100 px-5 py-2.5 text-lg text-orange-600"
-                        : tag.score >= 60
-                        ? "bg-yellow-50 px-4 py-2 text-base text-orange-500"
-                        : "bg-slate-100 px-4 py-2 text-sm text-slate-600"
-                    }`}
+                    className="rounded-full bg-pink-100 px-5 py-3 text-lg font-black text-pink-600"
                   >
-                    <span>{tag.word}</span>
+                    {tag.word}
                   </div>
                 ))}
               </div>
@@ -309,17 +225,7 @@ export default function Page() {
                 >
                   <div className="grid grid-cols-1 gap-5 lg:grid-cols-[120px_1.4fr_1.2fr_290px] lg:items-center">
                     <div className="flex items-center justify-center">
-                      <div
-                        className={`flex items-center justify-center rounded-full font-black text-white shadow-lg ${
-                          index === 0
-                            ? "h-24 w-24 bg-gradient-to-br from-yellow-300 to-amber-500 text-5xl"
-                            : index === 1
-                            ? "h-24 w-24 bg-gradient-to-br from-slate-300 to-slate-500 text-5xl"
-                            : index === 2
-                            ? "h-24 w-24 bg-gradient-to-br from-orange-400 to-orange-700 text-5xl"
-                            : "h-16 w-16 bg-gradient-to-br from-pink-400 to-pink-500 text-3xl"
-                        }`}
-                      >
+                      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-pink-400 to-pink-500 text-5xl font-black text-white shadow-lg">
                         {index + 1}
                       </div>
                     </div>
@@ -334,24 +240,12 @@ export default function Page() {
                           href={`/offers/${offerSlug}`}
                           className="block transition hover:opacity-80"
                         >
-                          <h3
-                            className={`font-black leading-tight text-slate-900 transition hover:text-pink-500 ${
-                              index < 3
-                                ? "text-3xl lg:text-5xl"
-                                : "text-2xl lg:text-3xl"
-                            }`}
-                          >
+                          <h3 className="text-3xl font-black leading-tight text-slate-900 hover:text-pink-500 lg:text-5xl">
                             {offerName}
                           </h3>
                         </Link>
                       ) : (
-                        <h3
-                          className={`font-black leading-tight text-slate-900 ${
-                            index < 3
-                              ? "text-3xl lg:text-5xl"
-                              : "text-2xl lg:text-3xl"
-                          }`}
-                        >
+                        <h3 className="text-3xl font-black leading-tight text-slate-900 lg:text-5xl">
                           {offerName}
                         </h3>
                       )}
@@ -400,9 +294,6 @@ export default function Page() {
                         </span>
                         <span className="mt-2 flex items-center text-2xl text-yellow-100">
                           モッピーで探す
-                          <span className="ml-2 text-4xl leading-none transition group-hover:translate-x-1">
-                            ›
-                          </span>
                         </span>
                       </button>
                     </div>
@@ -411,12 +302,9 @@ export default function Page() {
               );
             })}
           </div>
-
-          <p className="mt-8 text-center text-xs font-bold text-slate-400 lg:text-sm">
-            ※ 本ランキングはAIによる分析結果をもとに作成しています。実際の成果やポイント獲得を保証するものではありません。
-          </p>
         </main>
       </div>
     </>
   );
 }
+```
