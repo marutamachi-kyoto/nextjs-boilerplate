@@ -168,7 +168,12 @@ async function getTrends(): Promise<TrendInfo[]> {
 
     const xml = await res.text();
 
-    console.log(xml);
+    return [
+  {
+    keyword: xml.slice(0, 500),
+    traffic: "0",
+  },
+];
 
     const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
 
