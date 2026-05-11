@@ -389,78 +389,81 @@ export default function Page() {
           </section>
 
           <section className="mt-6 overflow-hidden rounded-[2rem] bg-white shadow-lg ring-1 ring-pink-100">
-            <div className="divide-y divide-pink-100">
-              {listItems.map((item, listIndex) => {
-                const index = listIndex + 3;
-                const reasons = getAiReasons(item);
-                const offerName = getOfferName(item);
-                const offerSlug = getOfferSlug(offerName);
+  <div className="divide-y divide-pink-100">
+    {listItems.map((item, listIndex) => {
+      const index = listIndex + 3;
+      const reasons = getAiReasons(item);
+      const offerName = getOfferName(item);
+      const offerSlug = getOfferSlug(offerName);
 
-                return (
-                  <article
-                    key={`${item.rank}-${item.offer_name}-${index}`}
-                    className="grid gap-3 p-4 transition hover:bg-pink-50/40 lg:grid-cols-[58px_150px_1.2fr_1.8fr_1.4fr_210px] lg:items-center lg:gap-4"
-                  >
-                    <div className="flex items-center gap-3 lg:justify-center">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg font-black text-slate-900 shadow-sm ring-1 ring-slate-200">
-                        {index + 1}
-                      </div>
-                      <div className="inline-flex rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-500 lg:hidden">
-                        {item.category}
-                      </div>
-                    </div>
-
-                    <div className="hidden lg:block">
-                      <div className="inline-flex rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-500">
-                        {item.category}
-                      </div>
-                    </div>
-
-                    <div>
-                      {offerSlug ? (
-                        <Link href={`/offers/${offerSlug}`} className="group">
-                          <h3 className="text-xl font-black text-slate-900 transition group-hover:text-pink-500">
-                            {offerName}
-                          </h3>
-                        </Link>
-                      ) : (
-                        <h3 className="text-xl font-black text-slate-900">
-                          {offerName}
-                        </h3>
-                      )}
-                    </div>
-
-                    <p className="line-clamp-2 text-sm font-bold leading-6 text-slate-600">
-                      {item.reason}
-                    </p>
-
-                    <div className="flex flex-wrap gap-2">
-                      {reasons.map((reason) => (
-                        <span
-                          key={reason.title}
-                          className="inline-flex items-center gap-1 rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-600"
-                        >
-                          <span>{reason.icon}</span>
-                          {reason.title}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="flex lg:justify-end">
-                      <button
-                        onClick={() => trackMoppyClick(item.category)}
-                        className="flex h-11 w-full max-w-[210px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-sm font-black text-white shadow-md transition hover:scale-105"
-                      >
-                        モッピーで探す
-                        <span className="ml-2 text-xl leading-none">›</span>
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
+      return (
+        <article
+          key={`${item.rank}-${item.offer_name}-${index}`}
+          className="grid gap-4 p-5 transition hover:bg-pink-50/40 lg:grid-cols-[58px_150px_1.25fr_1.45fr_210px] lg:items-center lg:gap-5"
+        >
+          <div className="flex items-center gap-3 lg:justify-center">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg font-black text-slate-900 shadow-sm ring-1 ring-slate-200">
+              {index + 1}
             </div>
-          </section>
 
+            <div className="inline-flex rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-500 lg:hidden">
+              {item.category}
+            </div>
+          </div>
+
+          <div className="hidden lg:block">
+            <div className="inline-flex rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-500">
+              {item.category}
+            </div>
+          </div>
+
+          <div>
+            {offerSlug ? (
+              <Link href={`/offers/${offerSlug}`} className="group">
+                <h3 className="whitespace-nowrap text-2xl font-black text-slate-900 transition group-hover:text-pink-500">
+                  {offerName}
+                </h3>
+              </Link>
+            ) : (
+              <h3 className="whitespace-nowrap text-2xl font-black text-slate-900">
+                {offerName}
+              </h3>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            {reasons.map((reason) => (
+              <div
+                key={reason.title}
+                className="rounded-2xl bg-pink-50/80 px-3 py-3 text-center shadow-sm"
+              >
+                <div className="text-2xl">{reason.icon}</div>
+
+                <div className="mt-1 text-sm font-black text-slate-900">
+                  {reason.title}
+                </div>
+
+                <div className="mt-1 text-xs font-bold leading-snug text-slate-600">
+                  {reason.text}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex lg:justify-end">
+            <button
+              onClick={() => trackMoppyClick(item.category)}
+              className="flex h-12 w-full max-w-[210px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-sm font-black text-white shadow-md transition hover:scale-105"
+            >
+              モッピーで探す
+              <span className="ml-2 text-xl leading-none">›</span>
+            </button>
+          </div>
+        </article>
+      );
+    })}
+  </div>
+</section>
           <p className="mt-8 text-center text-xs font-bold text-slate-400 lg:text-sm">
             ※ 本ランキングはAIによる分析結果をもとに作成しています。実際の成果やポイント獲得を保証するものではありません。
           </p>
