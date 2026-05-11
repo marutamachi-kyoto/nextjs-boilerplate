@@ -321,7 +321,7 @@ export default function Page() {
                       </div>
                     </div>
 
-                    <div>
+                    <div className="min-h-[120px]">
                       <div className="mb-3 inline-flex rounded-full bg-pink-50 px-5 py-2 text-sm font-black text-pink-500">
                         {item.category}
                       </div>
