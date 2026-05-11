@@ -142,106 +142,6 @@ const OFFERS: Offer[] = [
     secondary_site_url: "https://www.warau.jp/",
     base_score: 80,
   },
-  {
-    offer_name: "dカード GOLD",
-    category: "クレジットカード",
-    keywords: ["dカード", "ドコモ", "カード"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 79,
-  },
-  {
-    offer_name: "セゾンカードインターナショナル",
-    category: "クレジットカード",
-    keywords: ["セゾンカード", "カード", "クレカ"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 78,
-  },
-  {
-    offer_name: "auカブコム証券",
-    category: "証券・投資",
-    keywords: ["auカブコム", "証券", "投資"],
-    primary_site_name: "ポイントインカム",
-    primary_site_url: "https://pointi.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 77,
-  },
-  {
-    offer_name: "Pontaパス",
-    category: "サブスク",
-    keywords: ["ponta", "ポンタ", "サブスク"],
-    primary_site_name: "ワラウ",
-    primary_site_url: "https://www.warau.jp/",
-    secondary_site_name: "ハピタス",
-    secondary_site_url: "https://hapitas.jp/",
-    base_score: 76,
-  },
-  {
-    offer_name: "メルカリ",
-    category: "アプリ・ゲーム",
-    keywords: ["メルカリ", "フリマ", "アプリ"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 75,
-  },
-  {
-    offer_name: "LINEマンガ",
-    category: "アプリ・ゲーム",
-    keywords: ["lineマンガ", "漫画", "アプリ"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 74,
-  },
-  {
-    offer_name: "エポスカード",
-    category: "クレジットカード",
-    keywords: ["エポスカード", "カード"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 73,
-  },
-  {
-    offer_name: "マネックス証券",
-    category: "証券・投資",
-    keywords: ["マネックス", "証券", "投資"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 72,
-  },
-  {
-    offer_name: "イオンカード（WAON一体型）",
-    category: "クレジットカード",
-    keywords: ["イオンカード", "waon", "カード"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 71,
-  },
-  {
-    offer_name: "ahamo",
-    category: "通信・回線",
-    keywords: ["ahamo", "ドコモ", "スマホ", "sim"],
-    primary_site_name: "ワラウ",
-    primary_site_url: "https://www.warau.jp/",
-    secondary_site_name: "ハピタス",
-    secondary_site_url: "https://hapitas.jp/",
-    base_score: 70,
-  },
 ];
 
 async function getTrends(): Promise<TrendInfo[]> {
@@ -263,18 +163,18 @@ async function getTrends(): Promise<TrendInfo[]> {
 
     const xml = await res.text();
 
-    const items = [...xml.matchAll(/<item>([\\s\\S]*?)<\\/item>/g)];
+    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
 
     return items
       .map((match) => {
         const item = match[1];
 
         const titleMatch = item.match(
-          /<title><!\\[CDATA\\[(.*?)\\]\\]><\\/title>/
+          /<title><!\[CDATA\[(.*?)\]\]><\/title>/
         );
 
         const trafficMatch = item.match(
-          /<ht:approx_traffic><!\\[CDATA\\[(.*?)\\]\\]><\\/ht:approx_traffic>/
+          /<ht:approx_traffic><!\[CDATA\[(.*?)\]\]><\/ht:approx_traffic>/
         );
 
         return {
@@ -291,7 +191,7 @@ async function getTrends(): Promise<TrendInfo[]> {
 function getTrafficBonus(traffic?: string): number {
   if (!traffic) return 0;
 
-  const number = Number(traffic.replace(/[^\\d]/g, ""));
+  const number = Number(traffic.replace(/[^\d]/g, ""));
 
   if (number >= 50000) return 10;
   if (number >= 20000) return 8;
@@ -366,7 +266,6 @@ export async function GET() {
 
     const { error } = await supabase.from("rankings").insert(rankings);
 
-    // trends テーブル更新
     const trendRows = safeTrends.slice(0, 30).map((trend, index) => ({
       word: trend.keyword,
       score: Math.max(100 - index * 3, 40),
