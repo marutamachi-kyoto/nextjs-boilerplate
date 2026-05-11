@@ -157,12 +157,9 @@ async function getTrends(): Promise<TrendInfo[]> {
       }
     );
 
-    if (!res.ok) {
-      return [];
-    }
+    if (!res.ok) return [];
 
     const xml = await res.text();
-
     const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
 
     return items
@@ -223,7 +220,7 @@ export async function GET() {
   try {
     const trends = await getTrends();
 
-    const safeTrends =
+    const rankingTrendSource =
       trends.length > 0
         ? trends
         : OFFERS.map((offer) => ({
@@ -232,7 +229,7 @@ export async function GET() {
           }));
 
     const rankings = OFFERS.map((offer) => {
-      const trend = getMatchedTrend(offer, safeTrends);
+      const trend = getMatchedTrend(offer, rankingTrendSource);
 
       const score = Math.min(
         100,
@@ -266,16 +263,6 @@ export async function GET() {
 
     const { error } = await supabase.from("rankings").insert(rankings);
 
-    const trendRows = safeTrends.slice(0, 30).map((trend, index) => ({
-      word: trend.keyword,
-      score: Math.max(100 - index * 3, 40),
-      category: "一般",
-    }));
-
-    await supabase.from("trends").delete().neq("word", "");
-
-    await supabase.from("trends").insert(trendRows);
-
     if (error) {
       return Response.json(
         {
@@ -286,12 +273,24 @@ export async function GET() {
       );
     }
 
+    const trendRows = trends.slice(0, 30).map((trend, index) => ({
+      word: trend.keyword,
+      score: Math.max(100 - index * 3, 40),
+      category: "一般",
+    }));
+
+    if (trendRows.length > 0) {
+      await supabase.from("trends").delete().neq("word", "");
+      await supabase.from("trends").insert(trendRows);
+    }
+
     return Response.json({
       message: "ランキング更新完了",
       count: rankings.length,
       trends_count: trendRows.length,
+      trends_source: trends.length > 0 ? "google_trends" : "not_updated",
     });
-  } catch (error) {
+  } catch {
     return Response.json(
       {
         error: "ランキング更新中にエラーが発生しました",
