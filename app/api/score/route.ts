@@ -33,6 +33,8 @@ export async function GET() {
       category: item.category ?? "その他",
       trend_keyword: item.trend_keyword ?? item.offer_name ?? item.category,
 
+      reward: item.reward ?? 0,
+
       reason:
         item.description ||
         item.reason ||
