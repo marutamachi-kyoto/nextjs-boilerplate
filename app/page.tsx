@@ -32,6 +32,12 @@ type AiReason = {
   text: string;
 };
 
+type TrendBadge = {
+  icon: string;
+  text: string;
+  className: string;
+};
+
 export default function Page() {
   const [items, setItems] = useState<CategoryScore[]>([]);
   const [updatedAt, setUpdatedAt] = useState("-");
@@ -117,41 +123,187 @@ export default function Page() {
 
     if (category.includes("通信")) {
       return [
-        { icon: "📈", title: "高額ポイント", text: "還元期待値が高い" },
-        { icon: "💗", title: "SNSで話題", text: "検索・投稿が増加" },
-        { icon: "🎁", title: "条件が明確", text: "比較しやすい案件" },
+        {
+          icon: "📈",
+          title: "高額ポイント",
+          text: "高還元案件として急上昇中",
+        },
+        {
+          icon: "💗",
+          title: "SNS話題化",
+          text: "投稿数・検索数が増加",
+        },
+        {
+          icon: "⚡",
+          title: "申込増加",
+          text: "短期間で人気拡大中",
+        },
       ];
     }
 
     if (category.includes("ゲーム") || category.includes("アプリ")) {
       return [
-        { icon: "🔍", title: "検索急増", text: "関連検索が上昇" },
-        { icon: "💗", title: "SNS話題化", text: "投稿・共有が増加" },
-        { icon: "⏱", title: "短期達成可", text: "条件達成を狙える" },
+        {
+          icon: "🔥",
+          title: "急上昇",
+          text: "関連検索が急増中",
+        },
+        {
+          icon: "🎮",
+          title: "人気拡大",
+          text: "ユーザー流入が増加",
+        },
+        {
+          icon: "⏱",
+          title: "達成しやすい",
+          text: "短期間攻略が可能",
+        },
       ];
     }
 
     if (category.includes("カード") || category.includes("クレジット")) {
       return [
-        { icon: "¥", title: "高額還元", text: "ポイント単価が高い" },
-        { icon: "⚡", title: "即効性あり", text: "成果につながりやすい" },
-        { icon: "👤", title: "初心者向け", text: "申込がシンプル" },
+        {
+          icon: "💰",
+          title: "高還元",
+          text: "大型ポイント案件",
+        },
+        {
+          icon: "📈",
+          title: "検索増加",
+          text: "比較検討ユーザー増加",
+        },
+        {
+          icon: "👤",
+          title: "初心者向け",
+          text: "申込条件がわかりやすい",
+        },
       ];
     }
 
     if (category.includes("証券") || category.includes("投資")) {
       return [
-        { icon: "📈", title: "投資需要", text: "口座開設が増加" },
-        { icon: "🎁", title: "高ポイント", text: "還元額が大きい" },
-        { icon: "⏱", title: "申込増加", text: "注目度が上昇" },
+        {
+          icon: "📊",
+          title: "投資人気",
+          text: "NISA需要で注目増加",
+        },
+        {
+          icon: "💰",
+          title: "高ポイント",
+          text: "還元期待値が高い",
+        },
+        {
+          icon: "🔥",
+          title: "検索急増",
+          text: "口座開設需要が拡大",
+        },
       ];
     }
 
     return [
-      { icon: "📈", title: "検索上昇", text: "話題性が高い" },
-      { icon: "💗", title: "注目度あり", text: "関心が増加中" },
-      { icon: "🎁", title: "案件向き", text: "ポイ活と相性良好" },
+      {
+        icon: "📈",
+        title: "検索上昇",
+        text: "Google検索で話題化",
+      },
+      {
+        icon: "💗",
+        title: "注目案件",
+        text: "SNS流入が増加中",
+      },
+      {
+        icon: "🎁",
+        title: "人気拡大",
+        text: "利用者数が増加傾向",
+      },
     ];
+  };
+
+  const getTrendBadges = (item: CategoryScore): TrendBadge[] => {
+    const category = item.category;
+
+    if (category.includes("通信")) {
+      return [
+        {
+          icon: "🔥",
+          text: "急上昇",
+          className:
+            "bg-red-50 text-red-500 ring-1 ring-red-100",
+        },
+        {
+          icon: "💰",
+          text: "高還元",
+          className:
+            "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-100",
+        },
+      ];
+    }
+
+    if (category.includes("カード")) {
+      return [
+        {
+          icon: "📈",
+          text: "検索急増",
+          className:
+            "bg-pink-50 text-pink-500 ring-1 ring-pink-100",
+        },
+        {
+          icon: "💰",
+          text: "高単価",
+          className:
+            "bg-orange-50 text-orange-600 ring-1 ring-orange-100",
+        },
+      ];
+    }
+
+    if (category.includes("ゲーム") || category.includes("アプリ")) {
+      return [
+        {
+          icon: "🎮",
+          text: "人気拡大",
+          className:
+            "bg-violet-50 text-violet-600 ring-1 ring-violet-100",
+        },
+        {
+          icon: "🔥",
+          text: "SNS話題",
+          className:
+            "bg-rose-50 text-rose-500 ring-1 ring-rose-100",
+        },
+      ];
+    }
+
+    return [
+      {
+        icon: "📈",
+        text: "トレンド",
+        className:
+          "bg-pink-50 text-pink-500 ring-1 ring-pink-100",
+      },
+    ];
+  };
+
+  const getDynamicReason = (item: CategoryScore) => {
+    const category = item.category;
+
+    if (category.includes("通信")) {
+      return "高額ポイント案件としてSNS流入が増加しており、短期間で申し込みが伸びています。";
+    }
+
+    if (category.includes("カード")) {
+      return "比較検索ユーザーが増加しており、高還元案件として注目を集めています。";
+    }
+
+    if (category.includes("証券")) {
+      return "NISA・投資需要の拡大により、口座開設系案件の人気が急上昇しています。";
+    }
+
+    if (category.includes("ゲーム") || category.includes("アプリ")) {
+      return "SNSでの拡散が強く、短期間で条件達成しやすい案件として注目されています。";
+    }
+
+    return "Google検索とSNS流入の両方で注目度が上昇している案件です。";
   };
 
   const getRankStyle = (index: number) => {
@@ -251,8 +403,6 @@ export default function Page() {
         <main className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10">
           <section className="mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
             <div className="mb-6">
-
-
               <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
                 🔍 いまGoogleで話題のポイ活関連キーワード
               </h2>
@@ -298,6 +448,7 @@ export default function Page() {
           <section className="space-y-4">
             {topItems.map((item, index) => {
               const reasons = getAiReasons(item);
+              const badges = getTrendBadges(item);
               const offerName = getOfferName(item);
               const offerSlug = getOfferSlug(offerName);
               const rankStyle = getRankStyle(index);
@@ -313,6 +464,7 @@ export default function Page() {
                         <div className="text-4xl leading-none">
                           {rankStyle.crown}
                         </div>
+
                         <div
                           className={`mx-auto mt-1 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br ${rankStyle.badge} text-5xl font-black text-white shadow-xl`}
                         >
@@ -322,8 +474,20 @@ export default function Page() {
                     </div>
 
                     <div>
-                      <div className="mb-3 inline-flex rounded-full bg-pink-50 px-5 py-2 text-sm font-black text-pink-500">
-                        {item.category}
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <div className="inline-flex rounded-full bg-pink-50 px-5 py-2 text-sm font-black text-pink-500">
+                          {item.category}
+                        </div>
+
+                        {badges.map((badge) => (
+                          <div
+                            key={badge.text}
+                            className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-black ${badge.className}`}
+                          >
+                            <span className="mr-1">{badge.icon}</span>
+                            {badge.text}
+                          </div>
+                        ))}
                       </div>
 
                       {offerSlug ? (
@@ -341,8 +505,8 @@ export default function Page() {
                         </h3>
                       )}
 
-                      <p className="mt-3 text-sm leading-7 text-slate-600 lg:text-base">
-                        {item.reason}
+                      <p className="mt-4 text-base font-bold leading-8 text-slate-600">
+                        {getDynamicReason(item)}
                       </p>
                     </div>
 
@@ -358,9 +522,11 @@ export default function Page() {
                             className="rounded-2xl bg-pink-50/80 px-3 py-4 text-center"
                           >
                             <div className="text-3xl">{reason.icon}</div>
+
                             <div className="mt-2 text-sm font-black text-slate-900">
                               {reason.title}
                             </div>
+
                             <div className="mt-1 text-xs font-bold leading-snug text-slate-600">
                               {reason.text}
                             </div>
@@ -385,81 +551,93 @@ export default function Page() {
           </section>
 
           <section className="mt-6 overflow-hidden rounded-[2rem] bg-white shadow-lg ring-1 ring-pink-100">
-  <div className="divide-y divide-pink-100">
-    {listItems.map((item, listIndex) => {
-      const index = listIndex + 3;
-      const reasons = getAiReasons(item);
-      const offerName = getOfferName(item);
-      const offerSlug = getOfferSlug(offerName);
+            <div className="divide-y divide-pink-100">
+              {listItems.map((item, listIndex) => {
+                const index = listIndex + 3;
+                const reasons = getAiReasons(item);
+                const badges = getTrendBadges(item);
+                const offerName = getOfferName(item);
+                const offerSlug = getOfferSlug(offerName);
 
-      return (
-        <article
-          key={`${item.rank}-${item.offer_name}-${index}`}
-          className="grid gap-4 p-5 transition hover:bg-pink-50/40 lg:grid-cols-[58px_150px_1.25fr_1.45fr_210px] lg:items-center lg:gap-5"
-        >
-          <div className="flex items-center gap-3 lg:justify-center">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg font-black text-slate-900 shadow-sm ring-1 ring-slate-200">
-              {index + 1}
+                return (
+                  <article
+                    key={`${item.rank}-${item.offer_name}-${index}`}
+                    className="grid gap-4 p-5 transition hover:bg-pink-50/40 lg:grid-cols-[58px_170px_1.3fr_1.5fr_210px] lg:items-center lg:gap-5"
+                  >
+                    <div className="flex items-center gap-3 lg:justify-center">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg font-black text-slate-900 shadow-sm ring-1 ring-slate-200">
+                        {index + 1}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="inline-flex rounded-full bg-pink-50 px-4 py-1.5 text-sm font-black text-pink-500">
+                        {item.category}
+                      </div>
+
+                      {badges.map((badge) => (
+                        <div
+                          key={badge.text}
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-black ${badge.className}`}
+                        >
+                          <span className="mr-1">{badge.icon}</span>
+                          {badge.text}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div>
+                      {offerSlug ? (
+                        <Link href={`/offers/${offerSlug}`} className="group">
+                          <h3 className="text-2xl font-black text-slate-900 transition group-hover:text-pink-500">
+                            {offerName}
+                          </h3>
+                        </Link>
+                      ) : (
+                        <h3 className="text-2xl font-black text-slate-900">
+                          {offerName}
+                        </h3>
+                      )}
+
+                      <p className="mt-2 text-sm font-bold leading-7 text-slate-600">
+                        {getDynamicReason(item)}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      {reasons.map((reason) => (
+                        <div
+                          key={reason.title}
+                          className="rounded-2xl bg-pink-50/80 px-3 py-3 text-center shadow-sm"
+                        >
+                          <div className="text-2xl">{reason.icon}</div>
+
+                          <div className="mt-1 text-sm font-black text-slate-900">
+                            {reason.title}
+                          </div>
+
+                          <div className="mt-1 text-xs font-bold leading-snug text-slate-600">
+                            {reason.text}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex lg:justify-end">
+                      <button
+                        onClick={() => trackMoppyClick(item.category)}
+                        className="flex h-12 w-full max-w-[210px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-sm font-black text-white shadow-md transition hover:scale-105"
+                      >
+                        モッピーで探す
+                        <span className="ml-2 text-xl leading-none">›</span>
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
+          </section>
 
-            <div className="inline-flex rounded-full bg-pink-50 px-4 py-1.5 text-sm font-black text-pink-500 lg:hidden">
-              {item.category}
-            </div>
-          </div>
-
-          <div className="hidden lg:block">
-            <div className="inline-flex rounded-full bg-pink-50 px-4 py-1.5 text-sm font-black text-pink-500">
-              {item.category}
-            </div>
-          </div>
-
-          <div>
-            {offerSlug ? (
-              <Link href={`/offers/${offerSlug}`} className="group">
-                <h3 className="whitespace-nowrap text-2xl font-black text-slate-900 transition group-hover:text-pink-500">
-                  {offerName}
-                </h3>
-              </Link>
-            ) : (
-              <h3 className="whitespace-nowrap text-2xl font-black text-slate-900">
-                {offerName}
-              </h3>
-            )}
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            {reasons.map((reason) => (
-              <div
-                key={reason.title}
-                className="rounded-2xl bg-pink-50/80 px-3 py-3 text-center shadow-sm"
-              >
-                <div className="text-2xl">{reason.icon}</div>
-
-                <div className="mt-1 text-sm font-black text-slate-900">
-                  {reason.title}
-                </div>
-
-                <div className="mt-1 text-xs font-bold leading-snug text-slate-600">
-                  {reason.text}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex lg:justify-end">
-            <button
-              onClick={() => trackMoppyClick(item.category)}
-              className="flex h-12 w-full max-w-[210px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-sm font-black text-white shadow-md transition hover:scale-105"
-            >
-              モッピーで探す
-              <span className="ml-2 text-xl leading-none">›</span>
-            </button>
-          </div>
-        </article>
-      );
-    })}
-  </div>
-</section>
           <p className="mt-8 text-center text-xs font-bold text-slate-400 lg:text-sm">
             ※ 本ランキングはAIによる分析結果をもとに作成しています。実際の成果やポイント獲得を保証するものではありません。
           </p>
