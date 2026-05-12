@@ -1,7 +1,7 @@
 "use client";
-
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
+
 import { useEffect, useState } from "react";
 
 const MOPPY_URL =
@@ -450,7 +450,7 @@ export default function Page() {
               const reasons = getAiReasons(item);
               const badges = getTrendBadges(item);
               const offerName = getOfferName(item);
-              const offerSlug = getOfferSlug(offerName);
+              
               const rankStyle = getRankStyle(index);
 
               return (
@@ -490,20 +490,9 @@ export default function Page() {
                         ))}
                       </div>
 
-                      {offerSlug ? (
-                        <Link
-                          href={`/offers/${offerSlug}`}
-                          className="group inline-block"
-                        >
-                          <h3 className="text-3xl font-black leading-tight text-slate-900 transition group-hover:text-pink-500 lg:text-4xl">
-                            {offerName}
-                          </h3>
-                        </Link>
-                      ) : (
-                        <h3 className="text-3xl font-black leading-tight text-slate-900 lg:text-4xl">
-                          {offerName}
-                        </h3>
-                      )}
+                      <h3 className="text-3xl font-black leading-tight text-slate-900 lg:text-4xl">
+  　　　　　　　　　　　　{offerName}
+　　　　　　　　　　　　</h3>
 
                       <p className="mt-4 text-base font-bold leading-8 text-slate-600">
                         {getDynamicReason(item)}
@@ -557,7 +546,7 @@ export default function Page() {
                 const reasons = getAiReasons(item);
                 const badges = getTrendBadges(item);
                 const offerName = getOfferName(item);
-                const offerSlug = getOfferSlug(offerName);
+                
 
                 return (
                   <article
@@ -587,17 +576,9 @@ export default function Page() {
                     </div>
 
                     <div>
-                      {offerSlug ? (
-                        <Link href={`/offers/${offerSlug}`} className="group">
-                          <h3 className="text-2xl font-black text-slate-900 transition group-hover:text-pink-500">
-                            {offerName}
-                          </h3>
-                        </Link>
-                      ) : (
-                        <h3 className="text-2xl font-black text-slate-900">
-                          {offerName}
-                        </h3>
-                      )}
+                      <h3 className="text-2xl font-black text-slate-900">
+  　　　　　　　　　　　　{offerName}
+　　　　　　　　　　　　</h3>
 
                       <p className="mt-2 text-sm font-bold leading-7 text-slate-600">
                         {getDynamicReason(item)}
