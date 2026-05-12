@@ -109,26 +109,61 @@ export default function Page() {
   };
 
   const getDynamicReason = (item: CategoryScore) => {
-    const category = item.category;
+  const category = item.category;
+  const offerName = (item.offer_name || "").toLowerCase();
 
-    if (category.includes("通信")) {
-      return "高額ポイント案件としてSNS流入が増加しており、短期間で申し込みが伸びています。";
-    }
+  // ===== 案件別 =====
 
-    if (category.includes("カード")) {
-      return "比較検索ユーザーが増加しており、高還元案件として注目を集めています。";
-    }
+  if (offerName.includes("tiktok")) {
+    return "友達招待系キャンペーンとしてSNSで急拡散しており、短期間で利用者が急増しています。";
+  }
 
-    if (category.includes("証券")) {
-      return "NISA・投資需要の拡大により、口座開設系案件の人気が急上昇しています。";
-    }
+  if (offerName.includes("楽天市場")) {
+    return "買い回り・ポイントアップ需要の増加により、検索数が急上昇しています。";
+  }
 
-    if (category.includes("ゲーム") || category.includes("アプリ")) {
-      return "SNSでの拡散が強く、短期間で条件達成しやすい案件として注目されています。";
-    }
+  if (offerName.includes("amazon")) {
+    return "サブスク需要と大型セール時期の影響で、継続的に注目を集めています。";
+  }
 
-    return "Google検索とSNS流入の両方で注目度が上昇している案件です。";
-  };
+  if (offerName.includes("u-next")) {
+    return "無料トライアル案件として安定した人気があり、動画サブスク需要も拡大しています。";
+  }
+
+  if (offerName.includes("paypay")) {
+    return "キャッシュレス決済需要の拡大により、検索数と利用者数が増加しています。";
+  }
+
+  if (offerName.includes("楽天カード")) {
+    return "高還元キャンペーンが継続しており、クレジットカード案件の中でも人気が高い状態です。";
+  }
+
+  if (offerName.includes("楽天モバイル")) {
+    return "高額ポイント還元と通信費節約需要により、申し込み数が急増しています。";
+  }
+
+  // ===== カテゴリ別 =====
+
+  if (category.includes("通信")) {
+    return "高額ポイント案件としてSNS流入が増加しており、短期間で申し込みが伸びています。";
+  }
+
+  if (category.includes("カード")) {
+    return "比較検索ユーザーが増加しており、高還元案件として注目を集めています。";
+  }
+
+  if (category.includes("証券")) {
+    return "NISA・投資需要の拡大により、口座開設系案件の人気が急上昇しています。";
+  }
+
+  if (category.includes("ゲーム") || category.includes("アプリ")) {
+    return "SNSでの拡散が強く、短期間で条件達成しやすい案件として注目されています。";
+  }
+
+  // ===== デフォルト =====
+
+  return "Google検索とSNS流入の両方で注目度が上昇している案件です。";
+};
 
   const getRankStyle = (index: number) => {
     if (index === 0) {
@@ -415,8 +450,8 @@ export default function Page() {
                   </div>
 
                   <div className="rounded-2xl bg-white/90 px-4 py-4 text-center shadow-sm ring-1 ring-pink-100">
-                    <div className="text-xs font-black text-slate-500">
-                      報酬ポイント数
+                    <div className="text-sm font-black text-slate-650 lg:text-base">
+                      報酬ポイントの目安
                     </div>
                     <div className="mt-1 text-3xl font-black text-pink-500">
                       {formatReward(item.reward)}
