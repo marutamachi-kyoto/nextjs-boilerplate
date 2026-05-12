@@ -279,9 +279,29 @@ function extractRewardNearOffer(html: string, offer: Offer): number {
       }
     }
 
-    const hasExactTitle = titleCandidates.some(
-      (title) => title === targetTitle
-    );
+const NG_TITLE_WORDS = [
+  "ideco",
+  "iDeCo".toLowerCase(),
+  "ニーサ",
+  "nisa",
+  "つみたて",
+  "積立",
+  "投信",
+];
+
+const hasExactTitle = titleCandidates.some((title) => {
+  const isStrongMatch =
+    title === targetTitle ||
+    title.startsWith(targetTitle) ||
+    title.includes(`${targetTitle} `) ||
+    title.includes(`${targetTitle}　`);
+
+  const hasNgWord = NG_TITLE_WORDS.some((word) =>
+    title.includes(word.toLowerCase())
+  );
+
+  return isStrongMatch && !hasNgWord;
+});
 
     if (!hasExactTitle) continue;
 
