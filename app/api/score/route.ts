@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,7 +12,8 @@ export async function GET() {
     const { data, error } = await supabase
       .from("rankings")
       .select("*")
-      .order("rank", { ascending: true })
+      .order("updated_at", { ascending: false })
+　    .order("rank", { ascending: true })
       .limit(50);
 
     if (error) {
