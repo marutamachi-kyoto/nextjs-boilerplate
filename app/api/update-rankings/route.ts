@@ -406,17 +406,18 @@ export async function GET() {
     }
 
     const trendRows = matchedResults
-  .filter((result) => result.offers.length > 0)
-  .slice(0, 30)
-  .map((result, index) => {
-    const mainOffer = result.offers[0];
-
-    return {
-      word: mainOffer,
-      score: Math.max(100 - index * 3, 40),
+  .flatMap((result) =>
+    result.offers.map((offer, offerIndex) => ({
+      word: offer,
+      score: Math.max(100 - offerIndex * 2, 40),
       category: "ポイ活",
-    };
-  });
+    }))
+  )
+  .filter(
+    (item, index, self) =>
+      index === self.findIndex((t) => t.word === item.word)
+  )
+  .slice(0, 30);
 
     if (trendRows.length > 0) {
       await supabase.from("trends").delete().neq("word", "");
