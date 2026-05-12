@@ -32,9 +32,14 @@ type Offer = {
   reward: number;
 };
 
+type MatchedOffer = {
+  name: string;
+  reward: number;
+};
+
 type MoppySearchResult = {
   trend: TrendInfo;
-  offers: string[];
+  offers: MatchedOffer[];
 };
 
 type RankingItem = {
@@ -67,7 +72,6 @@ async function getOffers(): Promise<Offer[]> {
 
   return data.map((item: any) => ({
     offer_name: item.title,
-
     category:
       item.category?.includes("クレジット")
         ? "クレジットカード"
@@ -82,29 +86,15 @@ async function getOffers(): Promise<Offer[]> {
         : item.category?.includes("サブスク")
         ? "サブスク"
         : "その他",
-
-    keywords: [
-      item.title?.toLowerCase() || "",
-      ...(item.tags || []),
-    ],
-
+    keywords: [item.title?.toLowerCase() || "", ...(item.tags || [])],
     primary_site_name: item.point_site || "モッピー",
-
-    primary_site_url:
-      item.url || "https://pc.moppy.jp/",
-
+    primary_site_url: item.url || "https://pc.moppy.jp/",
     secondary_site_name: "ポイントインカム",
-
     secondary_site_url: "https://pointi.jp/",
-
     reward: item.reward || 0,
-
     base_score: Math.min(
       100,
-      Math.max(
-        60,
-        Math.floor((item.reward || 1000) / 120)
-      )
+      Math.max(60, Math.floor((item.reward || 1000) / 120))
     ),
   }));
 }
@@ -119,9 +109,7 @@ async function getTrends(): Promise<TrendInfo[]> {
       },
     });
 
-    if (!res.ok) {
-      return [];
-    }
+    if (!res.ok) return [];
 
     const xml = await res.text();
     const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
@@ -129,7 +117,6 @@ async function getTrends(): Promise<TrendInfo[]> {
     return items
       .map((match) => {
         const item = match[1];
-
         const titleMatch = item.match(/<title>(.*?)<\/title>/);
         const trafficMatch = item.match(
           /<ht:approx_traffic>(.*?)<\/ht:approx_traffic>/
@@ -168,7 +155,7 @@ function extractOfferTitles(html: string): string[] {
       if (
         text &&
         text.length >= 2 &&
-        text.length <= 60 &&
+        text.length <= 80 &&
         !text.includes("モッピー") &&
         !text.includes("ポイント") &&
         !text.includes("広告")
@@ -179,6 +166,59 @@ function extractOfferTitles(html: string): string[] {
   }
 
   return [...titles];
+}
+
+function extractRewardFromText(text: string): number {
+  const normalized = text.replace(/&nbsp;/g, " ").replace(/\s+/g, " ");
+
+  const patterns = [
+    /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,7})\s*P/i,
+    /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,7})\s*ポイント/,
+    /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,7})\s*pt/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+
+    if (match?.[1]) {
+      return Number(match[1].replace(/,/g, ""));
+    }
+  }
+
+  return 0;
+}
+
+function extractRewardNearOffer(html: string, offer: Offer): number {
+  const plainText = html
+    .replace(/<script[\s\S]*?<\/script>/g, "")
+    .replace(/<style[\s\S]*?<\/style>/g, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+
+  const searchWords = [
+    offer.offer_name.toLowerCase(),
+    ...offer.keywords.map((keyword) => keyword.toLowerCase()),
+  ].filter(Boolean);
+
+  for (const word of searchWords) {
+    const index = plainText.indexOf(word);
+
+    if (index === -1) continue;
+
+    const start = Math.max(0, index - 300);
+    const end = Math.min(plainText.length, index + 700);
+    const nearbyText = plainText.slice(start, end);
+
+    const reward = extractRewardFromText(nearbyText);
+
+    if (reward > 0) {
+      return reward;
+    }
+  }
+
+  return 0;
 }
 
 async function searchMoppyOffers(
@@ -198,9 +238,7 @@ async function searchMoppyOffers(
       },
     });
 
-    if (!res.ok) {
-      return null;
-    }
+    if (!res.ok) return null;
 
     const html = await res.text();
 
@@ -210,11 +248,7 @@ async function searchMoppyOffers(
       "0件",
     ];
 
-    const hasNoResult = noResultTexts.some((text) =>
-      html.includes(text)
-    );
-
-    if (hasNoResult) {
+    if (noResultTexts.some((text) => html.includes(text))) {
       return null;
     }
 
@@ -231,11 +265,16 @@ async function searchMoppyOffers(
           );
         });
       })
-      .map((offer) => offer.offer_name);
+      .map((offer) => {
+        const extractedReward = extractRewardNearOffer(html, offer);
 
-    if (matchedOffers.length === 0) {
-      return null;
-    }
+        return {
+          name: offer.offer_name,
+          reward: extractedReward > 0 ? extractedReward : offer.reward,
+        };
+      });
+
+    if (matchedOffers.length === 0) return null;
 
     return {
       trend,
@@ -265,7 +304,6 @@ function applyCategoryBalance(rankings: RankingItem[]): RankingItem[] {
 
   const adjusted = rankings.map((item) => {
     const currentCount = categoryCounts[item.category] ?? 0;
-
     const penalty = currentCount * 4;
 
     categoryCounts[item.category] = currentCount + 1;
@@ -282,7 +320,6 @@ function applyCategoryBalance(rankings: RankingItem[]): RankingItem[] {
 export async function GET() {
   try {
     const offers = await getOffers();
-
     const trends = await getTrends();
 
     const matchedResults: MoppySearchResult[] = [];
@@ -297,18 +334,25 @@ export async function GET() {
 
     const baseRankings: RankingItem[] = offers.map((offer) => {
       const matchedResult = matchedResults.find((result) =>
-        result.offers.includes(offer.offer_name)
+        result.offers.some((matchedOffer) => matchedOffer.name === offer.offer_name)
+      );
+
+      const matchedOffer = matchedResult?.offers.find(
+        (matchedOffer) => matchedOffer.name === offer.offer_name
       );
 
       const trend = matchedResult?.trend;
-
       const isTrendMatched = !!trend;
+      const reward = matchedOffer?.reward || offer.reward || 0;
+
+      const rewardScore = Math.min(20, Math.floor(reward / 1000));
 
       const score = Math.max(
         1,
         Math.min(
           100,
           offer.base_score +
+            rewardScore +
             getTrafficBonus(trend?.traffic) +
             (isTrendMatched ? 10 : -12)
         )
@@ -322,7 +366,7 @@ export async function GET() {
         final_score: score,
         trend_keyword: trend?.keyword ?? null,
         trend_traffic: trend?.traffic ?? null,
-        reward: offer.reward,
+        reward,
         reason: isTrendMatched
           ? `${offer.offer_name} は現在のトレンド検索とモッピー掲載案件の両方に一致しており、特に注目度が高い案件です。`
           : `${offer.offer_name} は定番人気のポイ活案件です。`,
@@ -358,7 +402,7 @@ export async function GET() {
     const trendRows = matchedResults
       .flatMap((result) =>
         result.offers.map((offer, offerIndex) => ({
-          word: offer,
+          word: offer.name,
           score: Math.max(100 - offerIndex * 2, 40),
           category: "ポイ活",
         }))
@@ -380,10 +424,14 @@ export async function GET() {
       trends_count: trendRows.length,
       trends_source:
         matchedResults.length > 0
-          ? "google_trends_precise_moppy_matches"
+          ? "google_trends_precise_moppy_matches_with_rewards"
           : "fallback_offers",
       trends_debug: matchedResults[0]?.trend.keyword ?? null,
-      matched_offers_debug: matchedResults[0]?.offers ?? [],
+      matched_offers_debug:
+        matchedResults[0]?.offers.map((offer) => ({
+          name: offer.name,
+          reward: offer.reward,
+        })) ?? [],
       top_categories: rankings.slice(0, 5).map((r) => r.category),
     });
   } catch {
