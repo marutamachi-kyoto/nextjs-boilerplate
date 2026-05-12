@@ -224,33 +224,20 @@ function extractRewardNearOffer(html: string, offer: Offer): number {
     .replace(/<script[\s\S]*?<\/script>/g, "")
     .replace(/<style[\s\S]*?<\/style>/g, "");
 
-  const lowerHtml = cleanedHtml.toLowerCase();
-
   const searchWords = [
     offer.offer_name.toLowerCase(),
     ...offer.keywords.map((keyword) => keyword.toLowerCase()),
   ].filter(Boolean);
 
-  const rewardPattern =
-    /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,7})\s*(p|ポイント|pt)/gi;
+  const cardCandidates = cleanedHtml
+    .split(/(?=<a\s|<article|<li|<div\s)/i)
+    .map((card) => card.trim())
+    .filter((card) => card.length >= 100 && card.length <= 5000);
 
-  let bestReward = 0;
-  let bestDistance = Number.MAX_SAFE_INTEGER;
-
-  for (const word of searchWords) {
-    const offerIndex = lowerHtml.indexOf(word);
-
-    if (offerIndex === -1) continue;
-
-    const start = Math.max(0, offerIndex - 800);
-    const end = Math.min(cleanedHtml.length, offerIndex + 1600);
-
-    const cardHtml = cleanedHtml.slice(start, end);
-
+  for (const cardHtml of cardCandidates) {
     const cardText = cardHtml
       .replace(/<[^>]+>/g, " ")
       .replace(/&nbsp;/g, " ")
-      .replace(/,/g, "")
       .replace(/\s+/g, " ")
       .toLowerCase();
 
@@ -263,25 +250,30 @@ function extractRewardNearOffer(html: string, offer: Offer): number {
       continue;
     }
 
-    const matches = [...cardText.matchAll(rewardPattern)];
+    const hasOfferName = searchWords.some((word) =>
+      cardText.includes(word)
+    );
 
-    for (const match of matches) {
-      if (!match.index || !match[1]) continue;
+    if (!hasOfferName) continue;
 
-      const reward = Number(match[1].replace(/,/g, ""));
+    const rewardMatches = [
+      ...cardText.matchAll(
+        /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,7})\s*(p|ポイント|pt)/gi
+      ),
+    ];
 
-      if (reward <= 0 || reward > 100000) continue;
+    if (rewardMatches.length !== 1) {
+      continue;
+    }
 
-      const distance = Math.abs(match.index - cardText.indexOf(word));
+    const reward = Number(rewardMatches[0][1].replace(/,/g, ""));
 
-      if (distance < bestDistance) {
-        bestReward = reward;
-        bestDistance = distance;
-      }
+    if (reward > 0 && reward <= 100000) {
+      return reward;
     }
   }
 
-  return bestReward;
+  return 0;
 }
 
 
@@ -336,7 +328,7 @@ async function searchMoppyOffers(
 
         return {
           name: offer.offer_name,
-          reward: extractedReward > 0 ? extractedReward : offer.reward,
+          reward: extractedReward > 0 ? extractedReward : 0,
         };
       });
 
