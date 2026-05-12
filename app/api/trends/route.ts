@@ -12,7 +12,7 @@ export async function GET() {
       .from("trends")
       .select("word, score, category")
       .order("score", { ascending: false })
-      .limit(30);
+      .limit(50);
 
     if (error) {
       throw error;
