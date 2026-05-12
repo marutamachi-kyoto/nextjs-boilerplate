@@ -158,12 +158,7 @@ async function getTrends(): Promise<TrendInfo[]> {
     );
 
     if (!res.ok) {
-      return [
-        {
-          keyword: `HTTP_ERROR_${res.status}`,
-          traffic: "0",
-        },
-      ];
+      return [];
     }
 
     const xml = await res.text();
@@ -176,22 +171,54 @@ async function getTrends(): Promise<TrendInfo[]> {
 
         const titleMatch = item.match(/<title>(.*?)<\/title>/);
 
-　　　　　const trafficMatch = item.match(
- 　　　　　 /<ht:approx_traffic>(.*?)<\/ht:approx_traffic>/
-　　　　　);
+        const trafficMatch = item.match(
+          /<ht:approx_traffic>(.*?)<\/ht:approx_traffic>/
+        );
+
         return {
           keyword: titleMatch?.[1] ?? "",
           traffic: trafficMatch?.[1],
         };
       })
       .filter((trend) => trend.keyword);
-  } catch (e: any) {
-    return [
-      {
-        keyword: `FETCH_ERROR_${e.message}`,
-        traffic: "0",
+  } catch {
+    return [];
+  }
+}
+
+async function hasMoppyResult(keyword: string): Promise<boolean> {
+  try {
+    const url = `https://pc.moppy.jp/search/?q=${encodeURIComponent(
+      keyword
+    )}`;
+
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
       },
+    });
+
+    if (!res.ok) {
+      return false;
+    }
+
+    const html = await res.text();
+
+    const noResultTexts = [
+      "該当する広告がありません",
+      "検索結果がありません",
+      "0件",
     ];
+
+    const hasNoResult = noResultTexts.some((text) =>
+      html.includes(text)
+    );
+
+    return !hasNoResult;
+  } catch {
+    return false;
   }
 }
 
@@ -229,6 +256,16 @@ function getMatchedTrend(offer: Offer, trends: TrendInfo[]) {
 export async function GET() {
   try {
     const trends = await getTrends();
+
+    const moppyMatchedTrends: TrendInfo[] = [];
+
+    for (const trend of trends) {
+      const matched = await hasMoppyResult(trend.keyword);
+
+      if (matched) {
+        moppyMatchedTrends.push(trend);
+      }
+    }
 
     const rankingTrendSource =
       trends.length > 0
@@ -283,11 +320,13 @@ export async function GET() {
       );
     }
 
-    const trendRows = trends.slice(0, 30).map((trend, index) => ({
-      word: trend.keyword,
-      score: Math.max(100 - index * 3, 40),
-      category: "一般",
-    }));
+    const trendRows = moppyMatchedTrends
+      .slice(0, 30)
+      .map((trend, index) => ({
+        word: trend.keyword,
+        score: Math.max(100 - index * 3, 40),
+        category: "一般",
+      }));
 
     if (trendRows.length > 0) {
       await supabase.from("trends").delete().neq("word", "");
@@ -298,8 +337,11 @@ export async function GET() {
       message: "ランキング更新完了",
       count: rankings.length,
       trends_count: trendRows.length,
-      trends_source: trends.length > 0 ? "google_trends" : "not_updated",
-      trends_debug: trends[0]?.keyword ?? null,
+      trends_source:
+        moppyMatchedTrends.length > 0
+          ? "google_trends_moppy_filtered"
+          : "not_updated",
+      trends_debug: moppyMatchedTrends[0]?.keyword ?? null,
     });
   } catch {
     return Response.json(
