@@ -224,10 +224,23 @@ function extractRewardNearOffer(html: string, offer: Offer): number {
     .replace(/<script[\s\S]*?<\/script>/g, "")
     .replace(/<style[\s\S]*?<\/style>/g, "");
 
-  const searchWords = [
-    offer.offer_name.toLowerCase(),
-    ...offer.keywords.map((keyword) => keyword.toLowerCase()),
-  ].filter(Boolean);
+  const normalize = (text: string) =>
+    text
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+
+  const cleanTitle = (text: string) =>
+    normalize(text)
+      .replace(/^【[^】]+】\s*/g, "")
+      .replace(/^\[[^\]]+\]\s*/g, "")
+      .replace(/^（[^）]+）\s*/g, "")
+      .replace(/^\([^)]+\)\s*/g, "")
+      .trim();
+
+  const targetTitle = cleanTitle(offer.offer_name);
 
   const cardCandidates = cleanedHtml
     .split(/(?=<a\s|<article|<li|<div\s)/i)
@@ -235,11 +248,7 @@ function extractRewardNearOffer(html: string, offer: Offer): number {
     .filter((card) => card.length >= 100 && card.length <= 5000);
 
   for (const cardHtml of cardCandidates) {
-    const cardText = cardHtml
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/g, " ")
-      .replace(/\s+/g, " ")
-      .toLowerCase();
+    const cardText = normalize(cardHtml);
 
     if (
       cardText.includes("最近見た広告") ||
@@ -250,11 +259,31 @@ function extractRewardNearOffer(html: string, offer: Offer): number {
       continue;
     }
 
-    const hasOfferName = searchWords.some((word) =>
-      cardText.includes(word)
+    const titleCandidates: string[] = [];
+
+    const titlePatterns = [
+      /alt="([^"]+)"/gi,
+      /title="([^"]+)"/gi,
+      /<h2[^>]*>([\s\S]*?)<\/h2>/gi,
+      /<h3[^>]*>([\s\S]*?)<\/h3>/gi,
+      /<strong[^>]*>([\s\S]*?)<\/strong>/gi,
+    ];
+
+    for (const pattern of titlePatterns) {
+      const matches = [...cardHtml.matchAll(pattern)];
+
+      for (const match of matches) {
+        if (match[1]) {
+          titleCandidates.push(cleanTitle(match[1]));
+        }
+      }
+    }
+
+    const hasExactTitle = titleCandidates.some(
+      (title) => title === targetTitle
     );
 
-    if (!hasOfferName) continue;
+    if (!hasExactTitle) continue;
 
     const rewardMatches = [
       ...cardText.matchAll(
@@ -275,7 +304,6 @@ function extractRewardNearOffer(html: string, offer: Offer): number {
 
   return 0;
 }
-
 
 
 
