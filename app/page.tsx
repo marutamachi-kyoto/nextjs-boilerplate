@@ -75,9 +75,9 @@ export default function Page() {
   };
 
   const formatReward = (reward?: number) => {
-    if (!reward || reward <= 0) return "-";
-    return `${reward.toLocaleString()}P`;
-  };
+  if (!reward || reward <= 0) return "データ取得不可";
+  return `${reward.toLocaleString()}P`;
+};
 
   const getTrendBadges = (item: CategoryScore): TrendBadge[] => {
     const category = item.category;
