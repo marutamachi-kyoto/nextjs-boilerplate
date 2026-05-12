@@ -146,23 +146,19 @@ const OFFERS: Offer[] = [
 
 async function getTrends(): Promise<TrendInfo[]> {
   try {
-    const res = await fetch(
-      "https://trends.google.com/trending/rss?geo=JP",
-      {
-        cache: "no-store",
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
-        },
-      }
-    );
+    const res = await fetch("https://trends.google.com/trending/rss?geo=JP", {
+      cache: "no-store",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
+      },
+    });
 
     if (!res.ok) {
       return [];
     }
 
     const xml = await res.text();
-
     const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
 
     return items
@@ -170,7 +166,6 @@ async function getTrends(): Promise<TrendInfo[]> {
         const item = match[1];
 
         const titleMatch = item.match(/<title>(.*?)<\/title>/);
-
         const trafficMatch = item.match(
           /<ht:approx_traffic>(.*?)<\/ht:approx_traffic>/
         );
@@ -188,9 +183,7 @@ async function getTrends(): Promise<TrendInfo[]> {
 
 async function hasMoppyResult(keyword: string): Promise<boolean> {
   try {
-    const url = `https://pc.moppy.jp/search/?q=${encodeURIComponent(
-      keyword
-    )}`;
+    const url = `https://pc.moppy.jp/search/?q=${encodeURIComponent(keyword)}`;
 
     const res = await fetch(url, {
       cache: "no-store",
@@ -212,9 +205,7 @@ async function hasMoppyResult(keyword: string): Promise<boolean> {
       "0件",
     ];
 
-    const hasNoResult = noResultTexts.some((text) =>
-      html.includes(text)
-    );
+    const hasNoResult = noResultTexts.some((text) => html.includes(text));
 
     return !hasNoResult;
   } catch {
@@ -236,7 +227,7 @@ function getTrafficBonus(traffic?: string): number {
   return 0;
 }
 
-function getMatchedTrend(offer: Offer, trends: TrendInfo[]) {
+function getMatchedTrend(offer: Offer, trends: TrendInfo[]): TrendInfo {
   const matched = trends.find((trend) => {
     const text = trend.keyword.toLowerCase();
 
@@ -268,8 +259,8 @@ export async function GET() {
     }
 
     const rankingTrendSource =
-      trends.length > 0
-        ? trends
+      moppyMatchedTrends.length > 0
+        ? moppyMatchedTrends
         : OFFERS.map((offer) => ({
             keyword: offer.offer_name,
             traffic: "取得中",
@@ -278,9 +269,16 @@ export async function GET() {
     const rankings = OFFERS.map((offer) => {
       const trend = getMatchedTrend(offer, rankingTrendSource);
 
-      const score = Math.min(
-        100,
-        offer.base_score + getTrafficBonus(trend.traffic)
+      const isTrendMatched = trend.keyword !== offer.offer_name;
+
+      const score = Math.max(
+        1,
+        Math.min(
+          100,
+          offer.base_score +
+            getTrafficBonus(trend.traffic) +
+            (isTrendMatched ? 8 : -10)
+        )
       );
 
       return {
@@ -291,7 +289,9 @@ export async function GET() {
         final_score: score,
         trend_keyword: trend.keyword,
         trend_traffic: trend.traffic ?? null,
-        reason: `${offer.offer_name} は現在注目度が高く、ポイ活案件として評価されています。`,
+        reason: isTrendMatched
+          ? `${offer.offer_name} は現在の検索トレンドとモッピー案件の両方に関連しており、今狙いやすいポイ活案件として評価されています。`
+          : `${offer.offer_name} は安定して人気のあるポイ活案件として評価されています。`,
         primary_site_name: offer.primary_site_name,
         primary_site_url: offer.primary_site_url,
         secondary_site_name: offer.secondary_site_name,
@@ -320,13 +320,11 @@ export async function GET() {
       );
     }
 
-    const trendRows = moppyMatchedTrends
-      .slice(0, 30)
-      .map((trend, index) => ({
-        word: trend.keyword,
-        score: Math.max(100 - index * 3, 40),
-        category: "一般",
-      }));
+    const trendRows = moppyMatchedTrends.slice(0, 30).map((trend, index) => ({
+      word: trend.keyword,
+      score: Math.max(100 - index * 3, 40),
+      category: "一般",
+    }));
 
     if (trendRows.length > 0) {
       await supabase.from("trends").delete().neq("word", "");
@@ -340,7 +338,7 @@ export async function GET() {
       trends_source:
         moppyMatchedTrends.length > 0
           ? "google_trends_moppy_filtered"
-          : "not_updated",
+          : "fallback_offers",
       trends_debug: moppyMatchedTrends[0]?.keyword ?? null,
     });
   } catch {
