@@ -307,60 +307,36 @@ export default function Page() {
   };
 
   const getRankStyle = (index: number) => {
-  if (index === 0) {
-    return {
-      crown: "👑",
-      badge: "from-yellow-300 to-amber-500",
-      ring: "ring-yellow-100",
-      card: "from-yellow-50 via-white to-amber-50",
-    };
-  }
+    if (index === 0) {
+      return {
+        crown: "👑",
+        badge: "from-yellow-300 to-amber-500",
+        ring: "ring-yellow-100",
+      };
+    }
 
-  if (index === 1) {
+    if (index === 1) {
+      return {
+        crown: "♛",
+        badge: "from-slate-300 to-slate-500",
+        ring: "ring-slate-100",
+      };
+    }
+
+    if (index === 2) {
+      return {
+        crown: "♛",
+        badge: "from-orange-400 to-orange-700",
+        ring: "ring-orange-100",
+      };
+    }
+
     return {
-      crown: "♛",
-      badge: "from-slate-300 to-slate-500",
+      crown: "",
+      badge: "from-white to-white",
       ring: "ring-slate-100",
-      card: "from-slate-50 via-white to-blue-50",
     };
-  }
-
-  if (index === 2) {
-    return {
-      crown: "♛",
-      badge: "from-orange-400 to-orange-700",
-      ring: "ring-orange-100",
-      card: "from-orange-50 via-white to-rose-50",
-    };
-  }
-
-  const pastelCards = [
-    "from-pink-50 via-white to-rose-50",
-    "from-emerald-50 via-white to-teal-50",
-    "from-violet-50 via-white to-fuchsia-50",
-    "from-amber-50 via-white to-yellow-50",
-    "from-cyan-50 via-white to-sky-50",
-    "from-orange-50 via-white to-pink-50",
-  ];
-
-  const pastelBadges = [
-    "from-pink-300 to-rose-400",
-    "from-emerald-300 to-teal-400",
-    "from-violet-300 to-fuchsia-400",
-    "from-amber-300 to-orange-400",
-    "from-cyan-300 to-sky-400",
-    "from-orange-300 to-pink-400",
-  ];
-
-  const colorIndex = (index - 3) % pastelCards.length;
-
-  return {
-    crown: "",
-    badge: pastelBadges[colorIndex],
-    ring: "ring-pink-100",
-    card: pastelCards[colorIndex],
   };
-};
 
   const topItems = items.slice(0, 3);
   const listItems = items.slice(3, 30);
@@ -480,7 +456,7 @@ export default function Page() {
               return (
                 <article
                   key={`${item.rank}-${item.offer_name}-${index}`}
-                  className={`rounded-[2rem] bg-gradient-to-r ${rankStyle.card} p-5 shadow-lg ring-1 ${rankStyle.ring} lg:p-7`}
+                  className={`rounded-[2rem] bg-white p-5 shadow-lg ring-1 ${rankStyle.ring} lg:p-7`}
                 >
                   <div className="grid gap-6 lg:grid-cols-[120px_1.5fr_1.2fr_260px] lg:items-center">
                     <div className="flex items-center justify-center lg:block">
@@ -586,12 +562,10 @@ export default function Page() {
                 return (
                   <article
                     key={`${item.rank}-${item.offer_name}-${index}`}
-                    className={`grid gap-4 bg-gradient-to-r ${getRankStyle(index).card} p-5 transition hover:scale-[1.01] lg:grid-cols-[58px_170px_1.3fr_1.5fr_210px] lg:items-center lg:gap-5`}
+                    className="grid gap-4 p-5 transition hover:bg-pink-50/40 lg:grid-cols-[58px_170px_1.3fr_1.5fr_210px] lg:items-center lg:gap-5"
                   >
                     <div className="flex items-center gap-3 lg:justify-center">
-                      <div
-  　　　　　　　　　　　　className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${getRankStyle(index).badge} text-lg font-black text-white shadow-lg`}
-　　　　　　　　　　　　>
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg font-black text-slate-900 shadow-sm ring-1 ring-slate-200">
                         {index + 1}
                       </div>
                     </div>
