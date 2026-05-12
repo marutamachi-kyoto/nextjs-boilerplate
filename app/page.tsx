@@ -316,7 +316,7 @@ export default function Page() {
           <div className="flex items-center gap-3">
             <span className="text-4xl">🔥</span>
             <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-              いまAIがおすすめするポイ活ランキング
+              いま<span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">AI</span>がおすすめするポイ活ランキング
             </h2>
           </div>
 
