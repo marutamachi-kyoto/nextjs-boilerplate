@@ -344,8 +344,8 @@ export default function Page() {
                   </div>
 
                   <div className="rounded-[1.5rem] bg-white/90 px-5 py-5 text-center shadow-sm ring-1 ring-pink-100">
-                    <div className="text-sm font-black text-slate-500">
-                      報酬ポイント数
+                    <div className="text-base font-black text-slate-600 lg:text-lg">
+                      報酬ポイントの目安
                     </div>
                     <div className="mt-2 text-4xl font-black tracking-tight text-pink-500 lg:text-5xl">
                       {formatReward(item.reward)}
