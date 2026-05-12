@@ -11,7 +11,7 @@ export async function GET() {
       .from("rankings")
       .select("*")
       .order("rank", { ascending: true })
-      .limit(30);
+      .limit(50);
 
     if (error) {
       console.error(error);
@@ -24,7 +24,6 @@ export async function GET() {
     const formatted = (data || []).map((item, index) => ({
       rank: item.rank ?? index + 1,
 
-      // 案件名ランキング対応
       offer_name:
         item.offer_name ||
         item.trend_keyword ||
@@ -34,20 +33,16 @@ export async function GET() {
       category: item.category ?? "その他",
       trend_keyword: item.trend_keyword ?? item.offer_name ?? item.category,
 
-      // AI分析文
       reason:
         item.description ||
         item.reason ||
         "Googleトレンドや検索動向をもとに、AIが注目度の高い案件として判定しました。",
 
       primary_site_name: item.primary_site_name ?? "モッピー",
-      primary_site_url:
-        item.primary_site_url ?? "https://pc.moppy.jp/",
+      primary_site_url: item.primary_site_url ?? "https://pc.moppy.jp/",
 
-      secondary_site_name:
-        item.secondary_site_name ?? "ポイントインカム",
-      secondary_site_url:
-        item.secondary_site_url ?? "https://pointi.jp/",
+      secondary_site_name: item.secondary_site_name ?? "ポイントインカム",
+      secondary_site_url: item.secondary_site_url ?? "https://pointi.jp/",
 
       updated_at: item.updated_at,
     }));
