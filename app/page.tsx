@@ -35,7 +35,7 @@ export default function Page() {
   const [items, setItems] = useState<CategoryScore[]>([]);
   const [updatedAt, setUpdatedAt] = useState("-");
   const [trendTags, setTrendTags] = useState<TrendTag[]>([]);
-
+const [selectedKeyword, setSelectedKeyword] = useState("");
   useEffect(() => {
     fetch("/api/trends")
       .then((res) => res.json())
@@ -221,8 +221,17 @@ export default function Page() {
     };
   };
 
-  const topItems = items.slice(0, 3);
-  const listItems = items.slice(3, 50);
+  const filteredItems = selectedKeyword
+  ? items.filter((item) => {
+      const text =
+        `${item.offer_name} ${item.category} ${item.trend_keyword}`.toLowerCase();
+
+      return text.includes(selectedKeyword.toLowerCase());
+    })
+  : items;
+
+const topItems = filteredItems.slice(0, 3);
+const listItems = filteredItems.slice(3, 50);
 
   return (
     <div className="min-h-screen bg-[#fff8fb]">
@@ -293,20 +302,29 @@ export default function Page() {
           <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
             <div className="flex flex-wrap items-center gap-3">
               {trendTags.map((tag) => (
-                <div
-                  key={tag.word}
-                  className={`rounded-full bg-pink-100 px-5 py-3 font-black text-pink-600 transition hover:scale-105 ${
-                    tag.score >= 90
-                      ? "text-3xl"
-                      : tag.score >= 70
-                      ? "text-2xl"
-                      : tag.score >= 50
-                      ? "text-xl"
-                      : "text-base"
-                  }`}
-                >
-                  {tag.word}
-                </div>
+<button
+  key={tag.word}
+  onClick={() =>
+    setSelectedKeyword(
+      selectedKeyword === tag.word ? "" : tag.word
+    )
+  }
+  className={`rounded-full px-5 py-3 font-black transition hover:scale-105 ${
+    selectedKeyword === tag.word
+      ? "bg-pink-500 text-white"
+      : "bg-pink-100 text-pink-600"
+  } ${
+    tag.score >= 90
+      ? "text-3xl"
+      : tag.score >= 70
+      ? "text-2xl"
+      : tag.score >= 50
+      ? "text-xl"
+      : "text-base"
+  }`}
+>
+  {tag.word}
+</button>
               ))}
             </div>
           </div>
