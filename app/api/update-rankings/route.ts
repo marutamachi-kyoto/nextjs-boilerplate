@@ -36,6 +36,22 @@ type MoppySearchResult = {
   offers: string[];
 };
 
+type RankingItem = {
+  rank: number;
+  offer_name: string;
+  category: Category;
+  score: number;
+  final_score: number;
+  trend_keyword: string | null;
+  trend_traffic: string | null;
+  reason: string;
+  primary_site_name: string;
+  primary_site_url: string;
+  secondary_site_name: string;
+  secondary_site_url: string;
+  updated_at: string;
+};
+
 const OFFERS: Offer[] = [
   {
     offer_name: "楽天モバイル",
@@ -297,6 +313,25 @@ function getTrafficBonus(traffic?: string): number {
   return 0;
 }
 
+function applyCategoryBalance(rankings: RankingItem[]): RankingItem[] {
+  const categoryCounts: Record<string, number> = {};
+
+  const adjusted = rankings.map((item) => {
+    const currentCount = categoryCounts[item.category] ?? 0;
+
+    const penalty = currentCount * 4;
+
+    categoryCounts[item.category] = currentCount + 1;
+
+    return {
+      ...item,
+      final_score: Math.max(1, item.score - penalty),
+    };
+  });
+
+  return adjusted.sort((a, b) => b.final_score - a.final_score);
+}
+
 export async function GET() {
   try {
     const trends = await getTrends();
@@ -311,7 +346,7 @@ export async function GET() {
       }
     }
 
-    const rankings = OFFERS.map((offer) => {
+    const baseRankings: RankingItem[] = OFFERS.map((offer) => {
       const matchedResult = matchedResults.find((result) =>
         result.offers.includes(offer.offer_name)
       );
@@ -347,8 +382,9 @@ export async function GET() {
         secondary_site_url: offer.secondary_site_url,
         updated_at: new Date().toISOString(),
       };
-    })
-      .sort((a, b) => b.score - a.score)
+    });
+
+    const rankings = applyCategoryBalance(baseRankings)
       .slice(0, 30)
       .map((item, index) => ({
         ...item,
@@ -392,6 +428,7 @@ export async function GET() {
           : "fallback_offers",
       trends_debug: matchedResults[0]?.trend.keyword ?? null,
       matched_offers_debug: matchedResults[0]?.offers ?? [],
+      top_categories: rankings.slice(0, 5).map((r) => r.category),
     });
   } catch {
     return Response.json(
