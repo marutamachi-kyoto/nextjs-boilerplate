@@ -52,354 +52,30 @@ type RankingItem = {
   updated_at: string;
 };
 
-const OFFERS: Offer[] = [
-  {
-    offer_name: "楽天モバイル",
-    category: "通信・回線",
-    keywords: ["楽天モバイル", "楽天", "三木谷", "スマホ", "sim"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 92,
-  },
-  {
-    offer_name: "ahamo",
-    category: "通信・回線",
-    keywords: ["ahamo", "ドコモ", "スマホ", "回線"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ハピタス",
-    secondary_site_url: "https://hapitas.jp/",
-    base_score: 90,
-  },
-  {
-    offer_name: "LINEMO",
-    category: "通信・回線",
-    keywords: ["linemo", "line", "ソフトバンク"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 88,
-  },
-  {
-    offer_name: "mineo",
-    category: "通信・回線",
-    keywords: ["mineo", "マイネオ", "格安sim"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 86,
-  },
-  {
-    offer_name: "UQ mobile",
-    category: "通信・回線",
-    keywords: ["uq", "uq mobile", "au"],
-    primary_site_name: "ポイントインカム",
-    primary_site_url: "https://pointi.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 85,
-  },
+async function getOffers(): Promise<Offer[]> {
+  const { data, error } = await supabase
+    .from("offers")
+    .select("*");
 
-  {
-    offer_name: "三井住友カード（NL）",
-    category: "クレジットカード",
-    keywords: ["三井住友カード", "カード", "クレカ", "visa"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ハピタス",
-    secondary_site_url: "https://hapitas.jp/",
-    base_score: 89,
-  },
-  {
-    offer_name: "PayPayカード",
-    category: "クレジットカード",
-    keywords: ["paypay", "PayPayカード", "カード"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ハピタス",
-    secondary_site_url: "https://hapitas.jp/",
-    base_score: 87,
-  },
-  {
-    offer_name: "dカード GOLD",
-    category: "クレジットカード",
-    keywords: ["dカード", "gold", "docomo"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 86,
-  },
-  {
-    offer_name: "エポスカード",
-    category: "クレジットカード",
-    keywords: ["エポス", "epos", "カード"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 85,
-  },
-  {
-    offer_name: "JCB CARD W",
-    category: "クレジットカード",
-    keywords: ["jcb", "jcb card w", "カード"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 84,
-  },
-  {
-    offer_name: "Olive",
-    category: "クレジットカード",
-    keywords: ["olive", "三井住友", "銀行"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 83,
-  },
-  {
-    offer_name: "イオンカード",
-    category: "クレジットカード",
-    keywords: ["イオンカード", "waon", "カード"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 82,
-  },
+  if (error) {
+    console.error("offers fetch error", error);
+    return [];
+  }
 
-  {
-    offer_name: "楽天証券",
-    category: "証券・投資",
-    keywords: ["楽天証券", "証券", "nisa", "投資"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 85,
-  },
-  {
-    offer_name: "SBI証券",
-    category: "証券・投資",
-    keywords: ["sbi証券", "sbi", "nisa", "投資"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ハピタス",
-    secondary_site_url: "https://hapitas.jp/",
-    base_score: 84,
-  },
-  {
-    offer_name: "マネックス証券",
-    category: "証券・投資",
-    keywords: ["マネックス", "証券", "株"],
-    primary_site_name: "ポイントインカム",
-    primary_site_url: "https://pointi.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 83,
-  },
-  {
-    offer_name: "auカブコム証券",
-    category: "証券・投資",
-    keywords: ["auカブコム", "証券", "投資"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 82,
-  },
-  {
-    offer_name: "松井証券",
-    category: "証券・投資",
-    keywords: ["松井証券", "証券", "株"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 81,
-  },
-
-  {
-    offer_name: "TikTok Lite",
-    category: "アプリ・ゲーム",
-    keywords: ["tiktok", "TikTok Lite", "アプリ"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 86,
-  },
-  {
-    offer_name: "マージマンション",
-    category: "アプリ・ゲーム",
-    keywords: ["マージマンション", "ゲーム", "アプリ"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 81,
-  },
-  {
-    offer_name: "信長の野望 覇道",
-    category: "アプリ・ゲーム",
-    keywords: ["信長の野望", "信長", "覇道", "ゲーム"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 90,
-  },
-  {
-    offer_name: "トリマ",
-    category: "アプリ・ゲーム",
-    keywords: ["トリマ", "歩数", "ポイ活"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 80,
-  },
-  {
-    offer_name: "LINEマンガ",
-    category: "アプリ・ゲーム",
-    keywords: ["lineマンガ", "漫画", "アプリ"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 79,
-  },
-  {
-    offer_name: "メルカリ",
-    category: "アプリ・ゲーム",
-    keywords: ["メルカリ", "フリマ", "mercari"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 78,
-  },
-
-  {
-    offer_name: "楽天市場",
-    category: "ショッピング",
-    keywords: ["楽天市場", "楽天", "買い物", "セール"],
-    primary_site_name: "ポイントインカム",
-    primary_site_url: "https://pointi.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 84,
-  },
-  {
-    offer_name: "Yahoo!ショッピング",
-    category: "ショッピング",
-    keywords: ["yahooショッピング", "paypay", "買い物"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ハピタス",
-    secondary_site_url: "https://hapitas.jp/",
-    base_score: 82,
-  },
-  {
-    offer_name: "Qoo10",
-    category: "ショッピング",
-    keywords: ["qoo10", "メガ割", "通販"],
-    primary_site_name: "ポイントインカム",
-    primary_site_url: "https://pointi.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 80,
-  },
-  {
-    offer_name: "au PAYマーケット",
-    category: "ショッピング",
-    keywords: ["au pay", "マーケット", "通販"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 79,
-  },
-
-  {
-    offer_name: "Amazon Prime",
-    category: "サブスク",
-    keywords: ["amazon", "prime", "プライム", "サブスク"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 82,
-  },
-  {
-    offer_name: "U-NEXT",
-    category: "サブスク",
-    keywords: ["u-next", "動画", "配信", "サブスク"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 80,
-  },
-  {
-    offer_name: "Netflix",
-    category: "サブスク",
-    keywords: ["netflix", "動画", "映画"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    base_score: 79,
-  },
-  {
-    offer_name: "Disney+",
-    category: "サブスク",
-    keywords: ["disney+", "ディズニー", "動画"],
-    primary_site_name: "ハピタス",
-    primary_site_url: "https://hapitas.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 78,
-  },
-
-  {
-    offer_name: "住信SBIネット銀行",
-    category: "その他",
-    keywords: ["住信sbi", "銀行", "口座"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ワラウ",
-    secondary_site_url: "https://www.warau.jp/",
-    base_score: 83,
-  },
-  {
-    offer_name: "PayPay銀行",
-    category: "その他",
-    keywords: ["paypay銀行", "銀行", "口座"],
-    primary_site_name: "モッピー",
-    primary_site_url: "https://pc.moppy.jp/",
-    secondary_site_name: "ハピタス",
-    secondary_site_url: "https://hapitas.jp/",
-    base_score: 81,
-  },
-  {
-    offer_name: "ソニー銀行",
-    category: "その他",
-    keywords: ["ソニー銀行", "sony", "口座"],
-    primary_site_name: "ポイントインカム",
-    primary_site_url: "https://pointi.jp/",
-    secondary_site_name: "モッピー",
-    secondary_site_url: "https://pc.moppy.jp/",
-    base_score: 80,
-  },
-];
+  return data.map((item: any) => ({
+    offer_name: item.offer_name || item.title,
+    category: item.category,
+    keywords: item.keywords || [],
+    primary_site_name: item.primary_site_name || item.site_name || "モッピー",
+    primary_site_url:
+      item.primary_site_url || item.site_url || "https://pc.moppy.jp/",
+    secondary_site_name:
+      item.secondary_site_name || "ポイントインカム",
+    secondary_site_url:
+      item.secondary_site_url || "https://pointi.jp/",
+    base_score: item.base_score || item.points || 80,
+  }));
+}
 
 async function getTrends(): Promise<TrendInfo[]> {
   try {
@@ -474,7 +150,8 @@ function extractOfferTitles(html: string): string[] {
 }
 
 async function searchMoppyOffers(
-  trend: TrendInfo
+  trend: TrendInfo,
+  offers: Offer[]
 ): Promise<MoppySearchResult | null> {
   try {
     const url = `https://pc.moppy.jp/search/?q=${encodeURIComponent(
@@ -511,16 +188,18 @@ async function searchMoppyOffers(
 
     const extractedTitles = extractOfferTitles(html);
 
-    const matchedOffers = OFFERS.filter((offer) => {
-      return extractedTitles.some((title) => {
-        return (
-          title.includes(offer.offer_name.toLowerCase()) ||
-          offer.keywords.some((keyword) =>
-            title.includes(keyword.toLowerCase())
-          )
-        );
-      });
-    }).map((offer) => offer.offer_name);
+    const matchedOffers = offers
+      .filter((offer) => {
+        return extractedTitles.some((title) => {
+          return (
+            title.includes(offer.offer_name.toLowerCase()) ||
+            offer.keywords.some((keyword) =>
+              title.includes(keyword.toLowerCase())
+            )
+          );
+        });
+      })
+      .map((offer) => offer.offer_name);
 
     if (matchedOffers.length === 0) {
       return null;
@@ -570,19 +249,21 @@ function applyCategoryBalance(rankings: RankingItem[]): RankingItem[] {
 
 export async function GET() {
   try {
+    const offers = await getOffers();
+
     const trends = await getTrends();
 
     const matchedResults: MoppySearchResult[] = [];
 
     for (const trend of trends) {
-      const result = await searchMoppyOffers(trend);
+      const result = await searchMoppyOffers(trend, offers);
 
       if (result) {
         matchedResults.push(result);
       }
     }
 
-    const baseRankings: RankingItem[] = OFFERS.map((offer) => {
+    const baseRankings: RankingItem[] = offers.map((offer) => {
       const matchedResult = matchedResults.find((result) =>
         result.offers.includes(offer.offer_name)
       );
@@ -642,18 +323,18 @@ export async function GET() {
     }
 
     const trendRows = matchedResults
-  .flatMap((result) =>
-    result.offers.map((offer, offerIndex) => ({
-      word: offer,
-      score: Math.max(100 - offerIndex * 2, 40),
-      category: "ポイ活",
-    }))
-  )
-  .filter(
-    (item, index, self) =>
-      index === self.findIndex((t) => t.word === item.word)
-  )
-  .slice(0, 30);
+      .flatMap((result) =>
+        result.offers.map((offer, offerIndex) => ({
+          word: offer,
+          score: Math.max(100 - offerIndex * 2, 40),
+          category: "ポイ活",
+        }))
+      )
+      .filter(
+        (item, index, self) =>
+          index === self.findIndex((t) => t.word === item.word)
+      )
+      .slice(0, 30);
 
     if (trendRows.length > 0) {
       await supabase.from("trends").delete().neq("word", "");
