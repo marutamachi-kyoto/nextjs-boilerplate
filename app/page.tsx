@@ -52,7 +52,7 @@ export default function Page() {
       .then((res) => res.json())
       .then((json) => {
         const data = json.data || [];
-        setItems(data.slice(0, 30));
+        setItems(data.slice(0, 50));
 
         if (data[0]?.updated_at) {
           setUpdatedAt(
@@ -339,7 +339,7 @@ export default function Page() {
   };
 
   const topItems = items.slice(0, 3);
-  const listItems = items.slice(3, 30);
+  const listItems = items.slice(3, 50);
 
   return (
     <>
