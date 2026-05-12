@@ -186,6 +186,41 @@ async function getTrends(): Promise<TrendInfo[]> {
   }
 }
 
+function extractOfferTitles(html: string): string[] {
+  const titlePatterns = [
+    /alt="([^"]+)"/g,
+    /title="([^"]+)"/g,
+    /<h3[^>]*>(.*?)<\/h3>/g,
+    /<h2[^>]*>(.*?)<\/h2>/g,
+  ];
+
+  const titles = new Set<string>();
+
+  for (const pattern of titlePatterns) {
+    const matches = [...html.matchAll(pattern)];
+
+    for (const match of matches) {
+      const text = match[1]
+        ?.replace(/<[^>]+>/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (
+        text &&
+        text.length >= 2 &&
+        text.length <= 60 &&
+        !text.includes("モッピー") &&
+        !text.includes("ポイント") &&
+        !text.includes("広告")
+      ) {
+        titles.add(text.toLowerCase());
+      }
+    }
+  }
+
+  return [...titles];
+}
+
 async function searchMoppyOffers(
   trend: TrendInfo
 ): Promise<MoppySearchResult | null> {
@@ -222,15 +257,17 @@ async function searchMoppyOffers(
       return null;
     }
 
-    const matchedOffers = OFFERS.filter((offer) => {
-      const searchText = `${trend.keyword} ${html}`.toLowerCase();
+    const extractedTitles = extractOfferTitles(html);
 
-      return (
-        searchText.includes(offer.offer_name.toLowerCase()) ||
-        offer.keywords.some((keyword) =>
-          searchText.includes(keyword.toLowerCase())
-        )
-      );
+    const matchedOffers = OFFERS.filter((offer) => {
+      return extractedTitles.some((title) => {
+        return (
+          title.includes(offer.offer_name.toLowerCase()) ||
+          offer.keywords.some((keyword) =>
+            title.includes(keyword.toLowerCase())
+          )
+        );
+      });
     }).map((offer) => offer.offer_name);
 
     if (matchedOffers.length === 0) {
@@ -351,7 +388,7 @@ export async function GET() {
       trends_count: trendRows.length,
       trends_source:
         matchedResults.length > 0
-          ? "google_trends_real_moppy_matches"
+          ? "google_trends_precise_moppy_matches"
           : "fallback_offers",
       trends_debug: matchedResults[0]?.trend.keyword ?? null,
       matched_offers_debug: matchedResults[0]?.offers ?? [],
