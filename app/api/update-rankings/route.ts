@@ -55,7 +55,8 @@ type RankingItem = {
 async function getOffers(): Promise<Offer[]> {
   const { data, error } = await supabase
     .from("offers")
-    .select("*");
+    .select("*")
+    .eq("is_active", true);
 
   if (error) {
     console.error("offers fetch error", error);
@@ -63,17 +64,44 @@ async function getOffers(): Promise<Offer[]> {
   }
 
   return data.map((item: any) => ({
-    offer_name: item.offer_name || item.title,
-    category: item.category,
-    keywords: item.keywords || [],
-    primary_site_name: item.primary_site_name || item.site_name || "モッピー",
+    offer_name: item.title,
+
+    category:
+      item.category?.includes("クレジット")
+        ? "クレジットカード"
+        : item.category?.includes("証券")
+        ? "証券・投資"
+        : item.category?.includes("通信")
+        ? "通信・回線"
+        : item.category?.includes("ゲーム")
+        ? "アプリ・ゲーム"
+        : item.category?.includes("ショッピング")
+        ? "ショッピング"
+        : item.category?.includes("サブスク")
+        ? "サブスク"
+        : "その他",
+
+    keywords: [
+      item.title?.toLowerCase() || "",
+      ...(item.tags || []),
+    ],
+
+    primary_site_name: item.point_site || "モッピー",
+
     primary_site_url:
-      item.primary_site_url || item.site_url || "https://pc.moppy.jp/",
-    secondary_site_name:
-      item.secondary_site_name || "ポイントインカム",
-    secondary_site_url:
-      item.secondary_site_url || "https://pointi.jp/",
-    base_score: item.base_score || item.points || 80,
+      item.url || "https://pc.moppy.jp/",
+
+    secondary_site_name: "ポイントインカム",
+
+    secondary_site_url: "https://pointi.jp/",
+
+    base_score: Math.min(
+      100,
+      Math.max(
+        60,
+        Math.floor((item.reward || 1000) / 120)
+      )
+    ),
   }));
 }
 
