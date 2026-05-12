@@ -169,19 +169,27 @@ function extractOfferTitles(html: string): string[] {
 }
 
 function extractRewardFromText(text: string): number {
-  const normalized = text.replace(/&nbsp;/g, " ").replace(/\s+/g, " ");
+  const normalized = text
+    .replace(/&nbsp;/g, " ")
+    .replace(/,/g, "")
+    .replace(/\s+/g, " ");
 
   const patterns = [
-    /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,7})\s*P/i,
-    /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,7})\s*ポイント/,
-    /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,7})\s*pt/i,
+    /([0-9]{3,7})\s*P/i,
+    /([0-9]{3,7})\s*ポイント/,
+    /([0-9]{3,7})\s*pt/i,
   ];
 
   for (const pattern of patterns) {
     const match = normalized.match(pattern);
 
     if (match?.[1]) {
-      return Number(match[1].replace(/,/g, ""));
+      const reward = Number(match[1]);
+
+      // 明らかに別広告・異常値っぽいものを除外
+      if (reward > 0 && reward <= 100000) {
+        return reward;
+      }
     }
   }
 
@@ -189,52 +197,86 @@ function extractRewardFromText(text: string): number {
 }
 
 function extractRewardNearOffer(html: string, offer: Offer): number {
-  const plainText = html
+  const cleanedHtml = html
     .replace(/<script[\s\S]*?<\/script>/g, "")
-    .replace(/<style[\s\S]*?<\/style>/g, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .toLowerCase();
+    .replace(/<style[\s\S]*?<\/style>/g, "");
+
+  const lowerHtml = cleanedHtml.toLowerCase();
 
   const searchWords = [
     offer.offer_name.toLowerCase(),
     ...offer.keywords.map((keyword) => keyword.toLowerCase()),
   ].filter(Boolean);
 
-  const rewardPattern =
-    /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,7})\s*(p|ポイント|pt)/gi;
+  const cardStartMarkers = [
+    "<article",
+    "<li",
+    '<div class="',
+    "<a ",
+  ];
+
+  const cardEndMarkers = [
+    "</article>",
+    "</li>",
+    "</a>",
+  ];
 
   let bestReward = 0;
-  let bestDistance = Number.MAX_SAFE_INTEGER;
+  let bestCardLength = Number.MAX_SAFE_INTEGER;
 
   for (const word of searchWords) {
-    const offerIndex = plainText.indexOf(word);
+    const offerIndex = lowerHtml.indexOf(word);
 
     if (offerIndex === -1) continue;
 
-    const matches = [...plainText.matchAll(rewardPattern)];
+    let cardStart = -1;
 
-    for (const match of matches) {
-      if (!match.index || !match[1]) continue;
-
-      const rewardIndex = match.index;
-      const distance = Math.abs(rewardIndex - offerIndex);
-
-      // 遠すぎる報酬表記は別案件の可能性が高いので除外
-      if (distance > 900) continue;
-
-      const reward = Number(match[1].replace(/,/g, ""));
-
-      if (reward > 0 && distance < bestDistance) {
-        bestReward = reward;
-        bestDistance = distance;
+    for (const marker of cardStartMarkers) {
+      const index = lowerHtml.lastIndexOf(marker, offerIndex);
+      if (index !== -1) {
+        cardStart = cardStart === -1 ? index : Math.max(cardStart, index);
       }
+    }
+
+    if (cardStart === -1) {
+      cardStart = Math.max(0, offerIndex - 400);
+    }
+
+    let cardEnd = -1;
+
+    for (const marker of cardEndMarkers) {
+      const index = lowerHtml.indexOf(marker, offerIndex);
+      if (index !== -1) {
+        cardEnd = cardEnd === -1 ? index + marker.length : Math.min(cardEnd, index + marker.length);
+      }
+    }
+
+    if (cardEnd === -1 || cardEnd <= cardStart) {
+      cardEnd = Math.min(cleanedHtml.length, offerIndex + 1200);
+    }
+
+    const cardHtml = cleanedHtml.slice(cardStart, cardEnd);
+
+    // カードが大きすぎる場合は別案件を巻き込んでいる可能性が高い
+    if (cardHtml.length > 5000) continue;
+
+    const cardText = cardHtml
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ");
+
+    const reward = extractRewardFromText(cardText);
+
+    if (reward > 0 && cardHtml.length < bestCardLength) {
+      bestReward = reward;
+      bestCardLength = cardHtml.length;
     }
   }
 
   return bestReward;
 }
+
+
 
 
 
