@@ -202,24 +202,41 @@ function extractRewardNearOffer(html: string, offer: Offer): number {
     ...offer.keywords.map((keyword) => keyword.toLowerCase()),
   ].filter(Boolean);
 
+  const rewardPattern =
+    /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,7})\s*(p|ポイント|pt)/gi;
+
+  let bestReward = 0;
+  let bestDistance = Number.MAX_SAFE_INTEGER;
+
   for (const word of searchWords) {
-    const index = plainText.indexOf(word);
+    const offerIndex = plainText.indexOf(word);
 
-    if (index === -1) continue;
+    if (offerIndex === -1) continue;
 
-    const start = Math.max(0, index - 300);
-    const end = Math.min(plainText.length, index + 700);
-    const nearbyText = plainText.slice(start, end);
+    const matches = [...plainText.matchAll(rewardPattern)];
 
-    const reward = extractRewardFromText(nearbyText);
+    for (const match of matches) {
+      if (!match.index || !match[1]) continue;
 
-    if (reward > 0) {
-      return reward;
+      const rewardIndex = match.index;
+      const distance = Math.abs(rewardIndex - offerIndex);
+
+      // 遠すぎる報酬表記は別案件の可能性が高いので除外
+      if (distance > 900) continue;
+
+      const reward = Number(match[1].replace(/,/g, ""));
+
+      if (reward > 0 && distance < bestDistance) {
+        bestReward = reward;
+        bestDistance = distance;
+      }
     }
   }
 
-  return 0;
+  return bestReward;
 }
+
+
 
 async function searchMoppyOffers(
   trend: TrendInfo,
