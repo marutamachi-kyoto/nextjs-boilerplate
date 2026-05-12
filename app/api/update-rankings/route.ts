@@ -330,7 +330,7 @@ export async function GET() {
     });
 
     const rankings = applyCategoryBalance(baseRankings)
-      .slice(0, 30)
+      .slice(0, 50)
       .map((item, index) => ({
         ...item,
         rank: index + 1,
@@ -362,7 +362,7 @@ export async function GET() {
         (item, index, self) =>
           index === self.findIndex((t) => t.word === item.word)
       )
-      .slice(0, 30);
+      .slice(0, 50);
 
     if (trendRows.length > 0) {
       await supabase.from("trends").delete().neq("word", "");
