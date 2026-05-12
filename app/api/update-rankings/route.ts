@@ -29,6 +29,7 @@ type Offer = {
   secondary_site_name: string;
   secondary_site_url: string;
   base_score: number;
+  reward: number;
 };
 
 type MoppySearchResult = {
@@ -49,6 +50,7 @@ type RankingItem = {
   primary_site_url: string;
   secondary_site_name: string;
   secondary_site_url: string;
+  reward: number;
   updated_at: string;
 };
 
@@ -94,6 +96,8 @@ async function getOffers(): Promise<Offer[]> {
     secondary_site_name: "ポイントインカム",
 
     secondary_site_url: "https://pointi.jp/",
+
+    reward: item.reward || 0,
 
     base_score: Math.min(
       100,
@@ -318,6 +322,7 @@ export async function GET() {
         final_score: score,
         trend_keyword: trend?.keyword ?? null,
         trend_traffic: trend?.traffic ?? null,
+        reward: offer.reward,
         reason: isTrendMatched
           ? `${offer.offer_name} は現在のトレンド検索とモッピー掲載案件の両方に一致しており、特に注目度が高い案件です。`
           : `${offer.offer_name} は定番人気のポイ活案件です。`,
