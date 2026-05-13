@@ -3,17 +3,22 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://poikatu-ai.vercel.app"),
+
   title: {
     default:
       "ポイ活AI判定｜GoogleトレンドからAIが毎日おすすめ案件をランキング",
     template: "%s｜ポイ活AI判定",
-    icons: {
-    　icon: "/favicon.png",
-    　shortcut: "/favicon.png",
-    　apple: "/favicon.png",
   },
+
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
+
   description:
     "Googleトレンド・検索動向・話題性をもとに、AIが初心者向けのおすすめポイ活案件を毎日ランキング化。モッピー、ハピタス、ポイントインカムなどの案件探しに役立ちます。",
+
   keywords: [
     "ポイ活",
     "ポイ活 おすすめ",
@@ -27,6 +32,7 @@ export const metadata: Metadata = {
     "副業",
     "お小遣い稼ぎ",
   ],
+
   openGraph: {
     title:
       "ポイ活AI判定｜GoogleトレンドからAIが毎日おすすめ案件をランキング",
@@ -45,6 +51,7 @@ export const metadata: Metadata = {
       },
     ],
   },
+
   twitter: {
     card: "summary_large_image",
     title:
@@ -53,14 +60,16 @@ export const metadata: Metadata = {
       "Googleトレンド・検索動向・話題性をもとに、AIが初心者向けのおすすめポイ活案件を毎日ランキング化。",
     images: ["/hero.png.png"],
   },
+
   alternates: {
     canonical: "https://poikatu-ai.vercel.app",
   },
+
   robots: {
     index: true,
     follow: true,
   },
-
+};
 
 export default function RootLayout({
   children,
