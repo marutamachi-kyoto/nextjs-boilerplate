@@ -31,137 +31,6 @@ type TrendBadge = {
   className: string;
 };
 
-type FreePoikatsuItem = {
-  rank: number;
-  name: string;
-  reward: string;
-  type: string;
-  voices: string[];
-};
-
-const freePoikatsuItems: FreePoikatsuItem[] = [
-  {
-    rank: 1,
-    name: "TikTok Lite",
-    reward: "約4,000〜5,000P",
-    type: "無料アプリ",
-    voices: [
-      "動画を見るついでにできるのはラク",
-      "スマホだけで始められる",
-      "大きく稼ぐというよりコツコツ系",
-      "ミッション条件は先に確認した方がいい",
-    ],
-  },
-  {
-    rank: 2,
-    name: "トリマ",
-    reward: "約300〜500P",
-    type: "無料アプリ",
-    voices: [
-      "移動するだけで貯めやすい",
-      "毎日のすき間時間に向いている",
-      "広告視聴はやや多め",
-      "気長に続ける人向き",
-    ],
-  },
-  {
-    rank: 3,
-    name: "LINEマンガ",
-    reward: "約500〜1,000P",
-    type: "無料アプリ",
-    voices: [
-      "普段から使う人は相性がいい",
-      "無料話も多くて始めやすい",
-      "条件達成は事前確認が安心",
-      "マンガ好きには続けやすい",
-    ],
-  },
-  {
-    rank: 4,
-    name: "楽天スーパーポイントスクリーン",
-    reward: "約100〜300P",
-    type: "無料アプリ",
-    voices: [
-      "広告を見るだけで気軽",
-      "楽天ユーザーなら使いやすい",
-      "1回の獲得額は小さめ",
-      "毎日コツコツ向き",
-    ],
-  },
-  {
-    rank: 5,
-    name: "ECナビアンケート",
-    reward: "約300〜800P",
-    type: "アンケート",
-    voices: [
-      "無料で始めやすい",
-      "アンケート数に波がある",
-      "空き時間に進めやすい",
-      "コツコツ積み上げる感じ",
-    ],
-  },
-  {
-    rank: 6,
-    name: "マクロミル",
-    reward: "約500〜1,500P",
-    type: "アンケート",
-    voices: [
-      "定番で安心感がある",
-      "アンケート配信が比較的多い",
-      "即効性より継続型",
-      "無料系の中では取り組みやすい",
-    ],
-  },
-  {
-    rank: 7,
-    name: "Uvoice",
-    reward: "約300〜700P",
-    type: "無料アプリ",
-    voices: [
-      "インストール後の設定が簡単",
-      "自動で貯まる感覚がある",
-      "大きくは稼ぎにくい",
-      "サブで入れておく人が多い",
-    ],
-  },
-  {
-    rank: 8,
-    name: "CODE",
-    reward: "約100〜400P",
-    type: "レシート",
-    voices: [
-      "買い物後に使いやすい",
-      "レシート登録が手軽",
-      "毎回の単価は小さい",
-      "普段の買い物ついで向き",
-    ],
-  },
-  {
-    rank: 9,
-    name: "クラシルリワード",
-    reward: "約300〜800P",
-    type: "無料アプリ",
-    voices: [
-      "歩数や移動で貯められる",
-      "日常生活と相性がいい",
-      "広告視聴はやや必要",
-      "続けるほど貯まりやすい",
-    ],
-  },
-  {
-    rank: 10,
-    name: "Powl",
-    reward: "約300〜700P",
-    type: "無料アプリ",
-    voices: [
-      "二択やアンケートが手軽",
-      "スキマ時間にやりやすい",
-      "少額を積み上げるタイプ",
-      "初心者でも入りやすい",
-    ],
-  },
-];
-
 export default function Page() {
   const [items, setItems] = useState<CategoryScore[]>([]);
   const [updatedAt, setUpdatedAt] = useState("-");
@@ -206,117 +75,95 @@ export default function Page() {
   };
 
   const formatReward = (reward?: number) => {
-    if (!reward || reward <= 0) return "データ取得不可";
-    return `${reward.toLocaleString()}P`;
-  };
+  if (!reward || reward <= 0) return "データ取得不可";
+  return `${reward.toLocaleString()}P`;
+};
 
   const getTrendBadges = (item: CategoryScore): TrendBadge[] => {
     const category = item.category;
 
     if (category.includes("通信")) {
       return [
-        {
-          icon: "🔥",
-          text: "急上昇",
-          className: "bg-red-50 text-red-500 ring-1 ring-red-100",
-        },
-        {
-          icon: "💰",
-          text: "高還元",
-          className: "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-100",
-        },
+        { icon: "🔥", text: "急上昇", className: "bg-red-50 text-red-500 ring-1 ring-red-100" },
+        { icon: "💰", text: "高還元", className: "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-100" },
       ];
     }
 
     if (category.includes("カード")) {
       return [
-        {
-          icon: "📈",
-          text: "検索急増",
-          className: "bg-pink-50 text-pink-500 ring-1 ring-pink-100",
-        },
-        {
-          icon: "💰",
-          text: "高単価",
-          className: "bg-orange-50 text-orange-600 ring-1 ring-orange-100",
-        },
+        { icon: "📈", text: "検索急増", className: "bg-pink-50 text-pink-500 ring-1 ring-pink-100" },
+        { icon: "💰", text: "高単価", className: "bg-orange-50 text-orange-600 ring-1 ring-orange-100" },
       ];
     }
 
     if (category.includes("ゲーム") || category.includes("アプリ")) {
       return [
-        {
-          icon: "🎮",
-          text: "人気拡大",
-          className: "bg-violet-50 text-violet-600 ring-1 ring-violet-100",
-        },
-        {
-          icon: "🔥",
-          text: "SNS話題",
-          className: "bg-rose-50 text-rose-500 ring-1 ring-rose-100",
-        },
+        { icon: "🎮", text: "人気拡大", className: "bg-violet-50 text-violet-600 ring-1 ring-violet-100" },
+        { icon: "🔥", text: "SNS話題", className: "bg-rose-50 text-rose-500 ring-1 ring-rose-100" },
       ];
     }
 
     return [
-      {
-        icon: "📈",
-        text: "トレンド",
-        className: "bg-pink-50 text-pink-500 ring-1 ring-pink-100",
-      },
+      { icon: "📈", text: "トレンド", className: "bg-pink-50 text-pink-500 ring-1 ring-pink-100" },
     ];
   };
 
   const getDynamicReason = (item: CategoryScore) => {
-    const category = item.category;
-    const offerName = (item.offer_name || "").toLowerCase();
+  const category = item.category;
+  const offerName = (item.offer_name || "").toLowerCase();
 
-    if (offerName.includes("tiktok")) {
-      return "友達招待系キャンペーンとしてSNSで急拡散しており、短期間で利用者が急増しています。";
-    }
+  // ===== 案件別 =====
 
-    if (offerName.includes("楽天市場")) {
-      return "買い回り・ポイントアップ需要の増加により、検索数が急上昇しています。";
-    }
+  if (offerName.includes("tiktok")) {
+    return "友達招待系キャンペーンとしてSNSで急拡散しており、短期間で利用者が急増しています。";
+  }
 
-    if (offerName.includes("amazon")) {
-      return "サブスク需要と大型セール時期の影響で、継続的に注目を集めています。";
-    }
+  if (offerName.includes("楽天市場")) {
+    return "買い回り・ポイントアップ需要の増加により、検索数が急上昇しています。";
+  }
 
-    if (offerName.includes("u-next")) {
-      return "無料トライアル案件として安定した人気があり、動画サブスク需要も拡大しています。";
-    }
+  if (offerName.includes("amazon")) {
+    return "サブスク需要と大型セール時期の影響で、継続的に注目を集めています。";
+  }
 
-    if (offerName.includes("paypay")) {
-      return "キャッシュレス決済需要の拡大により、検索数と利用者数が増加しています。";
-    }
+  if (offerName.includes("u-next")) {
+    return "無料トライアル案件として安定した人気があり、動画サブスク需要も拡大しています。";
+  }
 
-    if (offerName.includes("楽天カード")) {
-      return "高還元キャンペーンが継続しており、クレジットカード案件の中でも人気が高い状態です。";
-    }
+  if (offerName.includes("paypay")) {
+    return "キャッシュレス決済需要の拡大により、検索数と利用者数が増加しています。";
+  }
 
-    if (offerName.includes("楽天モバイル")) {
-      return "高額ポイント還元と通信費節約需要により、申し込み数が急増しています。";
-    }
+  if (offerName.includes("楽天カード")) {
+    return "高還元キャンペーンが継続しており、クレジットカード案件の中でも人気が高い状態です。";
+  }
 
-    if (category.includes("通信")) {
-      return "高額ポイント案件としてSNS流入が増加しており、短期間で申し込みが伸びています。";
-    }
+  if (offerName.includes("楽天モバイル")) {
+    return "高額ポイント還元と通信費節約需要により、申し込み数が急増しています。";
+  }
 
-    if (category.includes("カード")) {
-      return "比較検索ユーザーが増加しており、高還元案件として注目を集めています。";
-    }
+  // ===== カテゴリ別 =====
 
-    if (category.includes("証券")) {
-      return "NISA・投資需要の拡大により、口座開設系案件の人気が急上昇しています。";
-    }
+  if (category.includes("通信")) {
+    return "高額ポイント案件としてSNS流入が増加しており、短期間で申し込みが伸びています。";
+  }
 
-    if (category.includes("ゲーム") || category.includes("アプリ")) {
-      return "SNSでの拡散が強く、短期間で条件達成しやすい案件として注目されています。";
-    }
+  if (category.includes("カード")) {
+    return "比較検索ユーザーが増加しており、高還元案件として注目を集めています。";
+  }
 
-    return "Google検索とSNS流入の両方で注目度が上昇している案件です。";
-  };
+  if (category.includes("証券")) {
+    return "NISA・投資需要の拡大により、口座開設系案件の人気が急上昇しています。";
+  }
+
+  if (category.includes("ゲーム") || category.includes("アプリ")) {
+    return "SNSでの拡散が強く、短期間で条件達成しやすい案件として注目されています。";
+  }
+
+  // ===== デフォルト =====
+
+  return "Google検索とSNS流入の両方で注目度が上昇している案件です。";
+};
 
   const getRankStyle = (index: number) => {
     if (index === 0) {
@@ -469,11 +316,7 @@ export default function Page() {
           <div className="flex items-center gap-3">
             <span className="text-4xl">🔥</span>
             <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-              いま
-              <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
-                AI
-              </span>
-              がおすすめするポイ活ランキング
+              いま<span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">AI</span>がおすすめするポイ活ランキング
             </h2>
           </div>
 
@@ -627,90 +470,6 @@ export default function Page() {
                 </article>
               );
             })}
-          </div>
-        </section>
-
-        <section className="mt-12 rounded-[2.5rem] bg-gradient-to-br from-[#FFF2F7] via-white to-[#FFF7ED] p-5 shadow-xl ring-1 ring-pink-100 lg:p-8">
-          <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="mb-3 inline-flex items-center rounded-full bg-white px-5 py-2 text-sm font-black text-pink-500 shadow-sm ring-1 ring-pink-100">
-                🎁 0円で始めやすい
-              </div>
-
-              <h2 className="text-3xl font-black tracking-[-0.04em] text-slate-900 lg:text-5xl">
-                <span className="text-pink-600">0円</span>
-                で始められるポイ活特集
-              </h2>
-
-              <p className="mt-4 max-w-4xl text-sm font-bold leading-7 text-slate-600 lg:text-base">
-                お金を使わずに始めやすいポイ活を、報酬目安と口コミでよく見る声からAIがピックアップしています。
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-white px-5 py-4 text-sm font-black text-slate-500 shadow-md ring-1 ring-slate-100">
-              最終更新：
-              <span className="text-slate-800">{updatedAt}</span>
-              <div className="mt-1 text-xs text-pink-500">
-                30分ごとに更新予定
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {freePoikatsuItems.map((offer) => (
-              <article
-                key={offer.rank}
-                className="grid gap-5 rounded-[2rem] bg-white p-5 shadow-md ring-1 ring-pink-100 transition hover:-translate-y-0.5 hover:shadow-xl lg:grid-cols-[70px_1.05fr_1.25fr_260px] lg:items-center lg:p-6"
-              >
-                <div className="flex items-start gap-3 lg:justify-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-orange-500 text-2xl font-black text-white shadow-lg">
-                    {offer.rank}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="mb-3 inline-flex rounded-full bg-orange-50 px-4 py-1.5 text-sm font-black text-orange-500">
-                    {offer.type}
-                  </div>
-
-                  <h3 className="text-2xl font-black leading-tight text-slate-950 lg:text-3xl">
-                    {offer.name}
-                  </h3>
-
-                  <div className="mt-3 text-lg font-black leading-7 text-pink-600 lg:text-xl">
-                    報酬目安：
-                    <br />
-                    {offer.reward}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-4 lg:p-5">
-                  <div className="mb-2 text-sm font-black text-slate-900">
-                    口コミでよく見る声
-                  </div>
-
-                  <ul className="space-y-1 text-sm font-bold leading-6 text-slate-600">
-                    {offer.voices.map((voice) => (
-                      <li key={voice}>・{voice}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="flex items-center justify-center lg:justify-end">
-                  <button
-                    onClick={() => trackMoppyClick(offer.type)}
-                    className="flex h-16 w-full max-w-[260px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-6 text-lg font-black text-white shadow-xl transition hover:scale-105"
-                  >
-                    モッピーで探す
-                    <span className="ml-3 text-2xl leading-none">›</span>
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <div className="mt-6 rounded-2xl bg-white/80 p-4 text-xs font-bold leading-6 text-slate-500 ring-1 ring-pink-100">
-            ※ 報酬ポイントは目安です。案件ごとに条件・期限・ポイント反映タイミングが異なります。申し込み前に必ずモッピー側の条件をご確認ください。
           </div>
         </section>
 
