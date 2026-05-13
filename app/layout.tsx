@@ -7,6 +7,10 @@ export const metadata: Metadata = {
     default:
       "ポイ活AI判定｜GoogleトレンドからAIが毎日おすすめ案件をランキング",
     template: "%s｜ポイ活AI判定",
+    icons: {
+    　icon: "/favicon.png",
+    　shortcut: "/favicon.png",
+    　apple: "/favicon.png",
   },
   description:
     "Googleトレンド・検索動向・話題性をもとに、AIが初心者向けのおすすめポイ活案件を毎日ランキング化。モッピー、ハピタス、ポイントインカムなどの案件探しに役立ちます。",
