@@ -307,18 +307,6 @@ export default async function ReviewPage({ params }: PageProps) {
           </div>
         </section>
 
-        <section className="mt-6 rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
-          <h2 className="text-2xl font-black text-slate-900 lg:text-3xl">
-            {offerName}の口コミを見る前に確認したいポイント
-          </h2>
-
-          <p className="mt-4 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
-            ポイ活案件を選ぶときは、報酬ポイントの高さだけでなく、申し込み条件、
-            ポイント付与までの期間、本人確認や審査の有無、キャンペーン条件の変更にも注意が必要です。
-            {offerName}を検討する場合も、申し込み前に公式情報と最新の口コミをあわせて確認しましょう。
-          </p>
-        </section>
-
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
           <section className="rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
             <h2 className="flex items-center gap-3 text-2xl font-black text-slate-900 lg:text-3xl">
@@ -356,18 +344,6 @@ export default async function ReviewPage({ params }: PageProps) {
             </ul>
           </section>
         </div>
-
-        {item.reason && (
-          <section className="mt-6 rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
-            <h2 className="text-2xl font-black text-slate-900 lg:text-3xl">
-              AIが注目した理由
-            </h2>
-
-            <p className="mt-4 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
-              {item.reason}
-            </p>
-          </section>
-        )}
 
         <section className="mt-6 rounded-[2rem] bg-gradient-to-r from-pink-50 via-white to-orange-50 p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
           <h2 className="text-2xl font-black text-slate-900 lg:text-3xl">
