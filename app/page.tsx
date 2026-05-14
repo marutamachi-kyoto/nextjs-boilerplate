@@ -75,23 +75,33 @@ export default function Page() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (window.location.hash !== "#ranking-section") return;
+    if (!window.location.hash) return;
 
-    const scrollToRankingSection = () => {
-      document.getElementById("ranking-section")?.scrollIntoView({
+    const hash = decodeURIComponent(window.location.hash.replace("#", ""));
+
+    if (!hash) return;
+
+    const scrollToHashTarget = () => {
+      const target = document.getElementById(hash);
+
+      if (!target) return;
+
+      target.scrollIntoView({
         behavior: "auto",
-        block: "start",
+        block: hash === "ranking-section" ? "start" : "center",
       });
     };
 
-    scrollToRankingSection();
+    scrollToHashTarget();
 
-    const timer1 = window.setTimeout(scrollToRankingSection, 300);
-    const timer2 = window.setTimeout(scrollToRankingSection, 800);
+    const timer1 = window.setTimeout(scrollToHashTarget, 300);
+    const timer2 = window.setTimeout(scrollToHashTarget, 800);
+    const timer3 = window.setTimeout(scrollToHashTarget, 1200);
 
     return () => {
       window.clearTimeout(timer1);
       window.clearTimeout(timer2);
+      window.clearTimeout(timer3);
     };
   }, [items.length]);
 
@@ -116,6 +126,15 @@ export default function Page() {
 
   const getReviewPath = (offerName: string) => {
     return `/reviews/${encodeURIComponent(offerName)}`;
+  };
+
+  const getReviewPathWithFrom = (
+    offerName: string,
+    item: CategoryScore,
+    index: number
+  ) => {
+    const from = getRankingId(item, index);
+    return `${getReviewPath(offerName)}?from=${encodeURIComponent(from)}`;
   };
 
   const getRankingId = (item: CategoryScore, index: number) => {
@@ -535,7 +554,7 @@ export default function Page() {
                     </button>
 
                     <Link
-                      href={getReviewPath(offerName)}
+                      href={getReviewPathWithFrom(offerName, item, index)}
                       className="flex h-14 w-full max-w-[260px] items-center justify-center rounded-2xl border-2 border-pink-200 bg-white px-5 text-center text-base font-black text-pink-600 shadow-md transition hover:scale-105 hover:bg-pink-50"
                     >
                       口コミ・評判を見る
@@ -615,7 +634,7 @@ export default function Page() {
                     </button>
 
                     <Link
-                      href={getReviewPath(offerName)}
+                      href={getReviewPathWithFrom(offerName, item, index)}
                       className="flex h-11 w-full max-w-[210px] items-center justify-center rounded-xl border-2 border-pink-200 bg-white px-4 text-xs font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50"
                     >
                       口コミ・評判を見る
