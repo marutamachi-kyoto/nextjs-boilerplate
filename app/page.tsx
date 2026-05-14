@@ -88,7 +88,7 @@ export default function Page() {
 
   const getReviewSearchUrl = (offerName: string) => {
     return `https://www.google.com/search?q=${encodeURIComponent(
-      `${offerName} 口コミ ポイ活`
+      `${offerName} 口コミ`
     )}`;
   };
 
