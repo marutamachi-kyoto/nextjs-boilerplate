@@ -438,7 +438,7 @@ export default function Page() {
                 id={getRankingId(item, index)}
                 className={`scroll-mt-8 rounded-[2rem] bg-gradient-to-r ${rankStyle.card} p-5 shadow-lg ring-1 ${rankStyle.ring} lg:p-7`}
               >
-                <div className="grid gap-6 lg:grid-cols-[120px_1.5fr_260px_260px] lg:items-center">
+                <div className="grid gap-6 lg:grid-cols-[100px_1fr] lg:items-center xl:grid-cols-[120px_1.5fr_260px_260px]">
                   <div className="flex items-center justify-center lg:block">
                     <div className="text-center">
                       <div className="text-4xl leading-none">
@@ -524,7 +524,7 @@ export default function Page() {
                 <article
                   key={`${item.rank}-${item.offer_name}-${index}`}
                   id={getRankingId(item, index)}
-                  className={`scroll-mt-8 grid gap-4 bg-gradient-to-r ${rankStyle.card} p-5 transition hover:scale-[1.01] lg:grid-cols-[58px_170px_1.3fr_220px_210px] lg:items-center lg:gap-5`}
+                  className={`scroll-mt-8 grid gap-4 bg-gradient-to-r ${rankStyle.card} p-5 transition hover:scale-[1.01] xl:grid-cols-[58px_170px_1.3fr_220px_210px] xl:items-center xl:gap-5`}
                 >
                   <div className="flex items-center gap-3 lg:justify-center">
                     <div
