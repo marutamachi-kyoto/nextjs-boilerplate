@@ -361,9 +361,10 @@ export default function Page() {
 
       <main className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10">
         <section className="mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-  　　　　　<h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-    　　　　　🔍 いまGoogleで話題のポイ活関連キーワード
+          <div className="mb-6">
+  　　　　　<div className="flex flex-wrap items-center gap-4">
+    　　　　　<h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
+    　　　　　　🔍 いまGoogleで話題のポイ活関連キーワード
  　　　　　　 </h2>
 
   　　　　　　<div className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
