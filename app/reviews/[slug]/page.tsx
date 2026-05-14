@@ -24,9 +24,9 @@ type RankingItem = {
 };
 
 type PageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 const normalizeText = (text?: string) => {
@@ -73,7 +73,12 @@ async function getRankingItem(slug: string) {
 
   const target = data.find((item) => {
     const offerName = getOfferName(item);
-    return normalizeText(offerName) === normalizeText(decodedSlug);
+
+    return (
+      normalizeText(offerName) === normalizeText(decodedSlug) ||
+      normalizeText(item.trend_keyword) === normalizeText(decodedSlug) ||
+      normalizeText(item.category) === normalizeText(decodedSlug)
+    );
   });
 
   return target || null;
@@ -82,8 +87,9 @@ async function getRankingItem(slug: string) {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const decodedSlug = decodeURIComponent(params.slug);
-  const item = await getRankingItem(params.slug);
+  const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
+  const item = await getRankingItem(slug);
   const offerName = item ? getOfferName(item) : decodedSlug;
 
   return {
@@ -93,8 +99,9 @@ export async function generateMetadata({
 }
 
 export default async function ReviewPage({ params }: PageProps) {
-  const decodedSlug = decodeURIComponent(params.slug);
-  const item = await getRankingItem(params.slug);
+  const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
+  const item = await getRankingItem(slug);
 
   if (!item) {
     return (
