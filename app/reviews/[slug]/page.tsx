@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const BASE_URL = "https://poikatu-ai.vercel.app";
+
 const MOPPY_URL =
   "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
 
@@ -49,10 +51,26 @@ const formatReward = (reward?: number) => {
   return `${reward.toLocaleString()}P`;
 };
 
+const formatDate = (dateText?: string) => {
+  if (!dateText) return null;
+
+  const date = new Date(dateText);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+};
+
 const getReviewSearchUrl = (offerName: string) => {
   return `https://www.google.com/search?q=${encodeURIComponent(
-    `${offerName} 口コミ`
+    `${offerName} 口コミ 評判`
   )}`;
+};
+
+const getReviewPageUrl = (offerName: string) => {
+  return `${BASE_URL}/reviews/${encodeURIComponent(offerName)}`;
 };
 
 async function getRankingItem(slug: string) {
@@ -90,10 +108,34 @@ export async function generateMetadata({
   const decodedSlug = decodeURIComponent(slug);
   const item = await getRankingItem(slug);
   const offerName = item ? getOfferName(item) : decodedSlug;
+  const pageUrl = getReviewPageUrl(offerName);
+
+  const title = `${offerName}の口コミ・評判｜ポイ活AI判定`;
+  const description = `${offerName}の口コミ・評判をAIが整理。良い口コミ、悪い口コミ、報酬ポイントの目安、申し込み前に確認すべき注意点をわかりやすくまとめています。`;
 
   return {
-    title: `${offerName}の口コミ・評判｜ポイ活AI判定`,
-    description: `${offerName}の口コミ・評判をAIが整理。良い口コミTOP3、悪い口コミTOP3、報酬ポイントの目安、最新口コミの確認リンクをまとめています。`,
+    title,
+    description,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: "ポイ活AI判定",
+      type: "article",
+      locale: "ja_JP",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
 }
 
@@ -128,7 +170,9 @@ export default async function ReviewPage({ params }: PageProps) {
 
   const offerName = getOfferName(item);
   const rewardText = formatReward(item.reward);
+  const updatedDateText = formatDate(item.updated_at);
   const googleReviewUrl = getReviewSearchUrl(offerName);
+  const pageUrl = getReviewPageUrl(offerName);
 
   const goodReviews = [
     `${offerName}は、サービスとしての知名度が高く、初めて検討する人でも情報を調べやすいという声が見られやすいです。`,
@@ -142,8 +186,56 @@ export default async function ReviewPage({ params }: PageProps) {
     `キャンペーン内容や条件が時期によって変わるため、申し込み前に最新情報を確認する必要があります。`,
   ];
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "ポイ活AI判定",
+            item: BASE_URL,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: `${offerName}の口コミ・評判`,
+            item: pageUrl,
+          },
+        ],
+      },
+      {
+        "@type": "Article",
+        headline: `${offerName}の口コミ・評判`,
+        description: `${offerName}の口コミ・評判、良い口コミ、悪い口コミ、報酬ポイントの目安をAIが整理しています。`,
+        url: pageUrl,
+        mainEntityOfPage: pageUrl,
+        inLanguage: "ja",
+        author: {
+          "@type": "Organization",
+          name: "ポイ活AI判定",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "ポイ活AI判定",
+        },
+        dateModified: item.updated_at || new Date().toISOString(),
+        datePublished: item.updated_at || new Date().toISOString(),
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-[#fff8fb] px-5 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd),
+        }}
+      />
+
       <div className="mx-auto max-w-[1100px]">
         <a
           href="/#ranking-section"
@@ -161,6 +253,9 @@ export default async function ReviewPage({ params }: PageProps) {
               <span className="rounded-full bg-yellow-100 px-5 py-2 text-sm font-black text-yellow-700">
                 AI整理
               </span>
+              <span className="rounded-full bg-orange-100 px-5 py-2 text-sm font-black text-orange-700">
+                ポイ活案件
+              </span>
             </div>
 
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 lg:text-6xl">
@@ -171,11 +266,17 @@ export default async function ReviewPage({ params }: PageProps) {
               が整理
             </h1>
 
-            <p className="mt-6 max-w-[850px] text-base font-bold leading-8 text-slate-600 lg:text-lg">
+            <p className="mt-6 max-w-[850px] text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
               Google検索などで確認されやすい評判をもとに、{offerName}
               という商品・サービス自体の口コミで見るべきポイントを整理しました。
               実際の口コミ本文を転載せず、良い評判・悪い評判の傾向をわかりやすくまとめています。
             </p>
+
+            {updatedDateText && (
+              <p className="mt-4 text-sm font-black text-slate-500">
+                最終更新：{updatedDateText}
+              </p>
+            )}
 
             <div className="mt-7 grid gap-4 lg:grid-cols-3">
               <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-pink-100">
@@ -206,9 +307,21 @@ export default async function ReviewPage({ params }: PageProps) {
           </div>
         </section>
 
+        <section className="mt-6 rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
+          <h2 className="text-2xl font-black text-slate-900 lg:text-3xl">
+            {offerName}の口コミを見る前に確認したいポイント
+          </h2>
+
+          <p className="mt-4 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
+            ポイ活案件を選ぶときは、報酬ポイントの高さだけでなく、申し込み条件、
+            ポイント付与までの期間、本人確認や審査の有無、キャンペーン条件の変更にも注意が必要です。
+            {offerName}を検討する場合も、申し込み前に公式情報と最新の口コミをあわせて確認しましょう。
+          </p>
+        </section>
+
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
-          <section className="rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100">
-            <h2 className="flex items-center gap-3 text-2xl font-black text-slate-900">
+          <section className="rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
+            <h2 className="flex items-center gap-3 text-2xl font-black text-slate-900 lg:text-3xl">
               <span className="text-3xl">👍</span>
               良い口コミTOP3
             </h2>
@@ -217,7 +330,7 @@ export default async function ReviewPage({ params }: PageProps) {
               {goodReviews.map((point) => (
                 <li
                   key={point}
-                  className="rounded-2xl bg-pink-50 px-5 py-5 text-base font-black leading-8 text-slate-800 lg:text-lg lg:leading-9"
+                  className="rounded-2xl bg-pink-50 px-5 py-5 text-lg font-black leading-9 text-slate-800 lg:text-xl lg:leading-10"
                 >
                   {point}
                 </li>
@@ -225,8 +338,8 @@ export default async function ReviewPage({ params }: PageProps) {
             </ul>
           </section>
 
-          <section className="rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100">
-            <h2 className="flex items-center gap-3 text-2xl font-black text-slate-900">
+          <section className="rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
+            <h2 className="flex items-center gap-3 text-2xl font-black text-slate-900 lg:text-3xl">
               <span className="text-3xl">⚠️</span>
               悪い口コミTOP3
             </h2>
@@ -235,7 +348,7 @@ export default async function ReviewPage({ params }: PageProps) {
               {badReviews.map((point) => (
                 <li
                   key={point}
-                  className="rounded-2xl bg-pink-50 px-5 py-5 text-base font-black leading-8 text-slate-800 lg:text-lg lg:leading-9"
+                  className="rounded-2xl bg-orange-50 px-5 py-5 text-lg font-black leading-9 text-slate-800 lg:text-xl lg:leading-10"
                 >
                   {point}
                 </li>
@@ -244,13 +357,26 @@ export default async function ReviewPage({ params }: PageProps) {
           </section>
         </div>
 
-        <section className="mt-6 rounded-[2rem] bg-gradient-to-r from-pink-50 via-white to-orange-50 p-6 shadow-lg ring-1 ring-pink-100">
-          <h2 className="text-2xl font-black text-slate-900">
+        {item.reason && (
+          <section className="mt-6 rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
+            <h2 className="text-2xl font-black text-slate-900 lg:text-3xl">
+              AIが注目した理由
+            </h2>
+
+            <p className="mt-4 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
+              {item.reason}
+            </p>
+          </section>
+        )}
+
+        <section className="mt-6 rounded-[2rem] bg-gradient-to-r from-pink-50 via-white to-orange-50 p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
+          <h2 className="text-2xl font-black text-slate-900 lg:text-3xl">
             最新の口コミも確認する
           </h2>
 
-          <p className="mt-3 text-sm font-bold leading-7 text-slate-600">
+          <p className="mt-3 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
             最新の口コミは日々変わるため、申し込み前には外部検索でも確認するのがおすすめです。
+            条件やキャンペーン内容は変更される場合があるため、必ず最新情報を確認してください。
           </p>
 
           <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row">
