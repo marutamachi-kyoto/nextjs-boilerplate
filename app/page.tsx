@@ -61,7 +61,13 @@ export default function Page() {
 
         if (data[0]?.updated_at) {
           setUpdatedAt(
-            new Date(data[0].updated_at).toLocaleDateString("ja-JP")
+            new Date(data[0].updated_at).toLocaleString("ja-JP", {
+              year: "numeric",
+              month: "numeric",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
           );
         }
       });
