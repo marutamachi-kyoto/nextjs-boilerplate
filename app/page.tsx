@@ -103,6 +103,10 @@ export default function Page() {
     const timer2 = window.setTimeout(scrollToTarget, 800);
     const timer3 = window.setTimeout(scrollToTarget, 1200);
 
+    if (from) {
+      window.history.replaceState(null, "", "/");
+    }
+
     return () => {
       window.clearTimeout(timer1);
       window.clearTimeout(timer2);
@@ -144,6 +148,14 @@ export default function Page() {
   ) => {
     const from = getRankingId(item, index);
     return `${getReviewPath(offerName)}?from=${encodeURIComponent(from)}`;
+  };
+
+  const goToReviewPage = (
+    offerName: string,
+    item: CategoryScore,
+    index: number
+  ) => {
+    window.location.href = getReviewPathWithFrom(offerName, item, index);
   };
 
   const findMatchedRanking = (tagWord: string) => {
@@ -551,6 +563,7 @@ export default function Page() {
 
                   <div className="flex flex-col items-center gap-3 lg:items-end">
                     <button
+                      type="button"
                       onClick={() => trackMoppyClick(item.category)}
                       className="flex h-16 w-full max-w-[260px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-6 text-center text-xl font-black text-white shadow-xl transition hover:scale-105"
                     >
@@ -558,13 +571,14 @@ export default function Page() {
                       <span className="ml-3 text-3xl leading-none">›</span>
                     </button>
 
-                    <a
-                      href={getReviewPathWithFrom(offerName, item, index)}
+                    <button
+                      type="button"
+                      onClick={() => goToReviewPage(offerName, item, index)}
                       className="flex h-14 w-full max-w-[260px] items-center justify-center rounded-2xl border-2 border-pink-200 bg-white px-5 text-center text-base font-black text-pink-600 shadow-md transition hover:scale-105 hover:bg-pink-50"
                     >
                       口コミ・評判を見る
                       <span className="ml-2 text-xl leading-none">›</span>
-                    </a>
+                    </button>
                   </div>
                 </div>
               </article>
@@ -631,6 +645,7 @@ export default function Page() {
 
                   <div className="flex flex-col items-center gap-2 lg:items-end">
                     <button
+                      type="button"
                       onClick={() => trackMoppyClick(item.category)}
                       className="flex h-12 w-full max-w-[210px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-sm font-black text-white shadow-md transition hover:scale-105"
                     >
@@ -638,13 +653,14 @@ export default function Page() {
                       <span className="ml-2 text-xl leading-none">›</span>
                     </button>
 
-                    <a
-                      href={getReviewPathWithFrom(offerName, item, index)}
+                    <button
+                      type="button"
+                      onClick={() => goToReviewPage(offerName, item, index)}
                       className="flex h-11 w-full max-w-[210px] items-center justify-center rounded-xl border-2 border-pink-200 bg-white px-4 text-xs font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50"
                     >
                       口コミ・評判を見る
                       <span className="ml-2 text-base leading-none">›</span>
-                    </a>
+                    </button>
                   </div>
                 </article>
               );
