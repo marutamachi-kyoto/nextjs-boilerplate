@@ -118,7 +118,7 @@ export default async function ReviewPage({ params }: PageProps) {
 
           <Link
             href="/"
-            className="mt-6 inline-flex rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-6 py-4 text-sm font-black text-white shadow-xl transition hover:scale-105"
+            className="mt-6 inline-flex min-h-[64px] items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-8 py-4 text-base font-black text-white shadow-xl transition hover:scale-105"
           >
             トップページに戻る
           </Link>
@@ -254,23 +254,25 @@ export default async function ReviewPage({ params }: PageProps) {
             最新の口コミは日々変わるため、申し込み前には外部検索でも確認するのがおすすめです。
           </p>
 
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row">
             <a
               href={googleReviewUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-14 flex-1 items-center justify-center rounded-2xl border-2 border-pink-200 bg-white px-5 text-base font-black text-pink-600 shadow-md transition hover:scale-105 hover:bg-pink-50"
+              className="flex min-h-[72px] w-full flex-1 items-center justify-center rounded-[1.4rem] border-2 border-pink-200 bg-white px-6 py-5 text-center text-lg font-black leading-6 text-pink-600 shadow-lg transition hover:scale-105 hover:bg-pink-50 lg:text-xl"
             >
-              Googleで口コミを見る ↗
+              Googleで口コミを見る
+              <span className="ml-2 text-2xl leading-none">↗</span>
             </a>
 
             <a
               href={MOPPY_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex h-14 flex-1 items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 text-base font-black text-white shadow-xl transition hover:scale-105"
+              className="flex min-h-[72px] w-full flex-1 items-center justify-center rounded-[1.4rem] bg-gradient-to-r from-pink-500 to-orange-500 px-6 py-5 text-center text-lg font-black leading-6 text-white shadow-xl transition hover:scale-105 lg:text-xl"
             >
-              モッピーで探す ›
+              モッピーで探す
+              <span className="ml-3 text-3xl leading-none">›</span>
             </a>
           </div>
         </section>
