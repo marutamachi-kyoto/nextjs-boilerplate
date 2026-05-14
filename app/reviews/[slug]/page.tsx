@@ -117,10 +117,10 @@ export default async function ReviewPage({ params }: PageProps) {
           </p>
 
           <Link
-            href="/"
+            href="/#ranking-section"
             className="mt-6 inline-flex min-h-[64px] items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-8 py-4 text-base font-black text-white shadow-xl transition hover:scale-105"
           >
-            トップページに戻る
+            ランキングに戻る
           </Link>
         </div>
       </main>
@@ -147,7 +147,7 @@ export default async function ReviewPage({ params }: PageProps) {
     <main className="min-h-screen bg-[#fff8fb] px-5 py-8">
       <div className="mx-auto max-w-[1100px]">
         <Link
-          href="/"
+          href="/#ranking-section"
           className="mb-6 inline-flex rounded-full bg-white px-5 py-3 text-sm font-black text-pink-600 shadow-lg ring-1 ring-pink-100 transition hover:scale-105 hover:bg-pink-50"
         >
           ← ランキングに戻る
