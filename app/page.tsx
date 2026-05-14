@@ -73,6 +73,28 @@ export default function Page() {
       });
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#ranking-section") return;
+
+    const scrollToRankingSection = () => {
+      document.getElementById("ranking-section")?.scrollIntoView({
+        behavior: "auto",
+        block: "start",
+      });
+    };
+
+    scrollToRankingSection();
+
+    const timer1 = window.setTimeout(scrollToRankingSection, 300);
+    const timer2 = window.setTimeout(scrollToRankingSection, 800);
+
+    return () => {
+      window.clearTimeout(timer1);
+      window.clearTimeout(timer2);
+    };
+  }, [items.length]);
+
   const trackMoppyClick = async (category: string) => {
     try {
       await fetch("/api/click", {
