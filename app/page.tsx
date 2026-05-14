@@ -75,28 +75,33 @@ export default function Page() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!window.location.hash) return;
 
-    const hash = decodeURIComponent(window.location.hash.replace("#", ""));
+    const searchParams = new URLSearchParams(window.location.search);
+    const from = searchParams.get("from");
+    const hash = window.location.hash
+      ? decodeURIComponent(window.location.hash.replace("#", ""))
+      : "";
 
-    if (!hash) return;
+    const targetId = from || hash;
 
-    const scrollToHashTarget = () => {
-      const target = document.getElementById(hash);
+    if (!targetId) return;
+
+    const scrollToTarget = () => {
+      const target = document.getElementById(targetId);
 
       if (!target) return;
 
       target.scrollIntoView({
         behavior: "auto",
-        block: hash === "ranking-section" ? "start" : "center",
+        block: targetId === "ranking-section" ? "start" : "center",
       });
     };
 
-    scrollToHashTarget();
+    scrollToTarget();
 
-    const timer1 = window.setTimeout(scrollToHashTarget, 300);
-    const timer2 = window.setTimeout(scrollToHashTarget, 800);
-    const timer3 = window.setTimeout(scrollToHashTarget, 1200);
+    const timer1 = window.setTimeout(scrollToTarget, 300);
+    const timer2 = window.setTimeout(scrollToTarget, 800);
+    const timer3 = window.setTimeout(scrollToTarget, 1200);
 
     return () => {
       window.clearTimeout(timer1);
