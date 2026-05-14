@@ -423,7 +423,7 @@ export default function Page() {
           </div>
         </section>
 
-        <div className="mt-12 mb-6">
+        <div id="ranking-section" className="mt-12 mb-6 scroll-mt-6">
           <div className="flex items-center gap-3">
             <span className="text-4xl">🔥</span>
             <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
