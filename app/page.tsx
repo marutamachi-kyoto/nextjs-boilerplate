@@ -86,6 +86,16 @@ export default function Page() {
     return item.offer_name || item.trend_keyword || item.category;
   };
 
+  const getReviewSearchUrl = (offerName: string) => {
+    return `https://www.google.com/search?q=${encodeURIComponent(
+      `${offerName} 口コミ ポイ活`
+    )}`;
+  };
+
+  const openReviewSearch = (offerName: string) => {
+    window.open(getReviewSearchUrl(offerName), "_blank", "noopener,noreferrer");
+  };
+
   const getRankingId = (item: CategoryScore, index: number) => {
     return `ranking-${index + 1}-${normalizeText(getOfferName(item))}`;
   };
@@ -478,13 +488,22 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className="flex justify-center lg:justify-end">
+                  <div className="flex flex-col gap-3 lg:items-end">
                     <button
                       onClick={() => trackMoppyClick(item.category)}
-                      className="flex h-20 w-full max-w-[260px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-6 text-center text-xl font-black text-white shadow-xl transition hover:scale-105"
+                      className="flex h-16 w-full max-w-[260px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-6 text-center text-xl font-black text-white shadow-xl transition hover:scale-105"
                     >
                       モッピーで探す
                       <span className="ml-3 text-3xl leading-none">›</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openReviewSearch(offerName)}
+                      className="flex h-14 w-full max-w-[260px] items-center justify-center rounded-2xl border-2 border-pink-200 bg-white px-5 text-center text-base font-black text-pink-600 shadow-md transition hover:scale-105 hover:bg-pink-50"
+                    >
+                      口コミ・評判を見る
+                      <span className="ml-2 text-xl leading-none">↗</span>
                     </button>
                   </div>
                 </div>
@@ -550,13 +569,22 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className="flex lg:justify-end">
+                  <div className="flex flex-col gap-2 lg:items-end">
                     <button
                       onClick={() => trackMoppyClick(item.category)}
                       className="flex h-12 w-full max-w-[210px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-sm font-black text-white shadow-md transition hover:scale-105"
                     >
                       モッピーで探す
                       <span className="ml-2 text-xl leading-none">›</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openReviewSearch(offerName)}
+                      className="flex h-11 w-full max-w-[210px] items-center justify-center rounded-xl border-2 border-pink-200 bg-white px-4 text-xs font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50"
+                    >
+                      口コミ・評判を見る
+                      <span className="ml-2 text-base leading-none">↗</span>
                     </button>
                   </div>
                 </article>
