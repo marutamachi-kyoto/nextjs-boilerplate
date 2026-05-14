@@ -413,7 +413,7 @@ export default function Page() {
           </div>
         </section>
 
-        <div className="mt-12 mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="mt-12 mb-6">
           <div className="flex items-center gap-3">
             <span className="text-4xl">🔥</span>
             <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
@@ -425,7 +425,7 @@ export default function Page() {
             </h2>
           </div>
 
-          <div className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
+          <div className="mt-4 inline-flex items-center rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
             最終更新：
             <span className="ml-2 text-slate-700">{updatedAt}</span>
           </div>
