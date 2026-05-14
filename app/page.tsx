@@ -135,6 +135,13 @@ export default function Page() {
     });
   };
 
+  const scrollToTrendKeywords = () => {
+    document.getElementById("trend-keywords")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   const formatReward = (reward?: number) => {
     if (!reward || reward <= 0) return "データ取得不可";
     return `${reward.toLocaleString()}P`;
@@ -366,7 +373,10 @@ export default function Page() {
       </header>
 
       <main className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10">
-        <section className="mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
+        <section
+          id="trend-keywords"
+          className="scroll-mt-6 mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8"
+        >
           <div className="mb-6">
             <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
               🔍 いまGoogleで話題のポイ活関連キーワード
@@ -608,6 +618,14 @@ export default function Page() {
           ※ 本ランキングはAIによる分析結果をもとに作成しています。実際の成果やポイント獲得を保証するものではありません。
         </p>
       </main>
+
+      <button
+        type="button"
+        onClick={scrollToTrendKeywords}
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-4 text-sm font-black text-white shadow-2xl transition hover:scale-105 active:scale-95 lg:bottom-8 lg:right-8 lg:px-6 lg:text-base"
+      >
+        🔍 話題キーワードへ
+      </button>
     </div>
   );
 }
