@@ -13,6 +13,7 @@ type RankingItem = {
   trend_keyword?: string | null;
   category?: string | null;
   updated_at?: string | null;
+  rank?: number | null;
 };
 
 const getOfferName = (item: RankingItem) => {
@@ -47,26 +48,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const seen = new Set<string>();
 
-  const reviewPages: MetadataRoute.Sitemap = data
-    .map((item) => {
-      const offerName = getOfferName(item);
+  const reviewPages: MetadataRoute.Sitemap = data.flatMap((item) => {
+    const offerName = getOfferName(item);
 
-      if (!offerName) return null;
+    if (!offerName) {
+      return [];
+    }
 
-      const encodedOfferName = encodeURIComponent(offerName);
-      const url = `${BASE_URL}/reviews/${encodedOfferName}`;
+    const url = `${BASE_URL}/reviews/${encodeURIComponent(offerName)}`;
 
-      if (seen.has(url)) return null;
-      seen.add(url);
+    if (seen.has(url)) {
+      return [];
+    }
 
-      return {
+    seen.add(url);
+
+    return [
+      {
         url,
         lastModified: item.updated_at ? new Date(item.updated_at) : new Date(),
         changeFrequency: "daily" as const,
         priority: 0.7,
-      };
-    })
-    .filter((page): page is MetadataRoute.Sitemap[number] => page !== null);
+      },
+    ];
+  });
 
   return [...staticPages, ...reviewPages];
 }
