@@ -362,16 +362,15 @@ export default function Page() {
       <main className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10">
         <section className="mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8">
           <div className="mb-6">
-  　　　　　<div className="flex flex-wrap items-center gap-4">
-    　　　　　<h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-    　　　　　　🔍 いまGoogleで話題のポイ活関連キーワード
- 　　　　　　 </h2>
+            <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
+              🔍 いまGoogleで話題のポイ活関連キーワード
+            </h2>
 
-  　　　　　　<div className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
-    　　　　　　最終更新：
-    　　　　　　<span className="ml-2 text-slate-700">{updatedAt}</span>
-  　　　　　　</div>
-　　　　　　</div>
+            <div className="mt-4 inline-flex items-center rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
+              最終更新：
+              <span className="ml-2 text-slate-700">{updatedAt}</span>
+            </div>
+          </div>
 
           <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
             <div className="flex flex-wrap items-center gap-3">
@@ -428,7 +427,7 @@ export default function Page() {
 
           <div className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
             最終更新：
-            <span className="text-slate-700">{updatedAt}</span>
+            <span className="ml-2 text-slate-700">{updatedAt}</span>
           </div>
         </div>
 
