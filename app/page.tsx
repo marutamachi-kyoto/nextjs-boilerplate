@@ -137,7 +137,7 @@ export default function Page() {
 
   const scrollToTrendKeywords = () => {
     document.getElementById("trend-keywords")?.scrollIntoView({
-      behavior: "smooth",
+      behavior: "auto",
       block: "start",
     });
   };
@@ -321,7 +321,7 @@ export default function Page() {
           <div className="w-full lg:w-[680px]">
             <div className="inline-flex items-center gap-3 rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-[0_10px_30px_rgba(236,72,153,0.18)] lg:text-xl">
               <span>🤖</span>
-              <span>AIが毎日判定！</span>
+              <span>AIが毎日自動で判定中！</span>
             </div>
 
             <h1 className="mt-8 text-[54px] font-black leading-[0.95] tracking-[-0.05em] text-pink-600 lg:text-[96px]">
