@@ -26,6 +26,9 @@ type PageProps = {
   params: Promise<{
     slug: string;
   }>;
+  searchParams?: Promise<{
+    from?: string;
+  }>;
 };
 
 const normalizeText = (text?: string) => {
@@ -97,10 +100,18 @@ export async function generateMetadata({
   };
 }
 
-export default async function ReviewPage({ params }: PageProps) {
+export default async function ReviewPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { slug } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
   const decodedSlug = decodeURIComponent(slug);
   const item = await getRankingItem(slug);
+
+  const from = resolvedSearchParams.from?.trim();
+  const backTarget = from || "ranking-section";
+  const backToRankingUrl = `/#${encodeURIComponent(backTarget)}`;
 
   if (!item) {
     return (
@@ -116,7 +127,7 @@ export default async function ReviewPage({ params }: PageProps) {
           </p>
 
           <a
-            href="/#ranking-section"
+            href={backToRankingUrl}
             className="mt-6 inline-flex min-h-[64px] items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-8 py-4 text-base font-black text-white shadow-xl transition hover:scale-105"
           >
             ランキングに戻る
@@ -146,7 +157,7 @@ export default async function ReviewPage({ params }: PageProps) {
     <main className="min-h-screen bg-[#fff8fb] px-5 py-8">
       <div className="mx-auto max-w-[1100px]">
         <a
-          href="/#ranking-section"
+          href={backToRankingUrl}
           className="mb-6 inline-flex rounded-full bg-white px-5 py-3 text-sm font-black text-pink-600 shadow-lg ring-1 ring-pink-100 transition hover:scale-105 hover:bg-pink-50"
         >
           ← ランキングに戻る
