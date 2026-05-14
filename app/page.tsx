@@ -31,6 +31,18 @@ type TrendBadge = {
   className: string;
 };
 
+const normalizeText = (text?: string) => {
+  return (text || "")
+    .toLowerCase()
+    .replace(/　/g, "")
+    .replace(/\s+/g, "")
+    .replace(/（/g, "(")
+    .replace(/）/g, ")")
+    .replace(/[・･]/g, "")
+    .replace(/[ーｰ−]/g, "-")
+    .trim();
+};
+
 export default function Page() {
   const [items, setItems] = useState<CategoryScore[]>([]);
   const [updatedAt, setUpdatedAt] = useState("-");
@@ -74,96 +86,151 @@ export default function Page() {
     return item.offer_name || item.trend_keyword || item.category;
   };
 
+  const getRankingId = (item: CategoryScore, index: number) => {
+    return `ranking-${index + 1}-${normalizeText(getOfferName(item))}`;
+  };
+
+  const findMatchedRanking = (tagWord: string) => {
+    const normalizedTagWord = normalizeText(tagWord);
+
+    return items.find((item) => {
+      const normalizedOfferName = normalizeText(getOfferName(item));
+      const normalizedTrendKeyword = normalizeText(item.trend_keyword);
+      const normalizedCategory = normalizeText(item.category);
+
+      return (
+        normalizedOfferName === normalizedTagWord ||
+        normalizedTrendKeyword === normalizedTagWord ||
+        normalizedCategory === normalizedTagWord
+      );
+    });
+  };
+
+  const scrollToRanking = (item: CategoryScore) => {
+    const index = items.findIndex((rankingItem) => rankingItem === item);
+    const targetId = getRankingId(item, index);
+    const target = document.getElementById(targetId);
+
+    if (!target) return;
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  };
+
   const formatReward = (reward?: number) => {
-  if (!reward || reward <= 0) return "データ取得不可";
-  return `${reward.toLocaleString()}P`;
-};
+    if (!reward || reward <= 0) return "データ取得不可";
+    return `${reward.toLocaleString()}P`;
+  };
 
   const getTrendBadges = (item: CategoryScore): TrendBadge[] => {
     const category = item.category;
 
     if (category.includes("通信")) {
       return [
-        { icon: "🔥", text: "急上昇", className: "bg-red-50 text-red-500 ring-1 ring-red-100" },
-        { icon: "💰", text: "高還元", className: "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-100" },
+        {
+          icon: "🔥",
+          text: "急上昇",
+          className: "bg-red-50 text-red-500 ring-1 ring-red-100",
+        },
+        {
+          icon: "💰",
+          text: "高還元",
+          className: "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-100",
+        },
       ];
     }
 
     if (category.includes("カード")) {
       return [
-        { icon: "📈", text: "検索急増", className: "bg-pink-50 text-pink-500 ring-1 ring-pink-100" },
-        { icon: "💰", text: "高単価", className: "bg-orange-50 text-orange-600 ring-1 ring-orange-100" },
+        {
+          icon: "📈",
+          text: "検索急増",
+          className: "bg-pink-50 text-pink-500 ring-1 ring-pink-100",
+        },
+        {
+          icon: "💰",
+          text: "高単価",
+          className: "bg-orange-50 text-orange-600 ring-1 ring-orange-100",
+        },
       ];
     }
 
     if (category.includes("ゲーム") || category.includes("アプリ")) {
       return [
-        { icon: "🎮", text: "人気拡大", className: "bg-violet-50 text-violet-600 ring-1 ring-violet-100" },
-        { icon: "🔥", text: "SNS話題", className: "bg-rose-50 text-rose-500 ring-1 ring-rose-100" },
+        {
+          icon: "🎮",
+          text: "人気拡大",
+          className: "bg-violet-50 text-violet-600 ring-1 ring-violet-100",
+        },
+        {
+          icon: "🔥",
+          text: "SNS話題",
+          className: "bg-rose-50 text-rose-500 ring-1 ring-rose-100",
+        },
       ];
     }
 
     return [
-      { icon: "📈", text: "トレンド", className: "bg-pink-50 text-pink-500 ring-1 ring-pink-100" },
+      {
+        icon: "📈",
+        text: "トレンド",
+        className: "bg-pink-50 text-pink-500 ring-1 ring-pink-100",
+      },
     ];
   };
 
   const getDynamicReason = (item: CategoryScore) => {
-  const category = item.category;
-  const offerName = (item.offer_name || "").toLowerCase();
+    const category = item.category;
+    const offerName = (item.offer_name || "").toLowerCase();
 
-  // ===== 案件別 =====
+    if (offerName.includes("tiktok")) {
+      return "友達招待系キャンペーンとしてSNSで急拡散しており、短期間で利用者が急増しています。";
+    }
 
-  if (offerName.includes("tiktok")) {
-    return "友達招待系キャンペーンとしてSNSで急拡散しており、短期間で利用者が急増しています。";
-  }
+    if (offerName.includes("楽天市場")) {
+      return "買い回り・ポイントアップ需要の増加により、検索数が急上昇しています。";
+    }
 
-  if (offerName.includes("楽天市場")) {
-    return "買い回り・ポイントアップ需要の増加により、検索数が急上昇しています。";
-  }
+    if (offerName.includes("amazon")) {
+      return "サブスク需要と大型セール時期の影響で、継続的に注目を集めています。";
+    }
 
-  if (offerName.includes("amazon")) {
-    return "サブスク需要と大型セール時期の影響で、継続的に注目を集めています。";
-  }
+    if (offerName.includes("u-next")) {
+      return "無料トライアル案件として安定した人気があり、動画サブスク需要も拡大しています。";
+    }
 
-  if (offerName.includes("u-next")) {
-    return "無料トライアル案件として安定した人気があり、動画サブスク需要も拡大しています。";
-  }
+    if (offerName.includes("paypay")) {
+      return "キャッシュレス決済需要の拡大により、検索数と利用者数が増加しています。";
+    }
 
-  if (offerName.includes("paypay")) {
-    return "キャッシュレス決済需要の拡大により、検索数と利用者数が増加しています。";
-  }
+    if (offerName.includes("楽天カード")) {
+      return "高還元キャンペーンが継続しており、クレジットカード案件の中でも人気が高い状態です。";
+    }
 
-  if (offerName.includes("楽天カード")) {
-    return "高還元キャンペーンが継続しており、クレジットカード案件の中でも人気が高い状態です。";
-  }
+    if (offerName.includes("楽天モバイル")) {
+      return "高額ポイント還元と通信費節約需要により、申し込み数が急増しています。";
+    }
 
-  if (offerName.includes("楽天モバイル")) {
-    return "高額ポイント還元と通信費節約需要により、申し込み数が急増しています。";
-  }
+    if (category.includes("通信")) {
+      return "高額ポイント案件としてSNS流入が増加しており、短期間で申し込みが伸びています。";
+    }
 
-  // ===== カテゴリ別 =====
+    if (category.includes("カード")) {
+      return "比較検索ユーザーが増加しており、高還元案件として注目を集めています。";
+    }
 
-  if (category.includes("通信")) {
-    return "高額ポイント案件としてSNS流入が増加しており、短期間で申し込みが伸びています。";
-  }
+    if (category.includes("証券")) {
+      return "NISA・投資需要の拡大により、口座開設系案件の人気が急上昇しています。";
+    }
 
-  if (category.includes("カード")) {
-    return "比較検索ユーザーが増加しており、高還元案件として注目を集めています。";
-  }
+    if (category.includes("ゲーム") || category.includes("アプリ")) {
+      return "SNSでの拡散が強く、短期間で条件達成しやすい案件として注目されています。";
+    }
 
-  if (category.includes("証券")) {
-    return "NISA・投資需要の拡大により、口座開設系案件の人気が急上昇しています。";
-  }
-
-  if (category.includes("ゲーム") || category.includes("アプリ")) {
-    return "SNSでの拡散が強く、短期間で条件達成しやすい案件として注目されています。";
-  }
-
-  // ===== デフォルト =====
-
-  return "Google検索とSNS流入の両方で注目度が上昇している案件です。";
-};
+    return "Google検索とSNS流入の両方で注目度が上昇している案件です。";
+  };
 
   const getRankStyle = (index: number) => {
     if (index === 0) {
@@ -292,22 +359,41 @@ export default function Page() {
 
           <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
             <div className="flex flex-wrap items-center gap-3">
-              {trendTags.map((tag) => (
-                <div
-                  key={tag.word}
-                  className={`rounded-full bg-pink-100 px-5 py-3 font-black text-pink-600 transition hover:scale-105 ${
-                    tag.score >= 90
-                      ? "text-3xl"
-                      : tag.score >= 70
-                      ? "text-2xl"
-                      : tag.score >= 50
-                      ? "text-xl"
-                      : "text-base"
-                  }`}
-                >
-                  {tag.word}
-                </div>
-              ))}
+              {trendTags.map((tag) => {
+                const matchedRanking = findMatchedRanking(tag.word);
+
+                const textSizeClass =
+                  tag.score >= 90
+                    ? "text-3xl"
+                    : tag.score >= 70
+                    ? "text-2xl"
+                    : tag.score >= 50
+                    ? "text-xl"
+                    : "text-base";
+
+                if (matchedRanking) {
+                  return (
+                    <button
+                      key={tag.word}
+                      type="button"
+                      onClick={() => scrollToRanking(matchedRanking)}
+                      className={`rounded-full bg-pink-100 px-5 py-3 font-black text-pink-600 underline decoration-2 underline-offset-4 transition hover:scale-105 hover:bg-pink-200 active:scale-95 ${textSizeClass}`}
+                      title="ランキング内の該当案件へ移動"
+                    >
+                      {tag.word}
+                    </button>
+                  );
+                }
+
+                return (
+                  <div
+                    key={tag.word}
+                    className={`rounded-full bg-pink-100 px-5 py-3 font-black text-pink-600 transition hover:scale-105 ${textSizeClass}`}
+                  >
+                    {tag.word}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -316,7 +402,11 @@ export default function Page() {
           <div className="flex items-center gap-3">
             <span className="text-4xl">🔥</span>
             <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-              いま<span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">AI</span>がおすすめするポイ活ランキング
+              いま
+              <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
+                AI
+              </span>
+              がおすすめするポイ活ランキング
             </h2>
           </div>
 
@@ -335,7 +425,8 @@ export default function Page() {
             return (
               <article
                 key={`${item.rank}-${item.offer_name}-${index}`}
-                className={`rounded-[2rem] bg-gradient-to-r ${rankStyle.card} p-5 shadow-lg ring-1 ${rankStyle.ring} lg:p-7`}
+                id={getRankingId(item, index)}
+                className={`scroll-mt-8 rounded-[2rem] bg-gradient-to-r ${rankStyle.card} p-5 shadow-lg ring-1 ${rankStyle.ring} lg:p-7`}
               >
                 <div className="grid gap-6 lg:grid-cols-[120px_1.5fr_260px_260px] lg:items-center">
                   <div className="flex items-center justify-center lg:block">
@@ -413,7 +504,8 @@ export default function Page() {
               return (
                 <article
                   key={`${item.rank}-${item.offer_name}-${index}`}
-                  className={`grid gap-4 bg-gradient-to-r ${rankStyle.card} p-5 transition hover:scale-[1.01] lg:grid-cols-[58px_170px_1.3fr_220px_210px] lg:items-center lg:gap-5`}
+                  id={getRankingId(item, index)}
+                  className={`scroll-mt-8 grid gap-4 bg-gradient-to-r ${rankStyle.card} p-5 transition hover:scale-[1.01] lg:grid-cols-[58px_170px_1.3fr_220px_210px] lg:items-center lg:gap-5`}
                 >
                   <div className="flex items-center gap-3 lg:justify-center">
                     <div
@@ -450,7 +542,7 @@ export default function Page() {
                   </div>
 
                   <div className="rounded-2xl bg-white/90 px-4 py-4 text-center shadow-sm ring-1 ring-pink-100">
-                    <div className="text-sm font-black text-slate-650 lg:text-base">
+                    <div className="text-sm font-black text-slate-600 lg:text-base">
                       報酬ポイントの目安
                     </div>
                     <div className="mt-1 text-3xl font-black text-pink-500">
