@@ -218,7 +218,7 @@ export default async function ReviewPage({ params }: PageProps) {
               {goodReviews.map((point) => (
                 <li
                   key={point}
-                  className="rounded-2xl bg-pink-50 px-5 py-4 text-sm font-bold leading-7 text-slate-700"
+                  className="rounded-2xl bg-pink-50 px-5 py-5 text-base font-black leading-8 text-slate-800 lg:text-lg lg:leading-9"
                 >
                   {point}
                 </li>
@@ -236,7 +236,7 @@ export default async function ReviewPage({ params }: PageProps) {
               {badReviews.map((point) => (
                 <li
                   key={point}
-                  className="rounded-2xl bg-pink-50 px-5 py-4 text-sm font-bold leading-7 text-slate-700"
+                  className="rounded-2xl bg-pink-50 px-5 py-5 text-base font-black leading-8 text-slate-800 lg:text-lg lg:leading-9"
                 >
                   {point}
                 </li>
