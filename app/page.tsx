@@ -503,7 +503,7 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-3 lg:items-end">
+                  <div className="flex flex-col items-center gap-3 lg:items-end">
                     <button
                       onClick={() => trackMoppyClick(item.category)}
                       className="flex h-16 w-full max-w-[260px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-6 text-center text-xl font-black text-white shadow-xl transition hover:scale-105"
@@ -583,7 +583,7 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 lg:items-end">
+                  <div className="flex flex-col items-center gap-2 lg:items-end">
                     <button
                       onClick={() => trackMoppyClick(item.category)}
                       className="flex h-12 w-full max-w-[210px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-sm font-black text-white shadow-md transition hover:scale-105"
