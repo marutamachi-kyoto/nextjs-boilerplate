@@ -60,7 +60,14 @@ const formatDate = (dateText?: string) => {
     return null;
   }
 
-  return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+  return date.toLocaleString("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
 const getReviewSearchUrl = (offerName: string) => {
@@ -246,18 +253,6 @@ export default async function ReviewPage({ params }: PageProps) {
 
         <section className="overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-pink-100">
           <div className="bg-gradient-to-r from-pink-50 via-white to-orange-50 p-7 lg:p-10">
-            <div className="mb-5 flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-pink-100 px-5 py-2 text-sm font-black text-pink-600">
-                口コミ・評判
-              </span>
-              <span className="rounded-full bg-yellow-100 px-5 py-2 text-sm font-black text-yellow-700">
-                AI整理
-              </span>
-              <span className="rounded-full bg-orange-100 px-5 py-2 text-sm font-black text-orange-700">
-                ポイ活案件
-              </span>
-            </div>
-
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 lg:text-6xl">
               {offerName}の口コミ・評判を
               <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
@@ -266,14 +261,8 @@ export default async function ReviewPage({ params }: PageProps) {
               が整理
             </h1>
 
-            <p className="mt-6 max-w-[850px] text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
-              Google検索などで確認されやすい評判をもとに、{offerName}
-              という商品・サービス自体の口コミで見るべきポイントを整理しました。
-              実際の口コミ本文を転載せず、良い評判・悪い評判の傾向をわかりやすくまとめています。
-            </p>
-
             {updatedDateText && (
-              <p className="mt-4 text-sm font-black text-slate-500">
+              <p className="mt-5 text-sm font-black text-slate-500">
                 最終更新：{updatedDateText}
               </p>
             )}
@@ -352,7 +341,6 @@ export default async function ReviewPage({ params }: PageProps) {
 
           <p className="mt-3 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
             最新の口コミは日々変わるため、申し込み前には外部検索でも確認するのがおすすめです。
-            条件やキャンペーン内容は変更される場合があるため、必ず最新情報を確認してください。
           </p>
 
           <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row">
