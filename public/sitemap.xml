@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://poikatu-ai.vercel.app/</loc>
-    <lastmod>2026-05-07</lastmod>
-    <changefreq>hourly</changefreq>
+    <lastmod>2026-05-15T00:00:00+09:00</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://poikatu-ai.vercel.app/about-poikatsu</loc>
+    <lastmod>2026-05-15T00:00:00+09:00</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://poikatu-ai.vercel.app/reviews/%E6%A5%BD%E5%A4%A9%E3%82%AB%E3%83%BC%E3%83%89</loc>
+    <lastmod>2026-05-15T00:00:00+09:00</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
