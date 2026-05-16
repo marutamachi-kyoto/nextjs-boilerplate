@@ -1,1120 +1,706 @@
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-type Category =
-  | "アプリ・ゲーム"
-  | "通信・回線"
-  | "クレジットカード"
-  | "証券・投資"
-  | "ショッピング"
-  | "サブスク"
-  | "サービス"
-  | "その他";
+const GOOGLE_TRENDS_RSS_URL =
+  "https://trends.google.com/trending/rss?geo=JP";
 
-type TrendInfo = {
+const MOPPY_SEARCH_BASE_URL = "https://pc.moppy.jp/search/?q=";
+
+type TrendItem = {
   keyword: string;
-  traffic?: string;
+  score: number;
 };
 
-type Offer = {
-  offer_name: string;
-  category: Category;
-  keywords: string[];
-  primary_site_name: string;
-  primary_site_url: string;
-  secondary_site_name: string;
-  secondary_site_url: string;
-  base_score: number;
-  reward: number;
-};
-
-type MatchedOffer = {
+type OfferItem = {
+  id?: string;
   name: string;
-  reward: number;
-  category: Category;
+  reward?: number | null;
+  category?: string | null;
+  is_active?: boolean | null;
+};
+
+type CandidateItem = {
+  offer_name: string;
+  trend_keyword: string;
+  category: string;
+  reward: number | null;
+  final_score: number;
   is_registered: boolean;
   confidence_score: number;
-};
-
-type MoppySearchResult = {
-  trend: TrendInfo;
-  offers: MatchedOffer[];
-};
-
-type RankingItem = {
-  rank: number;
-  offer_name: string;
-  category: Category;
-  score: number;
-  final_score: number;
-  trend_keyword: string | null;
-  trend_traffic: string | null;
   reason: string;
-  primary_site_name: string;
-  primary_site_url: string;
-  secondary_site_name: string;
-  secondary_site_url: string;
-  reward: number;
-  updated_at: string;
 };
 
-type OfferSyncResult = {
-  inserted: number;
-  updated: number;
-  skipped: number;
-};
-
-const MOPPY_URL =
-  "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
-
-function normalizeText(text?: string) {
-  return (text || "")
-    .toLowerCase()
-    .replace(/　/g, "")
-    .replace(/\s+/g, "")
-    .replace(/（/g, "(")
-    .replace(/）/g, ")")
-    .replace(/[・･]/g, "")
-    .replace(/[ーｰ−]/g, "-")
-    .trim();
-}
-
-function cleanHtmlText(text: string) {
-  return text
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
+function normalizeText(value: string) {
+  return value
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/<!\[CDATA\[/g, "")
+    .replace(/\]\]>/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function cleanTitle(text: string) {
-  return cleanHtmlText(text)
-    .replace(/^【[^】]+】\s*/g, "")
-    .replace(/^\[[^\]]+\]\s*/g, "")
-    .replace(/^（[^）]+）\s*/g, "")
-    .replace(/^\([^)]+\)\s*/g, "")
-    .replace(/^PR\s*/i, "")
+function normalizeName(value: string) {
+  return normalizeText(value)
+    .toLowerCase()
+    .replace(/[　\s]/g, "")
+    .replace(/[・\-_｜|【】\[\]（）()「」『』]/g, "")
+    .replace(/ポイント/g, "pt")
+    .replace(/ｐ/g, "p")
     .trim();
 }
 
-function isNoiseTitle(title: string) {
-  const normalized = normalizeText(title);
-
-  if (!normalized) return true;
-  if (title.length < 2) return true;
-  if (title.length > 70) return true;
-
-  const ngWords = [
-    "モッピー",
-    "ポイント",
-    "広告",
-    "検索",
-    "検索結果",
-    "もっと見る",
-    "最近見た広告",
-    "お気に入り広告",
-    "過去最高還元",
-    "キャンペーン",
-    "詳しくはこちら",
-    "無料会員登録",
-    "ログイン",
-    "会員登録",
-    "条件達成",
-    "ポイント獲得",
-    "おすすめ",
-    "人気",
-    "一覧",
-    "ヘルプ",
-    "問い合わせ",
-    "プライバシー",
-  ];
-
-  return ngWords.some((word) => normalized.includes(normalizeText(word)));
+function pickRandom<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
 }
 
-function isSameOfferName(a: string, b: string) {
-  const normalizedA = normalizeText(a);
-  const normalizedB = normalizeText(b);
-
-  if (!normalizedA || !normalizedB) return false;
-
-  return (
-    normalizedA === normalizedB ||
-    normalizedA.includes(normalizedB) ||
-    normalizedB.includes(normalizedA)
-  );
+function formatReward(reward: number | null | undefined) {
+  if (!reward || reward <= 0) return "報酬情報";
+  return `${reward.toLocaleString("ja-JP")}P`;
 }
 
-function inferCategory(name: string): Category {
-  const text = normalizeText(name);
+function getCategoryByName(name: string, keyword: string) {
+  const text = `${name} ${keyword}`;
 
   if (
-    text.includes("カード") ||
-    text.includes("クレカ") ||
-    text.includes("visa") ||
-    text.includes("jcb") ||
-    text.includes("mastercard") ||
-    text.includes("amex") ||
-    text.includes("paypayカード") ||
-    text.includes("楽天カード")
+    /カード|クレカ|paypay|楽天カード|三井住友|jcb|visa|master/i.test(text)
   ) {
-    return "クレジットカード";
+    return "カード";
   }
 
-  if (
-    text.includes("証券") ||
-    text.includes("投資") ||
-    text.includes("nisa") ||
-    text.includes("ニーサ") ||
-    text.includes("sbi") ||
-    text.includes("楽天証券") ||
-    text.includes("松井証券") ||
-    text.includes("マネックス")
-  ) {
-    return "証券・投資";
+  if (/証券|投資|nisa|sbi|楽天証券|口座|fx|暗号資産|仮想通貨/i.test(text)) {
+    return "証券・金融";
   }
 
-  if (
-    text.includes("モバイル") ||
-    text.includes("mobile") ||
-    text.includes("回線") ||
-    text.includes("wifi") ||
-    text.includes("wi-fi") ||
-    text.includes("光") ||
-    text.includes("ドコモ") ||
-    text.includes("docomo") ||
-    text.includes("au") ||
-    text.includes("softbank") ||
-    text.includes("ソフトバンク") ||
-    text.includes("楽天モバイル")
-  ) {
-    return "通信・回線";
+  if (/回線|wifi|モバイル|スマホ|sim|楽天モバイル|ahamo|povo|uq/i.test(text)) {
+    return "通信";
   }
 
-  if (
-    text.includes("ゲーム") ||
-    text.includes("アプリ") ||
-    text.includes("rpg") ||
-    text.includes("三国志") ||
-    text.includes("信長") ||
-    text.includes("キングダム") ||
-    text.includes("パズル") ||
-    text.includes("ウォー") ||
-    text.includes("クエスト")
-  ) {
-    return "アプリ・ゲーム";
+  if (/旅行|ホテル|宿泊|じゃらん|楽天トラベル|一休|航空券/i.test(text)) {
+    return "旅行";
   }
 
-  if (
-    text.includes("amazon") ||
-    text.includes("楽天市場") ||
-    text.includes("yahoo") ||
-    text.includes("ショッピング") ||
-    text.includes("qoo10") ||
-    text.includes("temu") ||
-    text.includes("aliexpress")
-  ) {
+  if (/ゲーム|アプリ|漫画|マンガ|電子書籍|動画|u-next|dmm|abema/i.test(text)) {
+    return "アプリ・エンタメ";
+  }
+
+  if (/ふるさと納税|買い物|ショッピング|楽天市場|yahoo|amazon/i.test(text)) {
     return "ショッピング";
   }
 
-  if (
-    text.includes("u-next") ||
-    text.includes("unext") ||
-    text.includes("netflix") ||
-    text.includes("hulu") ||
-    text.includes("dmm") ||
-    text.includes("abema") ||
-    text.includes("disney") ||
-    text.includes("サブスク") ||
-    text.includes("動画")
-  ) {
-    return "サブスク";
-  }
-
-  return "サービス";
+  return "一般";
 }
 
-function getMoppySearchUrl(keyword: string) {
-  return `https://pc.moppy.jp/search/?q=${encodeURIComponent(keyword)}`;
-}
+/**
+ * AI理由文を自然にばらけさせる関数
+ */
+function generateReason(params: {
+  offerName: string;
+  category: string;
+  reward: number | null;
+  rank: number;
+  isRegistered: boolean;
+  confidenceScore: number;
+}) {
+  const {
+    offerName,
+    category,
+    reward,
+    rank,
+    isRegistered,
+    confidenceScore,
+  } = params;
 
-async function getOffers(): Promise<Offer[]> {
-  const { data, error } = await supabase
-    .from("offers")
-    .select("*")
-    .eq("is_active", true);
+  const rewardText = formatReward(reward);
 
-  if (error) {
-    console.error("offers fetch error", error);
-    return [];
+  const focusPoints = [
+    "検索での注目度",
+    "案件としての見つけやすさ",
+    "報酬ポイントの目安",
+    "初心者でも比較しやすい点",
+    "現在の話題性",
+    "申し込み前に条件確認しやすい点",
+    "ポイ活案件としての相性",
+    "短期的な注目度",
+  ];
+
+  const focusPoint = pickRandom(focusPoints);
+
+  const registeredHighRankPatterns = [
+    `${offerName}は、${category}カテゴリの中でも話題性と案件の安定感を両方確認しやすい案件です。${rewardText}の目安も含めて、今チェックしておきたい上位候補としてAIが評価しました。`,
+    `${offerName}は、登録済み案件の中でも注目度が高く、ポイ活ユーザーが比較対象にしやすい案件です。検索動向と${focusPoint}を踏まえて、今回のランキングでは上位に入れています。`,
+    `${offerName}は、掲載の安定感があり、現在のトレンドとも相性がよい案件です。報酬だけでなく、案件として探しやすい点も含めて高めに評価しています。`,
+    `${offerName}は、定番寄りの案件でありながら、今の検索需要とも重なっている点が特徴です。条件が合えば優先的に確認したい案件としてAIが判断しました。`,
+    `${offerName}は、話題性・報酬・案件の確認しやすさのバランスがよい案件です。上位表示する価値がある候補として、AIが総合的に評価しています。`,
+  ];
+
+  const registeredNormalPatterns = [
+    `${offerName}は、登録済み案件として確認しやすく、${category}カテゴリの中でも比較対象に入れやすい案件です。${focusPoint}を踏まえてランキングに採用しています。`,
+    `${offerName}は、ポイ活案件としての実在性を確認しやすい点が評価ポイントです。報酬条件を確認したうえで、候補のひとつとして検討しやすい案件です。`,
+    `${offerName}は、現在の検索動向と案件内容の相性が見られるため、ランキングに入れています。大きく目立つ案件ではない場合でも、比較対象として確認する価値があります。`,
+    `${offerName}は、掲載状況を確認しやすい登録済み案件です。${rewardText}の目安と話題性をあわせて、AIが候補として評価しました。`,
+    `${offerName}は、案件名とカテゴリの関連性が分かりやすく、初心者でも内容を確認しやすい案件です。申し込み前に条件を見比べたい候補として採用しています。`,
+    `${offerName}は、報酬だけでなく案件としての探しやすさも評価しています。現在のトレンドと照らし合わせて、ランキング内に入れる価値があると判断しました。`,
+  ];
+
+  const autoHighConfidencePatterns = [
+    `${offerName}は、Googleトレンド由来のキーワードとモッピー検索結果の両方から検出された案件です。登録済み案件ではありませんが、関連性と${rewardText}の目安が確認できたため、AI自動発見枠として高めに評価しました。`,
+    `${offerName}は、最近の話題ワードから浮上した自動発見案件です。検索トレンドとの一致度が比較的高く、報酬情報も確認できたため、注目候補としてランキングに加えています。`,
+    `${offerName}は、通常の登録済み案件とは別に、トレンド検索の流れから見つかった案件です。信頼度が比較的高い候補として、AIが自動的に採用しました。`,
+    `${offerName}は、検索需要の高まりに連動して見つかった案件です。まだ定番案件とは言い切れませんが、関連性と報酬面が確認できたため、今チェックする価値があります。`,
+    `${offerName}は、AI自動発見案件の中でも、案件名・報酬・トレンドのつながりが比較的はっきりしています。短期的な注目候補としてランキングに反映しました。`,
+  ];
+
+  const autoNormalPatterns = [
+    `${offerName}は、トレンド検索から検出された新しめの候補です。登録済み案件ではないため確認は必要ですが、現在の話題性を踏まえてAIがランキングに加えています。`,
+    `${offerName}は、Googleトレンド由来のキーワードから見つかった案件です。定番案件と比べると慎重な確認が必要ですが、今後注目される可能性があります。`,
+    `${offerName}は、検索トレンドとの関連が見られたため、AIが自動的に候補として抽出しました。申し込み前には掲載条件や報酬内容を確認するのがおすすめです。`,
+    `${offerName}は、最近の話題ワードとのつながりから見つかった案件です。報酬や条件の確認は必要ですが、短期的な注目候補として採用しています。`,
+    `${offerName}は、モッピー検索結果から検出されたAI自動発見案件です。登録済み案件よりは変動の可能性がありますが、トレンドとの相性を見てランキングに反映しました。`,
+  ];
+
+  if (isRegistered && rank <= 10) {
+    return pickRandom(registeredHighRankPatterns);
   }
 
-  return data.map((item: any) => ({
-    offer_name: item.title,
-    category:
-      item.category?.includes("クレジット")
-        ? "クレジットカード"
-        : item.category?.includes("証券")
-        ? "証券・投資"
-        : item.category?.includes("通信")
-        ? "通信・回線"
-        : item.category?.includes("ゲーム")
-        ? "アプリ・ゲーム"
-        : item.category?.includes("ショッピング")
-        ? "ショッピング"
-        : item.category?.includes("サブスク")
-        ? "サブスク"
-        : "その他",
-    keywords: [item.title?.toLowerCase() || "", ...(item.tags || [])],
-    primary_site_name: item.point_site || "モッピー",
-    primary_site_url: item.url || "https://pc.moppy.jp/",
-    secondary_site_name: "ポイントインカム",
-    secondary_site_url: "https://pointi.jp/",
-    reward: item.reward || 0,
-    base_score: Math.min(
-      100,
-      Math.max(60, Math.floor((item.reward || 1000) / 120))
-    ),
+  if (isRegistered) {
+    return pickRandom(registeredNormalPatterns);
+  }
+
+  if (confidenceScore >= 90) {
+    return pickRandom(autoHighConfidencePatterns);
+  }
+
+  return pickRandom(autoNormalPatterns);
+}
+
+async function getGoogleTrends(): Promise<TrendItem[]> {
+  const res = await fetch(GOOGLE_TRENDS_RSS_URL, {
+    cache: "no-store",
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Google Trends RSS fetch failed: ${res.status}`);
+  }
+
+  const xml = await res.text();
+
+  const titles = [...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)]
+    .map((match) => normalizeText(match[1]))
+    .filter(Boolean)
+    .filter((title) => !/Daily Search Trends|検索トレンド/i.test(title));
+
+  const unique = Array.from(new Set(titles));
+
+  return unique.slice(0, 50).map((keyword, index) => ({
+    keyword,
+    score: Math.max(100 - index, 50),
   }));
 }
 
-async function getTrends(): Promise<TrendInfo[]> {
-  try {
-    const res = await fetch("https://trends.google.com/trending/rss?geo=JP", {
-      cache: "no-store",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
-      },
+async function fetchMoppySearch(keyword: string) {
+  const url = `${MOPPY_SEARCH_BASE_URL}${encodeURIComponent(keyword)}`;
+
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+    },
+  });
+
+  if (!res.ok) {
+    return "";
+  }
+
+  return await res.text();
+}
+
+function stripHtml(value: string) {
+  return normalizeText(
+    value
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+  );
+}
+
+function extractRewardFromText(text: string): number | null {
+  const matches = [
+    ...text.matchAll(/([0-9０-９,，]+)\s*(?:P|ｐ|ポイント)/gi),
+  ];
+
+  const rewards = matches
+    .map((match) =>
+      Number(
+        match[1]
+          .replace(/[０-９]/g, (s) =>
+            String.fromCharCode(s.charCodeAt(0) - 0xfee0)
+          )
+          .replace(/[,，]/g, "")
+      )
+    )
+    .filter((num) => Number.isFinite(num) && num > 0);
+
+  const uniqueRewards = Array.from(new Set(rewards));
+
+  /**
+   * 以前決めた方針：
+   * カード内のP表記が1個だけなら採用。
+   * 複数ある場合は誤取得の可能性があるため採用しない。
+   */
+  if (uniqueRewards.length === 1) {
+    return uniqueRewards[0];
+  }
+
+  return null;
+}
+
+function extractOfferCandidatesFromMoppyHtml(
+  html: string,
+  keyword: string
+): { name: string; reward: number | null }[] {
+  const text = stripHtml(html);
+
+  const lines = text
+    .split(/\n|。|！|!|\r/)
+    .map((line) => normalizeText(line))
+    .filter(Boolean);
+
+  const candidates: { name: string; reward: number | null }[] = [];
+
+  for (const line of lines) {
+    if (candidates.length >= 5) break;
+
+    const reward = extractRewardFromText(line);
+
+    if (!reward || reward < 500) continue;
+
+    const cleaned = line
+      .replace(/([0-9０-９,，]+)\s*(?:P|ｐ|ポイント).*/gi, "")
+      .replace(/獲得|還元|ポイント|詳細|広告|PR|キャンペーン/g, "")
+      .trim();
+
+    if (cleaned.length < 2 || cleaned.length > 60) continue;
+
+    if (
+      /ログイン|会員登録|検索|カテゴリ|ランキング|ヘルプ|無料でポイント|利用規約/.test(
+        cleaned
+      )
+    ) {
+      continue;
+    }
+
+    candidates.push({
+      name: cleaned,
+      reward,
     });
+  }
 
-    if (!res.ok) return [];
+  /**
+   * HTML構造の変化で行単位抽出が弱い場合の保険。
+   * キーワードそのものが案件名っぽい場合は候補にする。
+   */
+  if (candidates.length === 0) {
+    const reward = extractRewardFromText(text);
+    if (reward && reward >= 500) {
+      candidates.push({
+        name: keyword,
+        reward,
+      });
+    }
+  }
 
-    const xml = await res.text();
-    const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
+  return candidates;
+}
 
-    return items
-      .map((match) => {
-        const item = match[1];
-        const titleMatch = item.match(/<title>(.*?)<\/title>/);
-        const trafficMatch = item.match(
-          /<ht:approx_traffic>(.*?)<\/ht:approx_traffic>/
-        );
+async function getOffers(): Promise<OfferItem[]> {
+  const { data, error } = await supabase.from("offers").select("*");
 
-        return {
-          keyword: cleanHtmlText(titleMatch?.[1] ?? ""),
-          traffic: trafficMatch?.[1],
-        };
-      })
-      .filter((trend) => trend.keyword);
-  } catch {
+  if (error) {
+    console.error("offers fetch error:", error);
     return [];
   }
+
+  return (data || []).map((item: any) => ({
+    id: item.id,
+    name:
+      item.offer_name ||
+      item.name ||
+      item.title ||
+      item.trend_keyword ||
+      item.category ||
+      "",
+    reward: typeof item.reward === "number" ? item.reward : null,
+    category: item.category || null,
+    is_active: item.is_active ?? true,
+  }));
 }
 
-function extractSearchResultArea(html: string): string {
-  const lowerHtml = html.toLowerCase();
-  const markers = ["検索結果", "search_result", "search-result", "result"];
+function findRegisteredOffer(
+  offerName: string,
+  keyword: string,
+  offers: OfferItem[]
+) {
+  const normalizedOfferName = normalizeName(offerName);
+  const normalizedKeyword = normalizeName(keyword);
 
-  for (const marker of markers) {
-    const index = lowerHtml.indexOf(marker.toLowerCase());
+  return offers.find((offer) => {
+    const registeredName = normalizeName(offer.name);
 
-    if (index !== -1) {
-      return html.slice(index);
-    }
-  }
+    if (!registeredName) return false;
 
-  return html;
-}
-
-function extractOfferTitles(html: string): string[] {
-  const titlePatterns = [
-    /alt="([^"]+)"/g,
-    /title="([^"]+)"/g,
-    /<h3[^>]*>([\s\S]*?)<\/h3>/g,
-    /<h2[^>]*>([\s\S]*?)<\/h2>/g,
-    /<strong[^>]*>([\s\S]*?)<\/strong>/g,
-  ];
-
-  const titles = new Set<string>();
-
-  for (const pattern of titlePatterns) {
-    const matches = [...html.matchAll(pattern)];
-
-    for (const match of matches) {
-      const text = cleanTitle(match[1] || "");
-
-      if (!isNoiseTitle(text)) {
-        titles.add(text.toLowerCase());
-      }
-    }
-  }
-
-  return [...titles];
-}
-
-function extractRewardFromCardText(cardText: string): number {
-  const rewardMatches = [
-    ...cardText.matchAll(
-      /([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{3,7})\s*(p|ポイント|pt)/gi
-    ),
-  ];
-
-  if (rewardMatches.length !== 1) {
-    return 0;
-  }
-
-  const reward = Number(rewardMatches[0][1].replace(/,/g, ""));
-
-  if (reward > 0 && reward <= 100000) {
-    return reward;
-  }
-
-  return 0;
-}
-
-function extractRewardNearOffer(html: string, offer: Offer): number {
-  const searchResultHtml = extractSearchResultArea(html);
-
-  const cleanedHtml = searchResultHtml
-    .replace(/<script[\s\S]*?<\/script>/g, "")
-    .replace(/<style[\s\S]*?<\/style>/g, "");
-
-  const targetTitle = cleanTitle(offer.offer_name).toLowerCase();
-
-  const cardCandidates = cleanedHtml
-    .split(/(?=<a\s|<article|<li|<div\s)/i)
-    .map((card) => card.trim())
-    .filter((card) => card.length >= 100 && card.length <= 5000);
-
-  for (const cardHtml of cardCandidates) {
-    const cardText = cleanHtmlText(cardHtml).toLowerCase();
-
-    if (
-      cardText.includes("最近見た広告") ||
-      cardText.includes("お気に入り広告") ||
-      cardText.includes("過去最高還元") ||
-      cardText.includes("もっと見る")
-    ) {
-      continue;
-    }
-
-    const titleCandidates: string[] = [];
-
-    const titlePatterns = [
-      /alt="([^"]+)"/gi,
-      /title="([^"]+)"/gi,
-      /<h2[^>]*>([\s\S]*?)<\/h2>/gi,
-      /<h3[^>]*>([\s\S]*?)<\/h3>/gi,
-      /<strong[^>]*>([\s\S]*?)<\/strong>/gi,
-    ];
-
-    for (const pattern of titlePatterns) {
-      const matches = [...cardHtml.matchAll(pattern)];
-
-      for (const match of matches) {
-        if (match[1]) {
-          titleCandidates.push(cleanTitle(match[1]).toLowerCase());
-        }
-      }
-    }
-
-    const ngTitleWords = [
-      "ideco",
-      "ニーサ",
-      "nisa",
-      "つみたて",
-      "積立",
-      "投信",
-    ];
-
-    const hasExactTitle = titleCandidates.some((title) => {
-      const isStrongMatch =
-        title === targetTitle ||
-        title.startsWith(targetTitle) ||
-        title.includes(`${targetTitle} `) ||
-        title.includes(`${targetTitle}　`);
-
-      const hasNgWord = ngTitleWords.some((word) =>
-        title.includes(word.toLowerCase())
-      );
-
-      return isStrongMatch && !hasNgWord;
-    });
-
-    if (!hasExactTitle) continue;
-
-    const reward = extractRewardFromCardText(cardText);
-
-    if (reward > 0) {
-      return reward;
-    }
-  }
-
-  return 0;
-}
-
-function extractAutoDiscoveredOffers(
-  html: string,
-  trend: TrendInfo,
-  registeredOffers: Offer[]
-): MatchedOffer[] {
-  const searchResultHtml = extractSearchResultArea(html);
-
-  const cleanedHtml = searchResultHtml
-    .replace(/<script[\s\S]*?<\/script>/g, "")
-    .replace(/<style[\s\S]*?<\/style>/g, "");
-
-  const trendText = normalizeText(trend.keyword);
-
-  const cardCandidates = cleanedHtml
-    .split(/(?=<a\s|<article|<li|<div\s)/i)
-    .map((card) => card.trim())
-    .filter((card) => card.length >= 120 && card.length <= 5000);
-
-  const discovered = new Map<string, MatchedOffer>();
-
-  for (const cardHtml of cardCandidates) {
-    const cardText = cleanHtmlText(cardHtml);
-
-    if (
-      cardText.includes("最近見た広告") ||
-      cardText.includes("お気に入り広告") ||
-      cardText.includes("過去最高還元") ||
-      cardText.includes("もっと見る")
-    ) {
-      continue;
-    }
-
-    const reward = extractRewardFromCardText(cardText);
-
-    if (reward < 500) {
-      continue;
-    }
-
-    const titleCandidates: string[] = [];
-    const titlePatterns = [
-      /alt="([^"]+)"/gi,
-      /title="([^"]+)"/gi,
-      /<h2[^>]*>([\s\S]*?)<\/h2>/gi,
-      /<h3[^>]*>([\s\S]*?)<\/h3>/gi,
-      /<strong[^>]*>([\s\S]*?)<\/strong>/gi,
-    ];
-
-    for (const pattern of titlePatterns) {
-      const matches = [...cardHtml.matchAll(pattern)];
-
-      for (const match of matches) {
-        const title = cleanTitle(match[1] || "");
-
-        if (!isNoiseTitle(title)) {
-          titleCandidates.push(title);
-        }
-      }
-    }
-
-    const bestTitle = titleCandidates
-      .map((title) => title.trim())
-      .filter((title) => !isNoiseTitle(title))
-      .sort((a, b) => a.length - b.length)[0];
-
-    if (!bestTitle) {
-      continue;
-    }
-
-    const alreadyRegistered = registeredOffers.some((offer) =>
-      isSameOfferName(bestTitle, offer.offer_name)
+    return (
+      registeredName === normalizedOfferName ||
+      registeredName.includes(normalizedOfferName) ||
+      normalizedOfferName.includes(registeredName) ||
+      registeredName.includes(normalizedKeyword) ||
+      normalizedKeyword.includes(registeredName)
     );
-
-    if (alreadyRegistered) {
-      continue;
-    }
-
-    const normalizedTitle = normalizeText(bestTitle);
-
-    let confidence = 0;
-
-    confidence += 35;
-    confidence += 20;
-    confidence += 10;
-    confidence += 10;
-
-    if (
-      normalizedTitle.includes(trendText) ||
-      trendText.includes(normalizedTitle)
-    ) {
-      confidence += 20;
-    }
-
-    if (reward >= 1000) {
-      confidence += 5;
-    }
-
-    if (confidence < 80) {
-      continue;
-    }
-
-    const key = normalizeText(bestTitle);
-
-    if (!key) {
-      continue;
-    }
-
-    const existing = discovered.get(key);
-
-    const candidate: MatchedOffer = {
-      name: bestTitle,
-      reward,
-      category: inferCategory(bestTitle),
-      is_registered: false,
-      confidence_score: Math.min(confidence, 100),
-    };
-
-    if (!existing || candidate.confidence_score > existing.confidence_score) {
-      discovered.set(key, candidate);
-    }
-  }
-
-  return [...discovered.values()];
+  });
 }
 
-async function searchMoppyOffers(
-  trend: TrendInfo,
-  offers: Offer[]
-): Promise<MoppySearchResult | null> {
-  try {
-    const url = getMoppySearchUrl(trend.keyword);
+function calculateScore(params: {
+  trendScore: number;
+  reward: number | null;
+  isRegistered: boolean;
+  confidenceScore: number;
+  index: number;
+}) {
+  const { trendScore, reward, isRegistered, confidenceScore, index } = params;
 
-    const res = await fetch(url, {
-      cache: "no-store",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
-      },
-    });
+  const rewardScore = reward ? Math.min(reward / 100, 40) : 0;
+  const registeredBonus = isRegistered ? 25 : 0;
+  const confidenceBonus = confidenceScore / 5;
+  const freshnessPenalty = index * 0.3;
 
-    if (!res.ok) return null;
-
-    const html = await res.text();
-
-    const noResultTexts = [
-      "該当する広告がありません",
-      "検索結果がありません",
-      "0件",
-    ];
-
-    if (noResultTexts.some((text) => html.includes(text))) {
-      return null;
-    }
-
-    const extractedTitles = extractOfferTitles(html);
-
-    const registeredMatches: MatchedOffer[] = offers
-      .filter((offer) => {
-        return extractedTitles.some((title) => {
-          return (
-            isSameOfferName(title, offer.offer_name) ||
-            offer.keywords.some((keyword) => isSameOfferName(title, keyword))
-          );
-        });
-      })
-      .map((offer) => {
-        const extractedReward = extractRewardNearOffer(html, offer);
-
-        return {
-          name: offer.offer_name,
-          reward: extractedReward > 0 ? extractedReward : offer.reward || 0,
-          category: offer.category,
-          is_registered: true,
-          confidence_score: 100,
-        };
-      });
-
-    const autoDiscoveredMatches = extractAutoDiscoveredOffers(
-      html,
-      trend,
-      offers
-    );
-
-    const merged = [...registeredMatches];
-
-    for (const autoOffer of autoDiscoveredMatches) {
-      const alreadyExists = merged.some((item) =>
-        isSameOfferName(item.name, autoOffer.name)
-      );
-
-      if (!alreadyExists) {
-        merged.push(autoOffer);
-      }
-    }
-
-    if (merged.length === 0) return null;
-
-    return {
-      trend,
-      offers: merged,
-    };
-  } catch {
-    return null;
-  }
+  return Math.round(
+    trendScore + rewardScore + registeredBonus + confidenceBonus - freshnessPenalty
+  );
 }
 
-function getTrafficBonus(traffic?: string): number {
-  if (!traffic) return 0;
+function adjustCategoryBalance(candidates: CandidateItem[]) {
+  const categoryCounts = new Map<string, number>();
 
-  const number = Number(traffic.replace(/[^\d]/g, ""));
+  return candidates.map((item) => {
+    const count = categoryCounts.get(item.category) || 0;
+    categoryCounts.set(item.category, count + 1);
 
-  if (number >= 50000) return 10;
-  if (number >= 20000) return 8;
-  if (number >= 10000) return 6;
-  if (number >= 5000) return 4;
-  if (number >= 1000) return 2;
-
-  return 0;
-}
-
-function applyCategoryBalance(rankings: RankingItem[]): RankingItem[] {
-  const categoryCounts: Record<string, number> = {};
-
-  const adjusted = rankings.map((item) => {
-    const currentCount = categoryCounts[item.category] ?? 0;
-    const penalty = currentCount * 4;
-
-    categoryCounts[item.category] = currentCount + 1;
+    const penalty = count >= 3 ? count * 4 : 0;
 
     return {
       ...item,
-      final_score: Math.max(1, item.score - penalty),
+      final_score: Math.max(item.final_score - penalty, 1),
     };
   });
-
-  return adjusted.sort((a, b) => b.final_score - a.final_score);
 }
 
-function dedupeRankings(rankings: RankingItem[]) {
-  const seen = new Set<string>();
-  const result: RankingItem[] = [];
+async function syncOffersFromCandidates(candidates: CandidateItem[]) {
+  let offersInsertedCount = 0;
+  let offersUpdatedCount = 0;
+  let offersSyncSkippedCount = 0;
 
-  for (const item of rankings) {
-    const key = normalizeText(item.offer_name);
+  const { data: offersData } = await supabase.from("offers").select("*");
+  const currentOffers = offersData || [];
 
-    if (!key || seen.has(key)) {
+  for (const candidate of candidates) {
+    const existing = currentOffers.find((offer: any) => {
+      const offerName =
+        offer.offer_name || offer.name || offer.title || offer.trend_keyword || "";
+
+      return normalizeName(offerName) === normalizeName(candidate.offer_name);
+    });
+
+    if (existing) {
+      if (
+        candidate.reward &&
+        typeof existing.reward === "number" &&
+        candidate.reward !== existing.reward
+      ) {
+        const { error } = await supabase
+          .from("offers")
+          .update({
+            reward: candidate.reward,
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+
+        if (!error) {
+          offersUpdatedCount++;
+        } else {
+          offersSyncSkippedCount++;
+        }
+      } else {
+        offersSyncSkippedCount++;
+      }
+
       continue;
     }
 
-    seen.add(key);
-    result.push(item);
+    /**
+     * AI自動発見案件をoffersへ正式追加する条件は厳しめ。
+     */
+    if (
+      !candidate.is_registered &&
+      candidate.confidence_score >= 90 &&
+      candidate.reward &&
+      candidate.reward >= 500
+    ) {
+      const { error } = await supabase.from("offers").insert({
+        offer_name: candidate.offer_name,
+        category: candidate.category,
+        reward: candidate.reward,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      if (!error) {
+        offersInsertedCount++;
+      } else {
+        offersSyncSkippedCount++;
+      }
+    } else {
+      offersSyncSkippedCount++;
+    }
   }
 
-  return result;
+  return {
+    offers_inserted_count: offersInsertedCount,
+    offers_updated_count: offersUpdatedCount,
+    offers_sync_skipped_count: offersSyncSkippedCount,
+  };
 }
 
-async function syncOffersFromAutoDiscovery(
-  matchedResults: MoppySearchResult[],
-  registeredOffers: Offer[]
-): Promise<OfferSyncResult> {
-  const existingKeys = new Set(
-    registeredOffers.map((offer) => normalizeText(offer.offer_name))
-  );
+async function updateRankings(rows: CandidateItem[]) {
+  const now = new Date().toISOString();
 
-  const autoCandidates = new Map<
-    string,
-    {
-      name: string;
-      reward: number;
-      category: Category;
-      confidence_score: number;
-      trend_keyword: string;
-    }
-  >();
+  await supabase.from("rankings").delete().gte("rank", 0);
 
-  for (const result of matchedResults) {
-    for (const offer of result.offers) {
-      if (offer.is_registered) {
-        continue;
-      }
-
-      if (offer.confidence_score < 90) {
-        continue;
-      }
-
-      if (offer.reward < 500) {
-        continue;
-      }
-
-      const key = normalizeText(offer.name);
-
-      if (!key || existingKeys.has(key)) {
-        continue;
-      }
-
-      const existingCandidate = autoCandidates.get(key);
-
-      if (
-        !existingCandidate ||
-        offer.confidence_score > existingCandidate.confidence_score
-      ) {
-        autoCandidates.set(key, {
-          name: offer.name,
-          reward: offer.reward,
-          category: offer.category,
-          confidence_score: offer.confidence_score,
-          trend_keyword: result.trend.keyword,
-        });
-      }
-    }
-  }
-
-  const insertRows = [...autoCandidates.values()].map((offer) => ({
-    title: offer.name,
-    category: offer.category,
-    tags: [
-      "AI自動発見",
-      "Googleトレンド",
-      offer.trend_keyword,
-      offer.category,
-    ],
-    point_site: "モッピー",
-    url: getMoppySearchUrl(offer.name),
-    reward: offer.reward,
-    is_active: true,
+  const insertRows = rows.map((item, index) => ({
+    rank: index + 1,
+    offer_name: item.offer_name,
+    trend_keyword: item.trend_keyword,
+    category: item.category,
+    reward: item.reward,
+    final_score: item.final_score,
+    reason: item.reason,
+    is_registered: item.is_registered,
+    confidence_score: item.confidence_score,
+    updated_at: now,
   }));
 
-  if (insertRows.length === 0) {
-    return {
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-    };
-  }
+  const { error } = await supabase.from("rankings").insert(insertRows);
 
-  const { error } = await supabase.from("offers").insert(insertRows);
+  /**
+   * rankingsテーブルに is_registered / confidence_score が無い場合の保険。
+   * 既存スキーマ差分で落ちないよう、基本カラムだけで再挿入します。
+   */
+  if (error) {
+    console.error("rankings insert error:", error);
+
+    const fallbackRows = rows.map((item, index) => ({
+      rank: index + 1,
+      offer_name: item.offer_name,
+      trend_keyword: item.trend_keyword,
+      category: item.category,
+      reward: item.reward,
+      final_score: item.final_score,
+      reason: item.reason,
+      updated_at: now,
+    }));
+
+    const fallback = await supabase.from("rankings").insert(fallbackRows);
+
+    if (fallback.error) {
+      throw fallback.error;
+    }
+  }
+}
+
+async function updateTrends(rows: CandidateItem[]) {
+  const now = new Date().toISOString();
+
+  await supabase.from("trends").delete().gte("score", 0);
+
+  const trendRows = rows.slice(0, 50).map((item, index) => ({
+    word: item.offer_name,
+    score: Math.max(100 - index * 2, 10),
+    category: item.category,
+    updated_at: now,
+  }));
+
+  const { error } = await supabase.from("trends").insert(trendRows);
 
   if (error) {
-    console.error("auto offers insert error", error);
-
-    return {
-      inserted: 0,
-      updated: 0,
-      skipped: insertRows.length,
-    };
-  }
-
-  return {
-    inserted: insertRows.length,
-    updated: 0,
-    skipped: 0,
-  };
-}
-
-async function updateRegisteredOfferRewards(
-  matchedResults: MoppySearchResult[],
-  registeredOffers: Offer[]
-): Promise<OfferSyncResult> {
-  let updated = 0;
-  let skipped = 0;
-
-  const rewardUpdates = new Map<
-    string,
-    {
-      title: string;
-      reward: number;
-    }
-  >();
-
-  for (const result of matchedResults) {
-    for (const matchedOffer of result.offers) {
-      if (!matchedOffer.is_registered) {
-        continue;
-      }
-
-      if (matchedOffer.reward <= 0) {
-        continue;
-      }
-
-      const registeredOffer = registeredOffers.find((offer) =>
-        isSameOfferName(offer.offer_name, matchedOffer.name)
-      );
-
-      if (!registeredOffer) {
-        continue;
-      }
-
-      if (registeredOffer.reward === matchedOffer.reward) {
-        skipped += 1;
-        continue;
-      }
-
-      const key = normalizeText(registeredOffer.offer_name);
-
-      rewardUpdates.set(key, {
-        title: registeredOffer.offer_name,
-        reward: matchedOffer.reward,
-      });
-    }
-  }
-
-  for (const update of rewardUpdates.values()) {
-    const { error } = await supabase
-      .from("offers")
-      .update({
-        reward: update.reward,
-        is_active: true,
-      })
-      .eq("title", update.title);
-
-    if (error) {
-      console.error("offer reward update error", error);
-      skipped += 1;
-      continue;
-    }
-
-    updated += 1;
-  }
-
-  return {
-    inserted: 0,
-    updated,
-    skipped,
-  };
-}
-
-async function syncOffers(
-  matchedResults: MoppySearchResult[],
-  registeredOffers: Offer[]
-): Promise<OfferSyncResult> {
-  try {
-    const autoInsertResult = await syncOffersFromAutoDiscovery(
-      matchedResults,
-      registeredOffers
-    );
-
-    const rewardUpdateResult = await updateRegisteredOfferRewards(
-      matchedResults,
-      registeredOffers
-    );
-
-    return {
-      inserted: autoInsertResult.inserted,
-      updated: rewardUpdateResult.updated,
-      skipped: autoInsertResult.skipped + rewardUpdateResult.skipped,
-    };
-  } catch (error) {
-    console.error("offers sync error", error);
-
-    return {
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-    };
+    throw error;
   }
 }
 
 export async function GET() {
   try {
+    const trends = await getGoogleTrends();
     const offers = await getOffers();
-    const trends = await getTrends();
 
-    const matchedResults: MoppySearchResult[] = [];
+    const candidates: CandidateItem[] = [];
 
-    for (const trend of trends) {
-      const result = await searchMoppyOffers(trend, offers);
+    for (let i = 0; i < trends.length; i++) {
+      const trend = trends[i];
 
-      if (result) {
-        matchedResults.push(result);
+      try {
+        const html = await fetchMoppySearch(trend.keyword);
+        const moppyCandidates = extractOfferCandidatesFromMoppyHtml(
+          html,
+          trend.keyword
+        );
+
+        for (const moppyCandidate of moppyCandidates) {
+          const registeredOffer = findRegisteredOffer(
+            moppyCandidate.name,
+            trend.keyword,
+            offers
+          );
+
+          const isRegistered = Boolean(registeredOffer);
+
+          const offerName = registeredOffer?.name || moppyCandidate.name;
+
+          const reward =
+            moppyCandidate.reward ||
+            registeredOffer?.reward ||
+            null;
+
+          const category =
+            registeredOffer?.category ||
+            getCategoryByName(offerName, trend.keyword);
+
+          const confidenceScore = isRegistered
+            ? 100
+            : reward && reward >= 500
+              ? 90
+              : 80;
+
+          const finalScore = calculateScore({
+            trendScore: trend.score,
+            reward,
+            isRegistered,
+            confidenceScore,
+            index: i,
+          });
+
+          const duplicate = candidates.some(
+            (item) => normalizeName(item.offer_name) === normalizeName(offerName)
+          );
+
+          if (duplicate) continue;
+
+          candidates.push({
+            offer_name: offerName,
+            trend_keyword: trend.keyword,
+            category,
+            reward,
+            final_score: finalScore,
+            is_registered: isRegistered,
+            confidence_score: confidenceScore,
+            reason: "",
+          });
+        }
+      } catch (error) {
+        console.error(`Moppy search failed: ${trend.keyword}`, error);
       }
     }
 
-    const now = new Date().toISOString();
+    /**
+     * 登録済み案件が少なすぎる場合の補強。
+     * offers登録済み案件を安定枠として追加します。
+     */
+    for (const offer of offers) {
+      if (candidates.length >= 50) break;
 
-    const registeredRankings: RankingItem[] = offers.map((offer) => {
-      const matchedResult = matchedResults.find((result) =>
-        result.offers.some(
-          (matchedOffer) =>
-            matchedOffer.is_registered &&
-            isSameOfferName(matchedOffer.name, offer.offer_name)
-        )
+      if (!offer.name) continue;
+
+      const duplicate = candidates.some(
+        (item) => normalizeName(item.offer_name) === normalizeName(offer.name)
       );
 
-      const matchedOffer = matchedResult?.offers.find(
-        (matchedOffer) =>
-          matchedOffer.is_registered &&
-          isSameOfferName(matchedOffer.name, offer.offer_name)
-      );
+      if (duplicate) continue;
 
-      const trend = matchedResult?.trend;
-      const isTrendMatched = !!trend;
-      const reward = matchedOffer?.reward || offer.reward || 0;
+      const category = offer.category || getCategoryByName(offer.name, offer.name);
 
-      const rewardScore = Math.min(20, Math.floor(reward / 1000));
+      candidates.push({
+        offer_name: offer.name,
+        trend_keyword: offer.name,
+        category,
+        reward: offer.reward || null,
+        final_score: calculateScore({
+          trendScore: 60,
+          reward: offer.reward || null,
+          isRegistered: true,
+          confidenceScore: 100,
+          index: candidates.length,
+        }),
+        is_registered: true,
+        confidence_score: 100,
+        reason: "",
+      });
+    }
 
-      const score = Math.max(
-        1,
-        Math.min(
-          100,
-          offer.base_score +
-            rewardScore +
-            getTrafficBonus(trend?.traffic) +
-            (isTrendMatched ? 10 : -12)
-        )
-      );
-
-      return {
-        rank: 0,
-        offer_name: offer.offer_name,
-        category: offer.category,
-        score,
-        final_score: score,
-        trend_keyword: trend?.keyword ?? null,
-        trend_traffic: trend?.traffic ?? null,
-        reward,
-        reason: isTrendMatched
-          ? `${offer.offer_name} は現在のGoogleトレンド検索とモッピー掲載案件の両方に一致しており、特に注目度が高い案件です。`
-          : `${offer.offer_name} は定番人気のポイ活案件です。`,
-        primary_site_name: offer.primary_site_name,
-        primary_site_url: offer.primary_site_url,
-        secondary_site_name: offer.secondary_site_name,
-        secondary_site_url: offer.secondary_site_url,
-        updated_at: now,
-      };
-    });
-
-    const autoDiscoveredRankings: RankingItem[] = matchedResults
-      .flatMap((result) =>
-        result.offers
-          .filter((offer) => !offer.is_registered)
-          .map((offer) => {
-            const rewardScore = Math.min(20, Math.floor(offer.reward / 1000));
-            const confidenceBonus = Math.floor(
-              Math.max(0, offer.confidence_score - 60) / 2
-            );
-
-            const score = Math.max(
-              1,
-              Math.min(
-                100,
-                62 +
-                  rewardScore +
-                  confidenceBonus +
-                  getTrafficBonus(result.trend.traffic) +
-                  12
-              )
-            );
-
-            return {
-              rank: 0,
-              offer_name: offer.name,
-              category: offer.category,
-              score,
-              final_score: score,
-              trend_keyword: result.trend.keyword,
-              trend_traffic: result.trend.traffic ?? null,
-              reward: offer.reward,
-              reason: `${offer.name} はGoogleトレンドで話題の「${result.trend.keyword}」から検出され、モッピー検索結果でも報酬ポイントが確認できたAI自動発見案件です。`,
-              primary_site_name: "モッピー",
-              primary_site_url: getMoppySearchUrl(offer.name),
-              secondary_site_name: "モッピー",
-              secondary_site_url: MOPPY_URL,
-              updated_at: now,
-            };
-          })
-      )
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 15);
-
-    const baseRankings = dedupeRankings([
-      ...autoDiscoveredRankings,
-      ...registeredRankings,
-    ]);
-
-    const rankings = applyCategoryBalance(baseRankings)
+    const balancedCandidates = adjustCategoryBalance(candidates)
+      .sort((a, b) => b.final_score - a.final_score)
       .slice(0, 50)
       .map((item, index) => ({
         ...item,
-        rank: index + 1,
+        reason: generateReason({
+          offerName: item.offer_name,
+          category: item.category,
+          reward: item.reward,
+          rank: index + 1,
+          isRegistered: item.is_registered,
+          confidenceScore: item.confidence_score,
+        }),
       }));
 
-    await supabase.from("rankings").delete().neq("rank", 0);
+    const offersSyncResult = await syncOffersFromCandidates(balancedCandidates);
 
-    const { error } = await supabase.from("rankings").insert(rankings);
+    await updateRankings(balancedCandidates);
+    await updateTrends(balancedCandidates);
 
-    if (error) {
-      return Response.json(
-        {
-          error: "Supabaseへの保存に失敗しました",
-          details: error.message,
-        },
-        { status: 500 }
-      );
-    }
-
-    const offerSyncResult = await syncOffers(matchedResults, offers);
-
-    const trendRows = rankings
-      .map((ranking, index) => ({
-        word: ranking.offer_name,
-        score: Math.max(100 - index * 2, 40),
-        category: ranking.category || "ポイ活",
-      }))
-      .filter(
-        (item, index, self) =>
-          index ===
-          self.findIndex(
-            (t) => normalizeText(t.word) === normalizeText(item.word)
-          )
-      )
-      .slice(0, 50);
-
-    if (trendRows.length > 0) {
-      await supabase.from("trends").delete().neq("word", "");
-      await supabase.from("trends").insert(trendRows);
-    }
-
-    const autoDiscoveredCount = rankings.filter((ranking) =>
-      autoDiscoveredRankings.some((autoRanking) =>
-        isSameOfferName(autoRanking.offer_name, ranking.offer_name)
-      )
-    ).length;
-
-    return Response.json({
-      message: "ランキング更新完了",
-      count: rankings.length,
-      trends_count: trendRows.length,
-      auto_discovered_count: autoDiscoveredCount,
-      registered_count: rankings.length - autoDiscoveredCount,
-      offers_inserted_count: offerSyncResult.inserted,
-      offers_updated_count: offerSyncResult.updated,
-      offers_sync_skipped_count: offerSyncResult.skipped,
-      trends_source:
-        matchedResults.length > 0
-          ? "google_trends_moppy_auto_discovery"
-          : "fallback_offers",
-      trends_debug: matchedResults[0]?.trend.keyword ?? null,
-      matched_offers_debug:
-        matchedResults[0]?.offers.map((offer) => ({
-          name: offer.name,
-          reward: offer.reward,
-          category: offer.category,
-          is_registered: offer.is_registered,
-          confidence_score: offer.confidence_score,
-        })) ?? [],
-      top_categories: rankings.slice(0, 5).map((r) => r.category),
+    return NextResponse.json({
+      ok: true,
+      message: "rankings and trends updated",
+      count: balancedCandidates.length,
+      trends_count: trends.length,
+      registered_count: balancedCandidates.filter((item) => item.is_registered)
+        .length,
+      auto_discovered_count: balancedCandidates.filter(
+        (item) => !item.is_registered
+      ).length,
+      ...offersSyncResult,
+      sample: balancedCandidates.slice(0, 5),
     });
-  } catch (error) {
-    console.error("update rankings error", error);
+  } catch (error: any) {
+    console.error("update-rankings error:", error);
 
-    return Response.json(
+    return NextResponse.json(
       {
-        error: "ランキング更新中にエラーが発生しました",
+        ok: false,
+        error: error?.message || "unknown error",
       },
       { status: 500 }
     );
