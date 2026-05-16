@@ -317,7 +317,6 @@ async function getTrends(): Promise<TrendInfo[]> {
 
 function extractSearchResultArea(html: string): string {
   const lowerHtml = html.toLowerCase();
-
   const markers = ["検索結果", "search_result", "search-result", "result"];
 
   for (const marker of markers) {
@@ -492,7 +491,8 @@ function extractAutoDiscoveredOffers(
 
     const reward = extractRewardFromCardText(cardText);
 
-    if (reward <= 0) {
+    // 自動発見案件は500P未満を除外
+    if (reward < 500) {
       continue;
     }
 
@@ -538,21 +538,11 @@ function extractAutoDiscoveredOffers(
 
     let confidence = 0;
 
-    // モッピー検索結果カード内で、報酬Pが1つだけ取れた
-    confidence += 35;
+    confidence += 35; // 報酬Pが1つだけ取れた
+    confidence += 20; // Googleトレンド由来
+    confidence += 10; // タイトルの長さが適正
+    confidence += 10; // NGワードなし
 
-    // Googleトレンド由来の検索で見つかった
-    confidence += 20;
-
-    // タイトルとしての長さが適正
-    if (bestTitle.length >= 3 && bestTitle.length <= 40) {
-      confidence += 10;
-    }
-
-    // NGワードを含まない
-    confidence += 10;
-
-    // トレンドキーワードと案件名がある程度近い
     if (
       normalizedTitle.includes(trendText) ||
       trendText.includes(normalizedTitle)
@@ -560,12 +550,12 @@ function extractAutoDiscoveredOffers(
       confidence += 20;
     }
 
-    // 報酬がある程度大きい
     if (reward >= 1000) {
       confidence += 5;
     }
 
-    if (confidence < 70) {
+    // 自動発見案件はconfidence_score 80以上だけ採用
+    if (confidence < 80) {
       continue;
     }
 
@@ -793,8 +783,8 @@ export async function GET() {
       };
     });
 
-    const autoDiscoveredRankings: RankingItem[] = matchedResults.flatMap(
-      (result) =>
+    const autoDiscoveredRankings: RankingItem[] = matchedResults
+      .flatMap((result) =>
         result.offers
           .filter((offer) => !offer.is_registered)
           .map((offer) => {
@@ -832,7 +822,9 @@ export async function GET() {
               updated_at: now,
             };
           })
-    );
+      )
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 15);
 
     const baseRankings = dedupeRankings([
       ...autoDiscoveredRankings,
@@ -868,7 +860,10 @@ export async function GET() {
       }))
       .filter(
         (item, index, self) =>
-          index === self.findIndex((t) => normalizeText(t.word) === normalizeText(item.word))
+          index ===
+          self.findIndex(
+            (t) => normalizeText(t.word) === normalizeText(item.word)
+          )
       )
       .slice(0, 50);
 
