@@ -232,10 +232,6 @@ function generateReason(params: {
     reason = pickRandom(autoPatterns);
   }
 
-  /**
-   * 文章が長くなりすぎた場合の保険。
-   * 110文字を超える場合は、2文目以降を削って短くします。
-   */
   if (reason.length > 110) {
     const firstSentence = reason.split("。")[0];
     if (firstSentence.length >= 55) {
@@ -322,6 +318,10 @@ function extractRewardFromText(text: string): number | null {
 
   const uniqueRewards = Array.from(new Set(rewards));
 
+  /**
+   * モッピー検索でP表記が1つだけ取れた場合だけ採用。
+   * 複数ある場合は誤取得の可能性があるため不採用。
+   */
   if (uniqueRewards.length === 1) {
     return uniqueRewards[0];
   }
@@ -329,10 +329,20 @@ function extractRewardFromText(text: string): number | null {
   return null;
 }
 
+function isNoiseCandidateName(name: string) {
+  if (!name) return true;
+
+  if (name.length < 2 || name.length > 60) return true;
+
+  return /ログイン|会員登録|検索|カテゴリ|ランキング|ヘルプ|無料でポイント|利用規約|プライバシー|お問い合わせ|キャンペーン一覧|広告掲載|友達紹介|マイページ|条件|詳細|もっと見る/.test(
+    name
+  );
+}
+
 function extractOfferCandidatesFromMoppyHtml(
   html: string,
   keyword: string
-): { name: string; reward: number | null }[] {
+): { name: string; reward: number }[] {
   const text = stripHtml(html);
 
   const lines = text
@@ -340,13 +350,18 @@ function extractOfferCandidatesFromMoppyHtml(
     .map((line) => normalizeText(line))
     .filter(Boolean);
 
-  const candidates: { name: string; reward: number | null }[] = [];
+  const candidates: { name: string; reward: number }[] = [];
 
   for (const line of lines) {
     if (candidates.length >= 5) break;
 
     const reward = extractRewardFromText(line);
 
+    /**
+     * 重要：
+     * 報酬Pが1つだけ取れた候補だけ採用。
+     * 報酬が取れない候補はランキングに入れない。
+     */
     if (!reward || reward < 500) continue;
 
     const cleaned = line
@@ -354,30 +369,12 @@ function extractOfferCandidatesFromMoppyHtml(
       .replace(/獲得|還元|ポイント|詳細|広告|PR|キャンペーン/g, "")
       .trim();
 
-    if (cleaned.length < 2 || cleaned.length > 60) continue;
-
-    if (
-      /ログイン|会員登録|検索|カテゴリ|ランキング|ヘルプ|無料でポイント|利用規約/.test(
-        cleaned
-      )
-    ) {
-      continue;
-    }
+    if (isNoiseCandidateName(cleaned)) continue;
 
     candidates.push({
       name: cleaned,
       reward,
     });
-  }
-
-  if (candidates.length === 0) {
-    const reward = extractRewardFromText(text);
-    if (reward && reward >= 500) {
-      candidates.push({
-        name: keyword,
-        reward,
-      });
-    }
   }
 
   return candidates;
@@ -481,11 +478,11 @@ async function syncOffersFromCandidates(candidates: CandidateItem[]) {
     });
 
     if (existing) {
-      if (
-        candidate.reward &&
-        typeof existing.reward === "number" &&
-        candidate.reward !== existing.reward
-      ) {
+      /**
+       * ランキング表示ではoffers.rewardを使わない。
+       * ただし、モッピー検索で取れた報酬をoffersに同期するのはOK。
+       */
+      if (candidate.reward && candidate.reward > 0) {
         const { error } = await supabase
           .from("offers")
           .update({
@@ -623,19 +620,24 @@ export async function GET() {
 
           const isRegistered = Boolean(registeredOffer);
 
-          const offerName = registeredOffer?.name || moppyCandidate.name;
+          /**
+           * 重要：
+           * 表示名は、モッピー検索から取れた名前をそのまま使う。
+           * registeredOffer.name には置き換えない。
+           */
+          const offerName = moppyCandidate.name;
 
-          const reward = moppyCandidate.reward || registeredOffer?.reward || null;
+          /**
+           * 重要：
+           * 報酬は、モッピー検索で取れたものだけを使う。
+           */
+          const reward = moppyCandidate.reward;
 
           const category =
             registeredOffer?.category ||
             getCategoryByName(offerName, trend.keyword);
 
-          const confidenceScore = isRegistered
-            ? 100
-            : reward && reward >= 500
-              ? 90
-              : 80;
+          const confidenceScore = isRegistered ? 100 : 90;
 
           const finalScore = calculateScore({
             trendScore: trend.score,
@@ -667,36 +669,11 @@ export async function GET() {
       }
     }
 
-    for (const offer of offers) {
-      if (candidates.length >= 50) break;
-
-      if (!offer.name) continue;
-
-      const duplicate = candidates.some(
-        (item) => normalizeName(item.offer_name) === normalizeName(offer.name)
-      );
-
-      if (duplicate) continue;
-
-      const category = offer.category || getCategoryByName(offer.name, offer.name);
-
-      candidates.push({
-        offer_name: offer.name,
-        trend_keyword: offer.name,
-        category,
-        reward: offer.reward || null,
-        final_score: calculateScore({
-          trendScore: 60,
-          reward: offer.reward || null,
-          isRegistered: true,
-          confidenceScore: 100,
-          index: candidates.length,
-        }),
-        is_registered: true,
-        confidence_score: 100,
-        reason: "",
-      });
-    }
+    /**
+     * 重要：
+     * offers登録済み案件による50件補強はしない。
+     * モッピー検索で実際に見つかり、報酬Pが1つだけ取れた案件だけを採用する。
+     */
 
     const balancedCandidates = adjustCategoryBalance(candidates)
       .sort((a, b) => b.final_score - a.final_score)
@@ -728,6 +705,9 @@ export async function GET() {
       auto_discovered_count: balancedCandidates.filter(
         (item) => !item.is_registered
       ).length,
+      strict_moppy_search_only: true,
+      rewards_from_moppy_only: true,
+      no_offers_backfill: true,
       ...offersSyncResult,
       sample: balancedCandidates.slice(0, 5),
     });
