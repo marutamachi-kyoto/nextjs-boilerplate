@@ -36,6 +36,11 @@ type CandidateItem = {
   reason: string;
 };
 
+type RewardHit = {
+  value: number;
+  index: number;
+};
+
 function normalizeText(value: string) {
   return value
     .replace(/&amp;/g, "&")
@@ -101,7 +106,7 @@ function getCategoryByName(name: string, keyword: string) {
 }
 
 /**
- * AI理由文を80〜110文字前後に抑えて生成
+ * AI理由文を80〜110文字前後に抑えて生成する関数
  */
 function generateReason(params: {
   offerName: string;
@@ -307,19 +312,22 @@ function toHalfWidthNumber(value: string) {
     .replace(/[,，]/g, "");
 }
 
-function extractAllRewards(text: string): number[] {
+function extractRewardHits(text: string, minReward = 100): RewardHit[] {
   const matches = [...text.matchAll(/([0-9０-９,，]+)\s*(?:P|ｐ|ポイント)/gi)];
 
   return matches
-    .map((match) => Number(toHalfWidthNumber(match[1])))
-    .filter((num) => Number.isFinite(num) && num > 0);
+    .map((match) => ({
+      value: Number(toHalfWidthNumber(match[1])),
+      index: match.index ?? 0,
+    }))
+    .filter((hit) => Number.isFinite(hit.value) && hit.value >= minReward);
 }
 
 function extractUniqueRewardFromText(
   text: string,
   minReward = 100
 ): number | null {
-  const rewards = extractAllRewards(text).filter((num) => num >= minReward);
+  const rewards = extractRewardHits(text, minReward).map((hit) => hit.value);
   const uniqueRewards = Array.from(new Set(rewards));
 
   if (uniqueRewards.length === 1) {
@@ -334,13 +342,17 @@ function getKeywordVariants(keyword: string): string[] {
   const set = new Set<string>();
 
   if (base) set.add(base);
-  if (base.replace(/[　\s]/g, "")) set.add(base.replace(/[　\s]/g, ""));
-  if (base.replace(/[（(].*?[）)]/g, "").trim()) {
-    set.add(base.replace(/[（(].*?[）)]/g, "").trim());
-  }
-  if (base.replace(/[・\-_｜|【】\[\]（）()「」『』]/g, "").trim()) {
-    set.add(base.replace(/[・\-_｜|【】\[\]（）()「」『』]/g, "").trim());
-  }
+
+  const withoutSpaces = base.replace(/[　\s]/g, "");
+  if (withoutSpaces) set.add(withoutSpaces);
+
+  const withoutParentheses = base.replace(/[（(].*?[）)]/g, "").trim();
+  if (withoutParentheses) set.add(withoutParentheses);
+
+  const withoutSymbols = base
+    .replace(/[・\-_｜|【】\[\]（）()「」『』]/g, "")
+    .trim();
+  if (withoutSymbols) set.add(withoutSymbols);
 
   const tokens = base
     .split(/[　\s・\-_｜|【】\[\]（）()「」『』]+/)
@@ -357,10 +369,10 @@ function getKeywordVariants(keyword: string): string[] {
 }
 
 /**
- * 案件名の近くにある報酬だけを見る。
- * 近傍スニペット内で reward が1種類だけなら採用。
+ * 案件名の前後600文字を見て、案件名に一番近いPを採用する。
+ * 100P未満は除外。
  */
-function extractRewardNearKeywordFromText(
+function extractNearestRewardNearKeywordFromText(
   text: string,
   keyword: string,
   minReward = 100
@@ -369,43 +381,44 @@ function extractRewardNearKeywordFromText(
 
   const lowerText = text.toLowerCase();
   const variants = getKeywordVariants(keyword).map((v) => v.toLowerCase());
-  const foundRewards: number[] = [];
-  let matched = false;
+
+  let bestReward: number | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
 
   for (const variant of variants.slice(0, 8)) {
     let startIndex = 0;
     let hitCount = 0;
 
-    while (hitCount < 3) {
-      const index = lowerText.indexOf(variant, startIndex);
-      if (index === -1) break;
+    while (hitCount < 5) {
+      const keywordIndex = lowerText.indexOf(variant, startIndex);
+      if (keywordIndex === -1) break;
 
-      matched = true;
       hitCount += 1;
 
-      const snippet = text.slice(
-        Math.max(0, index - 240),
-        Math.min(text.length, index + variant.length + 240)
+      const windowStart = Math.max(0, keywordIndex - 600);
+      const windowEnd = Math.min(
+        text.length,
+        keywordIndex + variant.length + 600
       );
 
-      const rewards = extractAllRewards(snippet).filter((num) => num >= minReward);
-      foundRewards.push(...rewards);
+      const snippet = text.slice(windowStart, windowEnd);
+      const rewardHits = extractRewardHits(snippet, minReward);
 
-      startIndex = index + variant.length;
+      for (const hit of rewardHits) {
+        const absoluteRewardIndex = windowStart + hit.index;
+        const distance = Math.abs(absoluteRewardIndex - keywordIndex);
+
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestReward = hit.value;
+        }
+      }
+
+      startIndex = keywordIndex + variant.length;
     }
   }
 
-  const uniqueRewards = Array.from(new Set(foundRewards));
-
-  if (uniqueRewards.length === 1) {
-    return uniqueRewards[0];
-  }
-
-  if (!matched) {
-    return null;
-  }
-
-  return null;
+  return bestReward;
 }
 
 function isNoiseCandidateName(name: string) {
@@ -441,10 +454,14 @@ function extractOfferCandidatesFromMoppyHtml(
 
     if (isNoiseCandidateName(cleaned)) continue;
 
+    /**
+     * まず行の中でPが1種類だけなら採用。
+     * それが無理なら、案件名周辺600文字から一番近いPを採用。
+     */
     let reward = extractUniqueRewardFromText(line, 100);
 
     if (!reward) {
-      reward = extractRewardNearKeywordFromText(text, cleaned, 100);
+      reward = extractNearestRewardNearKeywordFromText(text, cleaned, 100);
     }
 
     if (!reward) continue;
@@ -460,11 +477,15 @@ function extractOfferCandidatesFromMoppyHtml(
   }
 
   /**
-   * ライン単位で取れなかった場合の緩い救済。
-   * トレンド検索語そのものの近傍から1つだけ報酬が取れれば候補にする。
+   * ライン単位で取れなかった場合の救済。
+   * トレンド検索語そのものの近くから一番近いPを採用。
    */
   if (candidates.length === 0) {
-    const rewardNearKeyword = extractRewardNearKeywordFromText(text, keyword, 100);
+    const rewardNearKeyword = extractNearestRewardNearKeywordFromText(
+      text,
+      keyword,
+      100
+    );
 
     if (rewardNearKeyword) {
       candidates.push({
@@ -483,15 +504,20 @@ async function getMoppyRewardForKeyword(keyword: string): Promise<number | null>
     const text = stripHtml(html);
 
     /**
-     * 優先:
-     * 1. 案件名近傍の報酬
-     * 2. ページ全体で唯一の報酬（かなり限定的な救済）
+     * 優先順位：
+     * 1. 案件名周辺600文字の中で一番近いP
+     * 2. ページ全体でPが1種類だけなら採用
      */
-    const nearReward = extractRewardNearKeywordFromText(text, keyword, 100);
-    if (nearReward) return nearReward;
+    const nearestReward = extractNearestRewardNearKeywordFromText(
+      text,
+      keyword,
+      100
+    );
 
-    const pageWideReward = extractUniqueRewardFromText(text, 100);
-    if (pageWideReward) return pageWideReward;
+    if (nearestReward) return nearestReward;
+
+    const uniquePageReward = extractUniqueRewardFromText(text, 100);
+    if (uniquePageReward) return uniquePageReward;
 
     return null;
   } catch (error) {
@@ -784,7 +810,7 @@ export async function GET() {
     /**
      * 2. offers 登録案件で補強
      *    ただし offers.reward は使わない。
-     *    各案件名でモッピー検索し、案件名近傍から報酬を取りに行く。
+     *    各案件名でモッピー検索し、案件名に一番近いPを採用する。
      */
     for (const offer of offers) {
       if (candidates.length >= 50) break;
@@ -851,7 +877,7 @@ export async function GET() {
       rewards_from_moppy_only: true,
       offers_backfill_enabled: true,
       offers_reward_used_for_display: false,
-      reward_extraction_mode: "near_offer_name",
+      reward_extraction_mode: "nearest_p_within_600_chars",
       ...offersSyncResult,
       sample: balancedCandidates.slice(0, 5),
     });
