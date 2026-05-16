@@ -101,7 +101,7 @@ function getCategoryByName(name: string, keyword: string) {
 }
 
 /**
- * AI理由文を80〜110文字前後に抑えて生成する関数
+ * AI理由文を80〜110文字前後に抑えて生成
  */
 function generateReason(params: {
   offerName: string;
@@ -299,31 +299,110 @@ function stripHtml(value: string) {
   );
 }
 
-function extractRewardFromText(text: string): number | null {
-  const matches = [
-    ...text.matchAll(/([0-9０-９,，]+)\s*(?:P|ｐ|ポイント)/gi),
-  ];
-
-  const rewards = matches
-    .map((match) =>
-      Number(
-        match[1]
-          .replace(/[０-９]/g, (s) =>
-            String.fromCharCode(s.charCodeAt(0) - 0xfee0)
-          )
-          .replace(/[,，]/g, "")
-      )
+function toHalfWidthNumber(value: string) {
+  return value
+    .replace(/[０-９]/g, (s) =>
+      String.fromCharCode(s.charCodeAt(0) - 0xfee0)
     )
-    .filter((num) => Number.isFinite(num) && num > 0);
+    .replace(/[,，]/g, "");
+}
 
+function extractAllRewards(text: string): number[] {
+  const matches = [...text.matchAll(/([0-9０-９,，]+)\s*(?:P|ｐ|ポイント)/gi)];
+
+  return matches
+    .map((match) => Number(toHalfWidthNumber(match[1])))
+    .filter((num) => Number.isFinite(num) && num > 0);
+}
+
+function extractUniqueRewardFromText(
+  text: string,
+  minReward = 100
+): number | null {
+  const rewards = extractAllRewards(text).filter((num) => num >= minReward);
   const uniqueRewards = Array.from(new Set(rewards));
 
-  /**
-   * P表記が1種類だけ取れた場合だけ採用。
-   * 複数ある場合は誤取得の可能性があるので null。
-   */
   if (uniqueRewards.length === 1) {
     return uniqueRewards[0];
+  }
+
+  return null;
+}
+
+function getKeywordVariants(keyword: string): string[] {
+  const base = normalizeText(keyword);
+  const set = new Set<string>();
+
+  if (base) set.add(base);
+  if (base.replace(/[　\s]/g, "")) set.add(base.replace(/[　\s]/g, ""));
+  if (base.replace(/[（(].*?[）)]/g, "").trim()) {
+    set.add(base.replace(/[（(].*?[）)]/g, "").trim());
+  }
+  if (base.replace(/[・\-_｜|【】\[\]（）()「」『』]/g, "").trim()) {
+    set.add(base.replace(/[・\-_｜|【】\[\]（）()「」『』]/g, "").trim());
+  }
+
+  const tokens = base
+    .split(/[　\s・\-_｜|【】\[\]（）()「」『』]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+
+  for (const token of tokens) {
+    set.add(token);
+  }
+
+  return Array.from(set)
+    .filter((v) => v.length >= 2)
+    .sort((a, b) => b.length - a.length);
+}
+
+/**
+ * 案件名の近くにある報酬だけを見る。
+ * 近傍スニペット内で reward が1種類だけなら採用。
+ */
+function extractRewardNearKeywordFromText(
+  text: string,
+  keyword: string,
+  minReward = 100
+): number | null {
+  if (!text || !keyword) return null;
+
+  const lowerText = text.toLowerCase();
+  const variants = getKeywordVariants(keyword).map((v) => v.toLowerCase());
+  const foundRewards: number[] = [];
+  let matched = false;
+
+  for (const variant of variants.slice(0, 8)) {
+    let startIndex = 0;
+    let hitCount = 0;
+
+    while (hitCount < 3) {
+      const index = lowerText.indexOf(variant, startIndex);
+      if (index === -1) break;
+
+      matched = true;
+      hitCount += 1;
+
+      const snippet = text.slice(
+        Math.max(0, index - 240),
+        Math.min(text.length, index + variant.length + 240)
+      );
+
+      const rewards = extractAllRewards(snippet).filter((num) => num >= minReward);
+      foundRewards.push(...rewards);
+
+      startIndex = index + variant.length;
+    }
+  }
+
+  const uniqueRewards = Array.from(new Set(foundRewards));
+
+  if (uniqueRewards.length === 1) {
+    return uniqueRewards[0];
+  }
+
+  if (!matched) {
+    return null;
   }
 
   return null;
@@ -350,17 +429,10 @@ function extractOfferCandidatesFromMoppyHtml(
     .filter(Boolean);
 
   const candidates: { name: string; reward: number | null }[] = [];
+  const seen = new Set<string>();
 
   for (const line of lines) {
     if (candidates.length >= 5) break;
-
-    const reward = extractRewardFromText(line);
-
-    /**
-     * トレンド検索由来の候補は、報酬が取れたものだけ採用する。
-     * ただし、ここで取れた報酬だけを使う。
-     */
-    if (!reward || reward < 500) continue;
 
     const cleaned = line
       .replace(/([0-9０-９,，]+)\s*(?:P|ｐ|ポイント).*/gi, "")
@@ -369,10 +441,37 @@ function extractOfferCandidatesFromMoppyHtml(
 
     if (isNoiseCandidateName(cleaned)) continue;
 
+    let reward = extractUniqueRewardFromText(line, 100);
+
+    if (!reward) {
+      reward = extractRewardNearKeywordFromText(text, cleaned, 100);
+    }
+
+    if (!reward) continue;
+
+    const key = normalizeName(cleaned);
+    if (seen.has(key)) continue;
+    seen.add(key);
+
     candidates.push({
       name: cleaned,
       reward,
     });
+  }
+
+  /**
+   * ライン単位で取れなかった場合の緩い救済。
+   * トレンド検索語そのものの近傍から1つだけ報酬が取れれば候補にする。
+   */
+  if (candidates.length === 0) {
+    const rewardNearKeyword = extractRewardNearKeywordFromText(text, keyword, 100);
+
+    if (rewardNearKeyword) {
+      candidates.push({
+        name: keyword,
+        reward: rewardNearKeyword,
+      });
+    }
   }
 
   return candidates;
@@ -382,11 +481,19 @@ async function getMoppyRewardForKeyword(keyword: string): Promise<number | null>
   try {
     const html = await fetchMoppySearch(keyword);
     const text = stripHtml(html);
-    const reward = extractRewardFromText(text);
 
-    if (!reward || reward < 500) return null;
+    /**
+     * 優先:
+     * 1. 案件名近傍の報酬
+     * 2. ページ全体で唯一の報酬（かなり限定的な救済）
+     */
+    const nearReward = extractRewardNearKeywordFromText(text, keyword, 100);
+    if (nearReward) return nearReward;
 
-    return reward;
+    const pageWideReward = extractUniqueRewardFromText(text, 100);
+    if (pageWideReward) return pageWideReward;
+
+    return null;
   } catch (error) {
     console.error(`Moppy reward fetch failed: ${keyword}`, error);
     return null;
@@ -449,7 +556,7 @@ function calculateScore(params: {
   const { trendScore, reward, isRegistered, confidenceScore, index } = params;
 
   /**
-   * 報酬スコアは、モッピー検索から取れた reward だけで計算。
+   * 報酬スコアはモッピー検索で取れた reward だけを使う。
    * offers.reward は使わない。
    */
   const rewardScore = reward ? Math.min(reward / 100, 40) : 0;
@@ -495,10 +602,6 @@ async function syncOffersFromCandidates(candidates: CandidateItem[]) {
     });
 
     if (existing) {
-      /**
-       * ランキング表示では offers.reward を使わない。
-       * ただし、モッピー検索で取れた報酬を offers に同期するのはOK。
-       */
       if (candidate.reward && candidate.reward > 0) {
         const { error } = await supabase
           .from("offers")
@@ -619,8 +722,7 @@ export async function GET() {
     const candidates: CandidateItem[] = [];
 
     /**
-     * 1. まずは Googleトレンド由来キーワードでモッピー検索
-     *    報酬が取れた候補だけ採用する。
+     * 1. Googleトレンド由来キーワードでモッピー検索
      */
     for (let i = 0; i < trends.length; i++) {
       const trend = trends[i];
@@ -640,10 +742,6 @@ export async function GET() {
           );
 
           const isRegistered = Boolean(registeredOffer);
-
-          /**
-           * トレンド経由で見つかった候補は、モッピー検索から取れた名前を優先。
-           */
           const offerName = moppyCandidate.name;
           const reward = moppyCandidate.reward;
 
@@ -684,10 +782,9 @@ export async function GET() {
     }
 
     /**
-     * 2. 0件や少数になりすぎないように offers 登録案件で補強
-     *    ただし offers.reward は絶対に使わない。
-     *    offers名でモッピー検索して、報酬が1種類だけ取れた場合のみ reward に入れる。
-     *    取れなければ reward:null のまま採用する。
+     * 2. offers 登録案件で補強
+     *    ただし offers.reward は使わない。
+     *    各案件名でモッピー検索し、案件名近傍から報酬を取りに行く。
      */
     for (const offer of offers) {
       if (candidates.length >= 50) break;
@@ -754,6 +851,7 @@ export async function GET() {
       rewards_from_moppy_only: true,
       offers_backfill_enabled: true,
       offers_reward_used_for_display: false,
+      reward_extraction_mode: "near_offer_name",
       ...offersSyncResult,
       sample: balancedCandidates.slice(0, 5),
     });
