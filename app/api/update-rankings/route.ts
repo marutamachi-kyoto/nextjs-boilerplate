@@ -105,6 +105,117 @@ function getCategoryByName(name: string, keyword: string) {
   return "一般";
 }
 
+const NG_NON_POIKATSU_WORDS = [
+  "対",
+  "vs",
+  "試合",
+  "速報",
+  "結果",
+  "スタメン",
+  "メンバー",
+  "ライブ",
+  "中継",
+  "サッカー",
+  "野球",
+  "バスケ",
+  "ゴルフ",
+  "テニス",
+  "大相撲",
+  "相撲",
+  "jリーグ",
+  "acl",
+  "アル・ナスル",
+  "ガンバ大阪",
+  "g大阪",
+  "阪神",
+  "巨人",
+  "ドジャース",
+  "大谷",
+  "日本代表",
+  "芸能",
+  "俳優",
+  "女優",
+  "歌手",
+  "アイドル",
+  "ドラマ",
+  "映画",
+  "アニメ",
+  "選挙",
+  "地震",
+  "台風",
+  "天気",
+];
+
+const POIKATSU_LIKE_WORDS = [
+  "カード",
+  "クレカ",
+  "クレジット",
+  "paypay",
+  "楽天",
+  "sbi",
+  "証券",
+  "投資",
+  "nisa",
+  "銀行",
+  "口座",
+  "fx",
+  "仮想通貨",
+  "暗号資産",
+  "モバイル",
+  "スマホ",
+  "sim",
+  "回線",
+  "wifi",
+  "光回線",
+  "アプリ",
+  "ゲーム",
+  "漫画",
+  "マンガ",
+  "電子書籍",
+  "動画",
+  "vod",
+  "u-next",
+  "dmm",
+  "abema",
+  "amazon",
+  "yahoo",
+  "ショッピング",
+  "買い物",
+  "旅行",
+  "ホテル",
+  "宿泊",
+  "ふるさと納税",
+  "保険",
+  "資料請求",
+  "買取",
+  "査定",
+];
+
+function hasNgNonPoikatsuWord(text: string) {
+  const normalized = normalizeText(text).toLowerCase();
+
+  return NG_NON_POIKATSU_WORDS.some((word) =>
+    normalized.includes(word.toLowerCase())
+  );
+}
+
+function hasPoikatsuLikeWord(text: string) {
+  const normalized = normalizeText(text).toLowerCase();
+
+  return POIKATSU_LIKE_WORDS.some((word) =>
+    normalized.includes(word.toLowerCase())
+  );
+}
+
+function isSafeAutoDiscoverySource(keyword: string) {
+  const normalized = normalizeText(keyword);
+
+  if (!normalized) return false;
+  if (hasNgNonPoikatsuWord(normalized)) return false;
+
+  return true;
+}
+
 /**
  * AI理由文を80〜110文字前後に抑えて生成する関数
  */
@@ -441,6 +552,8 @@ function isRawAutoDiscoveryNoise(rawText: string) {
 
   if (/^※/.test(raw)) return true;
 
+  if (hasNgNonPoikatsuWord(raw)) return true;
+
   if (
     /※|100%OFF|１００％OFF|100％OFF|％OFF|%OFF|半額|レシート投稿|投稿で|口コミ投稿|レビュー投稿|モッピーレシ活|モッピーツールバー|毎日貯める|楽しく遊んでゲット|取り忘れがなくなる|Olive口座開設|新規Olive口座|三井住友銀行|検索結果|対象広告|キャンペーン|チケット|クーポン|アンケート|診断|ゲームで貯める/i.test(
       raw
@@ -481,6 +594,8 @@ function isNoiseCandidateName(name: string) {
   if (normalized.length < 2 || normalized.length > 36) return true;
 
   if (/^※/.test(normalized)) return true;
+
+  if (hasNgNonPoikatsuWord(normalized)) return true;
 
   if (
     /ログイン|会員登録|検索|カテゴリ|ランキング|ヘルプ|無料でポイント|利用規約|プライバシー|お問い合わせ|キャンペーン一覧|広告掲載|友達紹介|マイページ|条件|詳細|もっと見る/.test(
@@ -541,12 +656,17 @@ function isSafeAutoDiscoveredOfferName(name: string) {
 
   const normalized = normalizeText(name);
 
-  const safeHints =
-    /カード|クレカ|paypay|楽天|sbi|証券|銀行|モバイル|回線|wifi|sim|nisa|fx|口座|u-next|dmm|abema|amazon|yahoo|ふるさと納税|ショッピング/i.test(
-      normalized
-    );
+  if (hasNgNonPoikatsuWord(normalized)) {
+    return false;
+  }
 
-  if (!safeHints && normalized.length > 16) {
+  const safeHints = hasPoikatsuLikeWord(normalized);
+
+  /**
+   * AI自動発見案件は、ポイ活案件らしい語を含むものだけ採用する。
+   * これにより、スポーツ・芸能・ニュース系の一般トレンド混入を防ぐ。
+   */
+  if (!safeHints) {
     return false;
   }
 
@@ -562,6 +682,7 @@ function isSafeTrendWord(word: string) {
   if (!normalized) return false;
   if (normalized.length < 2 || normalized.length > 24) return false;
   if (/^※/.test(normalized)) return false;
+  if (hasNgNonPoikatsuWord(normalized)) return false;
 
   if (
     /キャンペーン|%off|％off|off|半額|投稿|口コミ|レビュー|レシート|チラシ|ニュース|お知らせ|抽選|当選|プレゼント|ゲット|無料|get|モッピー|moppy|ログイン|会員登録|利用規約|詳細|チケット|クーポン|アンケート|診断|毎日貯める|ツールバー|レシ活|Olive口座開設|新規Olive口座|三井住友銀行/i.test(
@@ -907,6 +1028,10 @@ export async function GET() {
     for (let i = 0; i < trends.length; i++) {
       const trend = trends[i];
 
+      if (!isSafeAutoDiscoverySource(trend.keyword)) {
+        continue;
+      }
+
       try {
         const html = await fetchMoppySearch(trend.keyword);
         const moppyCandidates = extractOfferCandidatesFromMoppyHtml(
@@ -1042,6 +1167,8 @@ export async function GET() {
       auto_discovery_strict_noise_filter: true,
       raw_noise_filter_enabled: true,
       condition_phrase_filter_enabled: true,
+      non_poikatsu_trend_filter_enabled: true,
+      auto_discovery_poikatsu_like_required: true,
       ...offersSyncResult,
       sample: balancedCandidates.slice(0, 5),
     });
