@@ -159,7 +159,7 @@ export default function Page() {
   };
 
   const formatReward = (reward?: number) => {
-    if (!reward || reward <= 0) return "データ取得不可";
+    if (!reward || reward <= 0) return "データが取れませんでした";
     return `${reward.toLocaleString()}P`;
   };
 
@@ -419,10 +419,10 @@ export default function Page() {
                   tag.score >= 90
                     ? "text-3xl"
                     : tag.score >= 70
-                    ? "text-2xl"
-                    : tag.score >= 50
-                    ? "text-xl"
-                    : "text-base";
+                      ? "text-2xl"
+                      : tag.score >= 50
+                        ? "text-xl"
+                        : "text-base";
 
                 if (matchedRanking) {
                   return (
@@ -532,7 +532,7 @@ export default function Page() {
                     <div className="text-base font-black text-slate-600 lg:text-lg">
                       報酬ポイントの目安
                     </div>
-                    <div className="mt-2 text-4xl font-black tracking-tight text-pink-500 lg:text-5xl">
+                    <div className="mt-2 text-2xl font-black tracking-tight text-pink-500 lg:text-4xl">
                       {formatReward(item.reward)}
                     </div>
                   </div>
@@ -612,7 +612,7 @@ export default function Page() {
                     <div className="text-sm font-black text-slate-600 lg:text-base">
                       報酬ポイントの目安
                     </div>
-                    <div className="mt-1 text-3xl font-black text-pink-500">
+                    <div className="mt-1 text-xl font-black text-pink-500 lg:text-2xl">
                       {formatReward(item.reward)}
                     </div>
                   </div>
