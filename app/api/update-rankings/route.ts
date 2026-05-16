@@ -62,6 +62,12 @@ type RankingItem = {
   updated_at: string;
 };
 
+type OfferSyncResult = {
+  inserted: number;
+  updated: number;
+  skipped: number;
+};
+
 const MOPPY_URL =
   "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
 
@@ -491,7 +497,6 @@ function extractAutoDiscoveredOffers(
 
     const reward = extractRewardFromCardText(cardText);
 
-    // 自動発見案件は500P未満を除外
     if (reward < 500) {
       continue;
     }
@@ -538,10 +543,10 @@ function extractAutoDiscoveredOffers(
 
     let confidence = 0;
 
-    confidence += 35; // 報酬Pが1つだけ取れた
-    confidence += 20; // Googleトレンド由来
-    confidence += 10; // タイトルの長さが適正
-    confidence += 10; // NGワードなし
+    confidence += 35;
+    confidence += 20;
+    confidence += 10;
+    confidence += 10;
 
     if (
       normalizedTitle.includes(trendText) ||
@@ -554,7 +559,6 @@ function extractAutoDiscoveredOffers(
       confidence += 5;
     }
 
-    // 自動発見案件はconfidence_score 80以上だけ採用
     if (confidence < 80) {
       continue;
     }
@@ -714,6 +718,207 @@ function dedupeRankings(rankings: RankingItem[]) {
   return result;
 }
 
+async function syncOffersFromAutoDiscovery(
+  matchedResults: MoppySearchResult[],
+  registeredOffers: Offer[]
+): Promise<OfferSyncResult> {
+  const existingKeys = new Set(
+    registeredOffers.map((offer) => normalizeText(offer.offer_name))
+  );
+
+  const autoCandidates = new Map<
+    string,
+    {
+      name: string;
+      reward: number;
+      category: Category;
+      confidence_score: number;
+      trend_keyword: string;
+    }
+  >();
+
+  for (const result of matchedResults) {
+    for (const offer of result.offers) {
+      if (offer.is_registered) {
+        continue;
+      }
+
+      if (offer.confidence_score < 90) {
+        continue;
+      }
+
+      if (offer.reward < 500) {
+        continue;
+      }
+
+      const key = normalizeText(offer.name);
+
+      if (!key || existingKeys.has(key)) {
+        continue;
+      }
+
+      const existingCandidate = autoCandidates.get(key);
+
+      if (
+        !existingCandidate ||
+        offer.confidence_score > existingCandidate.confidence_score
+      ) {
+        autoCandidates.set(key, {
+          name: offer.name,
+          reward: offer.reward,
+          category: offer.category,
+          confidence_score: offer.confidence_score,
+          trend_keyword: result.trend.keyword,
+        });
+      }
+    }
+  }
+
+  const insertRows = [...autoCandidates.values()].map((offer) => ({
+    title: offer.name,
+    category: offer.category,
+    tags: [
+      "AI自動発見",
+      "Googleトレンド",
+      offer.trend_keyword,
+      offer.category,
+    ],
+    point_site: "モッピー",
+    url: getMoppySearchUrl(offer.name),
+    reward: offer.reward,
+    is_active: true,
+  }));
+
+  if (insertRows.length === 0) {
+    return {
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+    };
+  }
+
+  const { error } = await supabase.from("offers").insert(insertRows);
+
+  if (error) {
+    console.error("auto offers insert error", error);
+
+    return {
+      inserted: 0,
+      updated: 0,
+      skipped: insertRows.length,
+    };
+  }
+
+  return {
+    inserted: insertRows.length,
+    updated: 0,
+    skipped: 0,
+  };
+}
+
+async function updateRegisteredOfferRewards(
+  matchedResults: MoppySearchResult[],
+  registeredOffers: Offer[]
+): Promise<OfferSyncResult> {
+  let updated = 0;
+  let skipped = 0;
+
+  const rewardUpdates = new Map<
+    string,
+    {
+      title: string;
+      reward: number;
+    }
+  >();
+
+  for (const result of matchedResults) {
+    for (const matchedOffer of result.offers) {
+      if (!matchedOffer.is_registered) {
+        continue;
+      }
+
+      if (matchedOffer.reward <= 0) {
+        continue;
+      }
+
+      const registeredOffer = registeredOffers.find((offer) =>
+        isSameOfferName(offer.offer_name, matchedOffer.name)
+      );
+
+      if (!registeredOffer) {
+        continue;
+      }
+
+      if (registeredOffer.reward === matchedOffer.reward) {
+        skipped += 1;
+        continue;
+      }
+
+      const key = normalizeText(registeredOffer.offer_name);
+
+      rewardUpdates.set(key, {
+        title: registeredOffer.offer_name,
+        reward: matchedOffer.reward,
+      });
+    }
+  }
+
+  for (const update of rewardUpdates.values()) {
+    const { error } = await supabase
+      .from("offers")
+      .update({
+        reward: update.reward,
+        is_active: true,
+      })
+      .eq("title", update.title);
+
+    if (error) {
+      console.error("offer reward update error", error);
+      skipped += 1;
+      continue;
+    }
+
+    updated += 1;
+  }
+
+  return {
+    inserted: 0,
+    updated,
+    skipped,
+  };
+}
+
+async function syncOffers(
+  matchedResults: MoppySearchResult[],
+  registeredOffers: Offer[]
+): Promise<OfferSyncResult> {
+  try {
+    const autoInsertResult = await syncOffersFromAutoDiscovery(
+      matchedResults,
+      registeredOffers
+    );
+
+    const rewardUpdateResult = await updateRegisteredOfferRewards(
+      matchedResults,
+      registeredOffers
+    );
+
+    return {
+      inserted: autoInsertResult.inserted,
+      updated: rewardUpdateResult.updated,
+      skipped: autoInsertResult.skipped + rewardUpdateResult.skipped,
+    };
+  } catch (error) {
+    console.error("offers sync error", error);
+
+    return {
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+    };
+  }
+}
+
 export async function GET() {
   try {
     const offers = await getOffers();
@@ -852,6 +1057,8 @@ export async function GET() {
       );
     }
 
+    const offerSyncResult = await syncOffers(matchedResults, offers);
+
     const trendRows = rankings
       .map((ranking, index) => ({
         word: ranking.offer_name,
@@ -884,6 +1091,9 @@ export async function GET() {
       trends_count: trendRows.length,
       auto_discovered_count: autoDiscoveredCount,
       registered_count: rankings.length - autoDiscoveredCount,
+      offers_inserted_count: offerSyncResult.inserted,
+      offers_updated_count: offerSyncResult.updated,
+      offers_sync_skipped_count: offerSyncResult.skipped,
       trends_source:
         matchedResults.length > 0
           ? "google_trends_moppy_auto_discovery"
