@@ -395,8 +395,12 @@ export default function Page() {
         >
           <div className="mb-6">
             <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-              🔍 いまGoogleで話題のポイ活関連キーワード
+              🔍 いまGoogleで話題のポイ活関連ワード
             </h2>
+
+            <p className="mt-4 text-sm font-bold leading-7 text-slate-600 lg:text-base">
+              いま注目されているポイ活関連ワードをAIが整理しています。
+            </p>
 
             <div className="mt-4 inline-flex items-center rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
               最終更新：
@@ -456,6 +460,10 @@ export default function Page() {
               がおすすめするポイ活ランキング
             </h2>
           </div>
+
+          <p className="mt-4 text-sm font-bold leading-7 text-slate-600 lg:text-base">
+            「Googleでの話題度」や「モッピーで確認した案件情報」などをもとに、AIが毎日おすすめ順を見直しています。
+          </p>
 
           <div className="mt-4 inline-flex items-center rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
             最終更新：
