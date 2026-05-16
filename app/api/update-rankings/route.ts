@@ -421,13 +421,146 @@ function extractNearestRewardNearKeywordFromText(
   return bestReward;
 }
 
-function isNoiseCandidateName(name: string) {
-  if (!name) return true;
-  if (name.length < 2 || name.length > 80) return true;
+function cleanCandidateName(name: string) {
+  return normalizeText(name)
+    .replace(/^※+/, "")
+    .replace(/^[・\-ー:：\s]+/, "")
+    .replace(/([0-9０-９,，]+)\s*(?:P|ｐ|ポイント).*/gi, "")
+    .replace(/獲得|還元|ポイント|詳細|広告|PR/g, "")
+    .trim();
+}
 
-  return /ログイン|会員登録|検索|カテゴリ|ランキング|ヘルプ|無料でポイント|利用規約|プライバシー|お問い合わせ|キャンペーン一覧|広告掲載|友達紹介|マイページ|条件|詳細|もっと見る/.test(
-    name
-  );
+/**
+ * cleanCandidateName 前の元の行で見るノイズ判定。
+ * 「※」やモッピー内部コンテンツはここで落とす。
+ */
+function isRawAutoDiscoveryNoise(rawText: string) {
+  const raw = normalizeText(rawText);
+
+  if (!raw) return true;
+
+  if (/^※/.test(raw)) return true;
+
+  if (
+    /※|100%OFF|１００％OFF|100％OFF|％OFF|%OFF|半額|レシート投稿|投稿で|口コミ投稿|レビュー投稿|モッピーレシ活|モッピーツールバー|毎日貯める|楽しく遊んでゲット|取り忘れがなくなる|Olive口座開設|新規Olive口座|三井住友銀行|検索結果|対象広告|キャンペーン|チケット|クーポン|アンケート|診断|ゲームで貯める/i.test(
+      raw
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    /モッピー|moppy/i.test(raw) &&
+    !/カード|証券|モバイル|回線|paypay|楽天|sbi|olive/i.test(raw)
+  ) {
+    return true;
+  }
+
+  if (raw.length > 80) return true;
+
+  return false;
+}
+
+/**
+ * 自動発見案件名のノイズ除去。
+ * 登録済み offers の名前には使いすぎない。
+ */
+function isNoiseCandidateName(name: string) {
+  const normalized = normalizeText(name);
+  const compact = normalizeName(name);
+
+  if (!normalized) return true;
+  if (normalized.length < 2 || normalized.length > 36) return true;
+
+  if (/^※/.test(normalized)) return true;
+
+  if (
+    /ログイン|会員登録|検索|カテゴリ|ランキング|ヘルプ|無料でポイント|利用規約|プライバシー|お問い合わせ|キャンペーン一覧|広告掲載|友達紹介|マイページ|条件|詳細|もっと見る/.test(
+      normalized
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    /キャンペーン|%off|％off|off|半額|投稿|口コミ|レビュー|レシート|チラシ|ニュース|お知らせ|抽選|当選|プレゼント|ゲット|無料|get|チケット|クーポン|アンケート|診断|口座開設完了/i.test(
+      normalized
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    /モッピーレシ活|モッピーツールバー|毎日貯める|楽しく遊んでゲット|取り忘れがなくなる|モッピービーンズ/i.test(
+      normalized
+    )
+  ) {
+    return true;
+  }
+
+  if (/モッピー|moppy/i.test(normalized)) {
+    return true;
+  }
+
+  if (/Olive口座開設|新規Olive口座|三井住友銀行/i.test(normalized)) {
+    return true;
+  }
+
+  if (/[。！？!?]/.test(normalized)) return true;
+
+  const bracketCount = (normalized.match(/[【】「」『』]/g) || []).length;
+  if (bracketCount >= 2) return true;
+
+  if (compact.length < 2) return true;
+
+  return false;
+}
+
+/**
+ * 自動発見候補として採用してよいか。
+ * 登録済み候補には使わず、moppyCandidate のみに使う。
+ */
+function isSafeAutoDiscoveredOfferName(name: string) {
+  if (isNoiseCandidateName(name)) return false;
+
+  const normalized = normalizeText(name);
+
+  const safeHints =
+    /カード|クレカ|paypay|楽天|sbi|証券|銀行|モバイル|回線|wifi|sim|nisa|fx|口座|u-next|dmm|abema|amazon|yahoo|ふるさと納税|ショッピング/i.test(
+      normalized
+    );
+
+  if (!safeHints && normalized.length > 16) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * trends表示用のキーワードとして安全かどうか。
+ */
+function isSafeTrendWord(word: string) {
+  const normalized = normalizeText(word);
+
+  if (!normalized) return false;
+  if (normalized.length < 2 || normalized.length > 24) return false;
+  if (/^※/.test(normalized)) return false;
+
+  if (
+    /キャンペーン|%off|％off|off|半額|投稿|口コミ|レビュー|レシート|チラシ|ニュース|お知らせ|抽選|当選|プレゼント|ゲット|無料|get|モッピー|moppy|ログイン|会員登録|利用規約|詳細|チケット|クーポン|アンケート|診断|毎日貯める|ツールバー|レシ活|Olive口座開設|新規Olive口座|三井住友銀行/i.test(
+      normalized
+    )
+  ) {
+    return false;
+  }
+
+  if (/[。！？!?]/.test(normalized)) return false;
+
+  const bracketCount = (normalized.match(/[【】「」『』]/g) || []).length;
+  if (bracketCount >= 2) return false;
+
+  return true;
 }
 
 function extractOfferCandidatesFromMoppyHtml(
@@ -447,17 +580,12 @@ function extractOfferCandidatesFromMoppyHtml(
   for (const line of lines) {
     if (candidates.length >= 5) break;
 
-    const cleaned = line
-      .replace(/([0-9０-９,，]+)\s*(?:P|ｐ|ポイント).*/gi, "")
-      .replace(/獲得|還元|ポイント|詳細|広告|PR|キャンペーン/g, "")
-      .trim();
+    if (isRawAutoDiscoveryNoise(line)) continue;
 
-    if (isNoiseCandidateName(cleaned)) continue;
+    const cleaned = cleanCandidateName(line);
 
-    /**
-     * まず行の中でPが1種類だけなら採用。
-     * それが無理なら、案件名周辺600文字から一番近いPを採用。
-     */
+    if (!isSafeAutoDiscoveredOfferName(cleaned)) continue;
+
     let reward = extractUniqueRewardFromText(line, 100);
 
     if (!reward) {
@@ -477,21 +605,27 @@ function extractOfferCandidatesFromMoppyHtml(
   }
 
   /**
-   * ライン単位で取れなかった場合の救済。
-   * トレンド検索語そのものの近くから一番近いPを採用。
+   * トレンド検索語そのものを候補化する場合も、
+   * 強いノイズ判定を通したものだけ採用。
    */
   if (candidates.length === 0) {
-    const rewardNearKeyword = extractNearestRewardNearKeywordFromText(
-      text,
-      keyword,
-      100
-    );
+    if (!isRawAutoDiscoveryNoise(keyword)) {
+      const cleanedKeyword = cleanCandidateName(keyword);
 
-    if (rewardNearKeyword) {
-      candidates.push({
-        name: keyword,
-        reward: rewardNearKeyword,
-      });
+      if (isSafeAutoDiscoveredOfferName(cleanedKeyword)) {
+        const rewardNearKeyword = extractNearestRewardNearKeywordFromText(
+          text,
+          cleanedKeyword,
+          100
+        );
+
+        if (rewardNearKeyword) {
+          candidates.push({
+            name: cleanedKeyword,
+            reward: rewardNearKeyword,
+          });
+        }
+      }
     }
   }
 
@@ -503,11 +637,6 @@ async function getMoppyRewardForKeyword(keyword: string): Promise<number | null>
     const html = await fetchMoppySearch(keyword);
     const text = stripHtml(html);
 
-    /**
-     * 優先順位：
-     * 1. 案件名周辺600文字の中で一番近いP
-     * 2. ページ全体でPが1種類だけなら採用
-     */
     const nearestReward = extractNearestRewardNearKeywordFromText(
       text,
       keyword,
@@ -581,10 +710,6 @@ function calculateScore(params: {
 }) {
   const { trendScore, reward, isRegistered, confidenceScore, index } = params;
 
-  /**
-   * 報酬スコアはモッピー検索で取れた reward だけを使う。
-   * offers.reward は使わない。
-   */
   const rewardScore = reward ? Math.min(reward / 100, 40) : 0;
   const registeredBonus = isRegistered ? 25 : 0;
   const confidenceBonus = confidenceScore / 5;
@@ -654,7 +779,8 @@ async function syncOffersFromCandidates(candidates: CandidateItem[]) {
       !candidate.is_registered &&
       candidate.confidence_score >= 90 &&
       candidate.reward &&
-      candidate.reward >= 500
+      candidate.reward >= 500 &&
+      isSafeAutoDiscoveredOfferName(candidate.offer_name)
     ) {
       const { error } = await supabase.from("offers").insert({
         offer_name: candidate.offer_name,
@@ -727,11 +853,14 @@ async function updateRankings(rows: CandidateItem[]) {
 async function updateTrends(rows: CandidateItem[]) {
   await supabase.from("trends").delete().gte("score", 0);
 
-  const trendRows = rows.slice(0, 50).map((item, index) => ({
-    word: item.offer_name,
-    score: Math.max(100 - index * 2, 10),
-    category: item.category,
-  }));
+  const trendRows = rows
+    .filter((item) => isSafeTrendWord(item.offer_name))
+    .slice(0, 50)
+    .map((item, index) => ({
+      word: item.offer_name,
+      score: Math.max(100 - index * 2, 10),
+      category: item.category,
+    }));
 
   const { error } = await supabase.from("trends").insert(trendRows);
 
@@ -749,6 +878,7 @@ export async function GET() {
 
     /**
      * 1. Googleトレンド由来キーワードでモッピー検索
+     *    自動発見候補はかなり厳しくノイズ除去する。
      */
     for (let i = 0; i < trends.length; i++) {
       const trend = trends[i];
@@ -770,6 +900,10 @@ export async function GET() {
           const isRegistered = Boolean(registeredOffer);
           const offerName = moppyCandidate.name;
           const reward = moppyCandidate.reward;
+
+          if (!isRegistered && !isSafeAutoDiscoveredOfferName(offerName)) {
+            continue;
+          }
 
           const category =
             registeredOffer?.category ||
@@ -809,8 +943,7 @@ export async function GET() {
 
     /**
      * 2. offers 登録案件で補強
-     *    ただし offers.reward は使わない。
-     *    各案件名でモッピー検索し、案件名に一番近いPを採用する。
+     *    offers.reward は表示に使わない。
      */
     for (const offer of offers) {
       if (candidates.length >= 50) break;
@@ -868,6 +1001,9 @@ export async function GET() {
       message: "rankings and trends updated",
       count: balancedCandidates.length,
       trends_count: trends.length,
+      trends_saved_count: balancedCandidates.filter((item) =>
+        isSafeTrendWord(item.offer_name)
+      ).length,
       registered_count: balancedCandidates.filter((item) => item.is_registered)
         .length,
       auto_discovered_count: balancedCandidates.filter(
@@ -878,6 +1014,9 @@ export async function GET() {
       offers_backfill_enabled: true,
       offers_reward_used_for_display: false,
       reward_extraction_mode: "nearest_p_within_600_chars",
+      noise_filter_enabled: true,
+      auto_discovery_strict_noise_filter: true,
+      raw_noise_filter_enabled: true,
       ...offersSyncResult,
       sample: balancedCandidates.slice(0, 5),
     });
