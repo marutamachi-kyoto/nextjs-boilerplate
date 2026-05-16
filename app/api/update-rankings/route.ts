@@ -10,7 +10,6 @@ const supabase = createClient(
 );
 
 const GOOGLE_TRENDS_RSS_URL = "https://trends.google.com/trending/rss?geo=JP";
-
 const MOPPY_SEARCH_BASE_URL = "https://pc.moppy.jp/search/?q=";
 
 type TrendItem = {
@@ -102,11 +101,7 @@ function getCategoryByName(name: string, keyword: string) {
 }
 
 /**
- * AI理由文を自然にばらけさせる関数
- * - カテゴリ別
- * - 短文 / 中文 / 長文
- * - 順位別の温度感
- * - 登録済み / AI自動発見
+ * AI理由文を80〜110文字前後に抑えて生成する関数
  */
 function generateReason(params: {
   offerName: string;
@@ -128,21 +123,14 @@ function generateReason(params: {
   const rewardText = formatReward(reward);
 
   const focusPoints = [
-    "検索での注目度",
-    "案件としての見つけやすさ",
-    "報酬ポイントの目安",
-    "初心者でも比較しやすい点",
-    "現在の話題性",
-    "申し込み前に条件確認しやすい点",
-    "ポイ活案件としての相性",
+    "話題性",
+    "検索需要",
+    "報酬の目安",
+    "比較しやすさ",
+    "案件の見つけやすさ",
+    "条件確認のしやすさ",
+    "ポイ活との相性",
     "短期的な注目度",
-    "案件内容の分かりやすさ",
-    "ポイント獲得までのイメージしやすさ",
-    "ランキング内での安定感",
-    "他案件と比較しやすい点",
-    "今チェックするタイミング",
-    "検索ニーズとの一致度",
-    "報酬と話題性のバランス",
   ];
 
   const focusPoint = pickRandom(focusPoints);
@@ -150,69 +138,57 @@ function generateReason(params: {
   const rankTone =
     rank <= 3
       ? pickRandom([
+          "上位候補として優先的に確認したい案件です。",
           "今回のランキングでも特に注目度が高い案件です。",
-          "上位案件として優先的に確認したい候補です。",
-          "今のランキングを代表する注目案件として評価しています。",
-          "話題性と案件の分かりやすさの両方で強めに評価しています。",
+          "今チェックしたい代表的な注目案件です。",
         ])
       : rank <= 10
         ? pickRandom([
-            "10位以内の候補として、比較優先度は高めです。",
-            "上位圏に入る案件として、今チェックする価値があります。",
-            "ランキング上位寄りの案件として、条件確認しておきたい候補です。",
-            "検索需要と案件内容のバランスを見て、上位圏に配置しています。",
+            "10位以内の候補として比較優先度は高めです。",
+            "上位圏の案件として条件確認しておきたい候補です。",
+            "今の検索需要と相性がよい案件です。",
           ])
         : pickRandom([
-            "比較候補のひとつとして確認しておきたい案件です。",
-            "条件が合う人にとっては検討しやすい案件です。",
-            "他案件と見比べながら候補に入れたい案件です。",
-            "大きく目立つ案件ではない場合でも、確認する価値があります。",
+            "比較候補のひとつとして確認したい案件です。",
+            "条件が合う人には検討しやすい案件です。",
+            "他案件と見比べたい候補として評価しています。",
           ]);
-
-  const lengthType = pickRandom(["short", "medium", "long"]);
 
   const categoryPhrases: Record<string, string[]> = {
     カード: [
-      "クレジットカード系は高額ポイントを狙いやすい一方で、発行条件や利用条件の確認が大切です。",
-      "カード案件は報酬が大きくなりやすく、ポイ活でも比較されやすいジャンルです。",
-      "年会費や利用条件を見比べながら選びたいカード系案件です。",
-      "カード発行系の中でも、報酬と申し込みやすさのバランスが注目ポイントです。",
+      "カード系は高額ポイントを狙いやすく、条件確認が大切です。",
+      "カード発行系として、報酬と申し込みやすさのバランスを評価しています。",
+      "クレカ案件として比較されやすく、報酬面でも注目しやすい候補です。",
     ],
     "証券・金融": [
-      "証券・金融系は口座開設や初回取引条件を確認しながら進めたいジャンルです。",
-      "金融系案件は報酬が高めになりやすく、条件達成までの手順も重要です。",
-      "投資・口座開設系のポイ活として、報酬と条件のバランスを確認したい案件です。",
-      "証券系は検索需要が高まりやすく、ポイ活案件としても比較対象に入りやすいジャンルです。",
+      "証券・金融系は報酬が高めになりやすく、条件達成の確認が重要です。",
+      "口座開設系として、報酬と手順の分かりやすさを評価しています。",
+      "金融系ポイ活として、検索需要と報酬面のバランスを見ています。",
     ],
     通信: [
-      "通信系はスマホ料金や固定費の見直しと相性がよく、ポイ活でも注目されやすいジャンルです。",
-      "通信・回線系は乗り換え需要と連動しやすく、条件が合えば大きなメリットを狙えます。",
-      "モバイル・回線系案件は、月額料金や契約条件を確認したうえで比較したい案件です。",
-      "通信費の見直しを考えている人にとって、ポイ活と相性のよい候補です。",
+      "通信系は固定費見直しと相性がよく、乗り換え需要でも注目されます。",
+      "モバイル・回線系として、料金や契約条件とあわせて比較したい案件です。",
+      "通信費を見直したい人にとって、ポイ活と相性のよい候補です。",
     ],
     旅行: [
-      "旅行系は予約タイミングや利用条件によってお得度が変わりやすいジャンルです。",
-      "宿泊・旅行予約系は、予定がある人ほど比較する価値が高い案件です。",
-      "旅行系案件は、予約前にポイント還元の対象条件を確認したいジャンルです。",
+      "旅行系は予約前に条件を確認すると、ポイントを取り逃がしにくい案件です。",
+      "宿泊・旅行予約と相性がよく、予定がある人ほど比較価値があります。",
       "旅行需要と連動しやすく、時期によって注目度が変わりやすい案件です。",
     ],
     "アプリ・エンタメ": [
-      "アプリ・エンタメ系は始めやすさが魅力で、初心者でも確認しやすいジャンルです。",
-      "動画・ゲーム・アプリ系は、利用条件が合えば手軽に試しやすい案件です。",
-      "エンタメ系案件は、日常利用とポイ活を組み合わせやすい点が評価ポイントです。",
-      "アプリ系は短期的に注目されやすく、トレンドとの相性も見やすいジャンルです。",
+      "アプリ・エンタメ系は始めやすく、初心者でも確認しやすいジャンルです。",
+      "動画・ゲーム・アプリ系として、手軽に試しやすい点を評価しています。",
+      "日常利用とポイ活を組み合わせやすい候補として見ています。",
     ],
     ショッピング: [
-      "ショッピング系は普段の買い物と組み合わせやすく、初心者にも分かりやすいジャンルです。",
-      "買い物・ふるさと納税系は、利用予定がある人ほどポイントを取り逃がしたくない案件です。",
-      "ショッピング案件は、購入前に経由条件や対象ショップを確認することが大切です。",
-      "普段使いしやすいジャンルなので、無理なくポイ活に取り入れやすい案件です。",
+      "ショッピング系は普段の買い物と組み合わせやすい案件です。",
+      "購入前に経由条件を確認すれば、ポイントを取り逃がしにくい候補です。",
+      "普段使いしやすく、無理なくポイ活に取り入れやすい案件です。",
     ],
     一般: [
-      "幅広いユーザーが比較しやすい一般案件として評価しています。",
-      "カテゴリを問わず、案件内容と話題性のバランスを見て候補に入れています。",
-      "申し込み条件を確認しながら、他の案件と比較したい候補です。",
+      "案件内容と話題性のバランスを見て候補に入れています。",
       "検索需要と案件としての分かりやすさをもとに評価しています。",
+      "申し込み条件を確認しながら比較したい候補です。",
     ],
   };
 
@@ -220,75 +196,56 @@ function generateReason(params: {
     categoryPhrases[category] || categoryPhrases["一般"]
   );
 
-  const registeredShortPatterns = [
-    `${offerName}は、${category}カテゴリの登録済み案件として確認しやすい候補です。${rankTone}`,
-    `${offerName}は、${focusPoint}の面で評価できる登録済み案件です。`,
-    `${offerName}は、${rewardText}の目安も含めて比較しやすい案件です。`,
-    `${offerName}は、現在のランキング内で安定感のある候補として評価しています。`,
-    `${offerName}は、案件内容が分かりやすく、比較対象に入れやすい案件です。`,
+  const registeredPatterns = [
+    `${offerName}は、${category}カテゴリの登録済み案件です。${rankTone}`,
+    `${offerName}は、${focusPoint}の面で評価できる登録済み案件です。${categoryPhrase}`,
+    `${offerName}は、${rewardText}の目安も含めて比較しやすい案件です。${rankTone}`,
+    `${offerName}は、案件内容を確認しやすく、比較対象に入れやすい候補です。${categoryPhrase}`,
+    `${offerName}は、登録済み案件として安定感があり、${focusPoint}も評価しやすい案件です。`,
+    `${offerName}は、検索需要と案件内容の相性が見られるため、AIが候補として評価しました。`,
+    `${offerName}は、報酬だけでなく探しやすさも評価しています。${rankTone}`,
+    `${offerName}は、ポイ活初心者でも比較しやすい案件です。申し込み前に条件確認したい候補です。`,
   ];
 
-  const registeredMediumPatterns = [
-    `${offerName}は、${category}カテゴリの中でもポイ活案件として確認しやすい候補です。${categoryPhrase} ${rankTone}`,
-    `${offerName}は、登録済み案件としての安定感があり、${focusPoint}も評価しやすい案件です。${rewardText}の目安とあわせて確認したい候補です。`,
-    `${offerName}は、検索需要と案件内容の結びつきが見られるため、ランキングに採用しています。${categoryPhrase}`,
-    `${offerName}は、報酬だけでなく案件として探しやすい点も評価しています。${rankTone}`,
-    `${offerName}は、ポイ活初心者でも比較しやすい登録済み案件です。申し込み前に条件を確認しながら、他案件と見比べたい候補です。`,
-  ];
-
-  const registeredLongPatterns = [
-    `${offerName}は、${category}カテゴリの登録済み案件として、案件内容と報酬の目安を確認しやすい点が評価ポイントです。${categoryPhrase} ${rewardText}の目安もあるため、申し込み条件を確認したうえで比較したい案件です。${rankTone}`,
-    `${offerName}は、現在の検索動向と案件内容の相性が見られるため、ランキング内で評価しています。${categoryPhrase} 単に報酬が見えるだけでなく、ポイ活ユーザーが比較対象にしやすい点もAIが重視しました。`,
-    `${offerName}は、登録済み案件として一定の安定感があり、${focusPoint}の面でも候補に残しやすい案件です。${categoryPhrase} 条件が合うかどうかを確認しながら、他の上位案件と比較する価値があります。`,
-    `${offerName}は、案件名とカテゴリの関連性が分かりやすく、現在のランキングでも扱いやすい候補です。${rewardText}の目安に加えて、検索需要や案件の確認しやすさを総合的に見てAIが評価しています。`,
-  ];
-
-  const autoShortPatterns = [
-    `${offerName}は、トレンド検索から見つかったAI自動発見案件です。`,
-    `${offerName}は、現在の話題性をもとにAIが候補として抽出しました。`,
-    `${offerName}は、検索動向との関連が見られたためランキングに加えています。`,
+  const autoPatterns = [
+    `${offerName}は、トレンド検索から見つかったAI自動発見案件です。${rankTone}`,
+    `${offerName}は、現在の話題性をもとにAIが抽出した候補です。条件確認前提で評価しています。`,
+    `${offerName}は、検索動向との関連が見られたためランキングに加えています。${categoryPhrase}`,
     `${offerName}は、登録済み案件ではありませんが、短期的な注目候補として評価しています。`,
-    `${offerName}は、トレンドとの相性を見てAIが自動的に採用した候補です。`,
+    `${offerName}は、モッピー検索結果とトレンドのつながりから検出された候補です。`,
+    `${offerName}は、${focusPoint}をもとにAIが自動採用した案件です。掲載条件は確認しておきたい候補です。`,
   ];
 
-  const autoMediumPatterns = [
-    `${offerName}は、Googleトレンド由来のキーワードから見つかった候補です。登録済み案件ではありませんが、${focusPoint}を踏まえてランキングに加えています。`,
-    `${offerName}は、モッピー検索結果と検索トレンドのつながりから検出された案件です。${rewardText}の目安が確認できる場合は、条件を見ながら比較したい候補です。`,
-    `${offerName}は、最近の話題ワードとの関連が見られたため、AIが自動的に抽出しました。定番案件と比べると慎重な確認は必要ですが、今チェックする価値があります。`,
-    `${offerName}は、通常の登録済み案件とは別に、トレンド検索の流れから浮上した候補です。${categoryPhrase}`,
-    `${offerName}は、検索需要の高まりに反応して検出された案件です。掲載状況や報酬条件を確認しながら検討したい候補です。`,
+  const autoHighConfidencePatterns = [
+    `${offerName}は、AI自動発見案件の中でも関連性が高めです。${rewardText}の目安も含めて評価しています。`,
+    `${offerName}は、検索トレンドとの一致度が高く、AI自動発見枠の中では強めに評価しています。`,
+    `${offerName}は、トレンド由来の候補の中でも判断材料が比較的そろった案件です。${rankTone}`,
   ];
 
-  const autoLongPatterns = [
-    `${offerName}は、Googleトレンド由来のキーワードとモッピー検索結果の関連から検出されたAI自動発見案件です。登録済み案件ではないため確認は必要ですが、${focusPoint}の面で候補に残す価値があると判断しました。${categoryPhrase}`,
-    `${offerName}は、通常の登録済み案件とは違い、最近の検索動向からAIが拾い上げた候補です。${rewardText}の目安が確認できる場合は、報酬条件と対象条件を見比べながら検討したい案件です。${rankTone}`,
-    `${offerName}は、短期的な話題性を重視してランキングに反映した自動発見案件です。定番案件ほどの安定感はまだ確認しきれませんが、検索需要との一致度や案件としての見つけやすさを見て採用しています。`,
-    `${offerName}は、トレンド由来の候補の中でも、案件名と検索ニーズのつながりが見られるためランキングに加えています。登録済み案件より変動の可能性はありますが、今後注目される可能性をAIが評価しました。`,
-  ];
-
-  const autoHighConfidenceExtraPatterns = [
-    `${offerName}は、AI自動発見案件の中でも関連性と報酬情報が比較的はっきりしている候補です。${rewardText}の目安も含めて、短期的に注目しやすい案件として評価しています。`,
-    `${offerName}は、登録済み案件ではありませんが、検索トレンドとの一致度が高めです。話題性と案件としての確認しやすさを見て、AI自動発見枠の中では強めに評価しました。`,
-    `${offerName}は、トレンド由来の案件の中でも判断材料が比較的そろっています。${categoryPhrase} 条件確認前提で、今チェックしたい候補として採用しています。`,
-  ];
-
-  let selectedPatterns: string[] = [];
+  let reason = "";
 
   if (isRegistered) {
-    if (lengthType === "short") selectedPatterns = registeredShortPatterns;
-    if (lengthType === "medium") selectedPatterns = registeredMediumPatterns;
-    if (lengthType === "long") selectedPatterns = registeredLongPatterns;
+    reason = pickRandom(registeredPatterns);
+  } else if (confidenceScore >= 90) {
+    reason = pickRandom([...autoPatterns, ...autoHighConfidencePatterns]);
   } else {
-    if (lengthType === "short") selectedPatterns = autoShortPatterns;
-    if (lengthType === "medium") selectedPatterns = autoMediumPatterns;
-    if (lengthType === "long") selectedPatterns = autoLongPatterns;
-
-    if (confidenceScore >= 90) {
-      selectedPatterns = [...selectedPatterns, ...autoHighConfidenceExtraPatterns];
-    }
+    reason = pickRandom(autoPatterns);
   }
 
-  return pickRandom(selectedPatterns);
+  /**
+   * 文章が長くなりすぎた場合の保険。
+   * 110文字を超える場合は、2文目以降を削って短くします。
+   */
+  if (reason.length > 110) {
+    const firstSentence = reason.split("。")[0];
+    if (firstSentence.length >= 55) {
+      return `${firstSentence}。`;
+    }
+
+    return `${firstSentence}。${rankTone}`;
+  }
+
+  return reason;
 }
 
 async function getGoogleTrends(): Promise<TrendItem[]> {
