@@ -431,6 +431,34 @@ function cleanCandidateName(name: string) {
 }
 
 /**
+ * cleanCandidateName 前の元の行で見るノイズ判定。
+ * 「※」やモッピー内部コンテンツはここで落とす。
+ */
+function isRawAutoDiscoveryNoise(rawText: string) {
+  const raw = normalizeText(rawText);
+
+  if (!raw) return true;
+
+  if (/^※/.test(raw)) return true;
+
+  if (
+    /※|100%OFF|１００％OFF|100％OFF|％OFF|%OFF|半額|レシート投稿|投稿で|口コミ投稿|レビュー投稿|モッピーレシ活|モッピーツールバー|毎日貯める|楽しく遊んでゲット|取り忘れがなくなる|Olive口座開設|新規Olive口座|三井住友銀行|検索結果|対象広告|キャンペーン|チケット|クーポン|アンケート|診断|ゲームで貯める/i.test(
+      raw
+    )
+  ) {
+    return true;
+  }
+
+  if (/モッピー|moppy/i.test(raw) && !/カード|証券|モバイル|回線|paypay|楽天|sbi|olive/i.test(raw)) {
+    return true;
+  }
+
+  if (raw.length > 80) return true;
+
+  return false;
+}
+
+/**
  * 自動発見案件名のノイズ除去。
  * 登録済み offers の名前には使いすぎない。
  */
@@ -439,7 +467,7 @@ function isNoiseCandidateName(name: string) {
   const compact = normalizeName(name);
 
   if (!normalized) return true;
-  if (normalized.length < 2 || normalized.length > 42) return true;
+  if (normalized.length < 2 || normalized.length > 36) return true;
 
   if (/^※/.test(normalized)) return true;
 
@@ -452,26 +480,58 @@ function isNoiseCandidateName(name: string) {
   }
 
   if (
-    /キャンペーン|%off|％off|off|投稿|口コミ|レビュー|レシート|チラシ|ニュース|お知らせ|抽選|当選|プレゼント|ゲット|無料|get/i.test(
+    /キャンペーン|%off|％off|off|半額|投稿|口コミ|レビュー|レシート|チラシ|ニュース|お知らせ|抽選|当選|プレゼント|ゲット|無料|get|チケット|クーポン|アンケート|診断|口座開設完了/i.test(
       normalized
     )
   ) {
     return true;
   }
 
-  if (/モッピー|moppy|モッピービーンズ/i.test(normalized)) {
+  if (
+    /モッピーレシ活|モッピーツールバー|毎日貯める|楽しく遊んでゲット|取り忘れがなくなる|モッピービーンズ/i.test(
+      normalized
+    )
+  ) {
+    return true;
+  }
+
+  if (/モッピー|moppy/i.test(normalized)) {
+    return true;
+  }
+
+  if (/Olive口座開設|新規Olive口座|三井住友銀行/i.test(normalized)) {
     return true;
   }
 
   if (/[。！？!?]/.test(normalized)) return true;
 
-  const bracketCount =
-    (normalized.match(/[【】「」『』]/g) || []).length;
+  const bracketCount = (normalized.match(/[【】「」『』]/g) || []).length;
   if (bracketCount >= 2) return true;
 
   if (compact.length < 2) return true;
 
   return false;
+}
+
+/**
+ * 自動発見候補として採用してよいか。
+ * 登録済み候補には使わず、moppyCandidate のみに使う。
+ */
+function isSafeAutoDiscoveredOfferName(name: string) {
+  if (isNoiseCandidateName(name)) return false;
+
+  const normalized = normalizeText(name);
+
+  const safeHints =
+    /カード|クレカ|paypay|楽天|sbi|証券|銀行|モバイル|回線|wifi|sim|nisa|fx|口座|u-next|dmm|abema|amazon|yahoo|ふるさと納税|ショッピング/i.test(
+      normalized
+    );
+
+  if (!safeHints && normalized.length > 16) {
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -481,11 +541,11 @@ function isSafeTrendWord(word: string) {
   const normalized = normalizeText(word);
 
   if (!normalized) return false;
-  if (normalized.length < 2 || normalized.length > 28) return false;
+  if (normalized.length < 2 || normalized.length > 24) return false;
   if (/^※/.test(normalized)) return false;
 
   if (
-    /キャンペーン|%off|％off|off|投稿|口コミ|レビュー|レシート|チラシ|ニュース|お知らせ|抽選|当選|プレゼント|ゲット|無料|get|モッピー|moppy|ログイン|会員登録|利用規約|詳細/i.test(
+    /キャンペーン|%off|％off|off|半額|投稿|口コミ|レビュー|レシート|チラシ|ニュース|お知らせ|抽選|当選|プレゼント|ゲット|無料|get|モッピー|moppy|ログイン|会員登録|利用規約|詳細|チケット|クーポン|アンケート|診断|毎日貯める|ツールバー|レシ活|Olive口座開設|新規Olive口座|三井住友銀行/i.test(
       normalized
     )
   ) {
@@ -494,8 +554,7 @@ function isSafeTrendWord(word: string) {
 
   if (/[。！？!?]/.test(normalized)) return false;
 
-  const bracketCount =
-    (normalized.match(/[【】「」『』]/g) || []).length;
+  const bracketCount = (normalized.match(/[【】「」『』]/g) || []).length;
   if (bracketCount >= 2) return false;
 
   return true;
@@ -518,9 +577,11 @@ function extractOfferCandidatesFromMoppyHtml(
   for (const line of lines) {
     if (candidates.length >= 5) break;
 
+    if (isRawAutoDiscoveryNoise(line)) continue;
+
     const cleaned = cleanCandidateName(line);
 
-    if (isNoiseCandidateName(cleaned)) continue;
+    if (!isSafeAutoDiscoveredOfferName(cleaned)) continue;
 
     let reward = extractUniqueRewardFromText(line, 100);
 
@@ -542,23 +603,25 @@ function extractOfferCandidatesFromMoppyHtml(
 
   /**
    * トレンド検索語そのものを候補化する場合も、
-   * ノイズ判定を通したものだけ採用。
+   * 強いノイズ判定を通したものだけ採用。
    */
   if (candidates.length === 0) {
-    const cleanedKeyword = cleanCandidateName(keyword);
+    if (!isRawAutoDiscoveryNoise(keyword)) {
+      const cleanedKeyword = cleanCandidateName(keyword);
 
-    if (!isNoiseCandidateName(cleanedKeyword)) {
-      const rewardNearKeyword = extractNearestRewardNearKeywordFromText(
-        text,
-        cleanedKeyword,
-        100
-      );
+      if (isSafeAutoDiscoveredOfferName(cleanedKeyword)) {
+        const rewardNearKeyword = extractNearestRewardNearKeywordFromText(
+          text,
+          cleanedKeyword,
+          100
+        );
 
-      if (rewardNearKeyword) {
-        candidates.push({
-          name: cleanedKeyword,
-          reward: rewardNearKeyword,
-        });
+        if (rewardNearKeyword) {
+          candidates.push({
+            name: cleanedKeyword,
+            reward: rewardNearKeyword,
+          });
+        }
       }
     }
   }
@@ -713,7 +776,8 @@ async function syncOffersFromCandidates(candidates: CandidateItem[]) {
       !candidate.is_registered &&
       candidate.confidence_score >= 90 &&
       candidate.reward &&
-      candidate.reward >= 500
+      candidate.reward >= 500 &&
+      isSafeAutoDiscoveredOfferName(candidate.offer_name)
     ) {
       const { error } = await supabase.from("offers").insert({
         offer_name: candidate.offer_name,
@@ -811,7 +875,7 @@ export async function GET() {
 
     /**
      * 1. Googleトレンド由来キーワードでモッピー検索
-     *    自動発見候補はノイズ除去を強める。
+     *    自動発見候補はかなり厳しくノイズ除去する。
      */
     for (let i = 0; i < trends.length; i++) {
       const trend = trends[i];
@@ -833,6 +897,10 @@ export async function GET() {
           const isRegistered = Boolean(registeredOffer);
           const offerName = moppyCandidate.name;
           const reward = moppyCandidate.reward;
+
+          if (!isRegistered && !isSafeAutoDiscoveredOfferName(offerName)) {
+            continue;
+          }
 
           const category =
             registeredOffer?.category ||
@@ -944,6 +1012,8 @@ export async function GET() {
       offers_reward_used_for_display: false,
       reward_extraction_mode: "nearest_p_within_600_chars",
       noise_filter_enabled: true,
+      auto_discovery_strict_noise_filter: true,
+      raw_noise_filter_enabled: true,
       ...offersSyncResult,
       sample: balancedCandidates.slice(0, 5),
     });
