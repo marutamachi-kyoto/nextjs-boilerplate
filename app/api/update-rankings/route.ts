@@ -9,8 +9,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const GOOGLE_TRENDS_RSS_URL =
-  "https://trends.google.com/trending/rss?geo=JP";
+const GOOGLE_TRENDS_RSS_URL = "https://trends.google.com/trending/rss?geo=JP";
 
 const MOPPY_SEARCH_BASE_URL = "https://pc.moppy.jp/search/?q=";
 
@@ -535,15 +534,12 @@ async function updateRankings(rows: CandidateItem[]) {
 }
 
 async function updateTrends(rows: CandidateItem[]) {
-  const now = new Date().toISOString();
-
   await supabase.from("trends").delete().gte("score", 0);
 
   const trendRows = rows.slice(0, 50).map((item, index) => ({
     word: item.offer_name,
     score: Math.max(100 - index * 2, 10),
     category: item.category,
-    updated_at: now,
   }));
 
   const { error } = await supabase.from("trends").insert(trendRows);
@@ -581,10 +577,7 @@ export async function GET() {
 
           const offerName = registeredOffer?.name || moppyCandidate.name;
 
-          const reward =
-            moppyCandidate.reward ||
-            registeredOffer?.reward ||
-            null;
+          const reward = moppyCandidate.reward || registeredOffer?.reward || null;
 
           const category =
             registeredOffer?.category ||
