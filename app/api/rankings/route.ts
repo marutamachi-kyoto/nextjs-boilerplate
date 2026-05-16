@@ -449,7 +449,10 @@ function isRawAutoDiscoveryNoise(rawText: string) {
     return true;
   }
 
-  if (/モッピー|moppy/i.test(raw) && !/カード|証券|モバイル|回線|paypay|楽天|sbi|olive/i.test(raw)) {
+  if (
+    /モッピー|moppy/i.test(raw) &&
+    !/カード|証券|モバイル|回線|paypay|楽天|sbi|olive/i.test(raw)
+  ) {
     return true;
   }
 
