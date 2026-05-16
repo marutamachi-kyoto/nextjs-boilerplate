@@ -450,6 +450,14 @@ function isRawAutoDiscoveryNoise(rawText: string) {
   }
 
   if (
+    /リピートOK|リピート可|再利用OK|何度でも|初回限定|初回のみ|初回購入|初回利用|初回登録|新規登録|新規入会|新規申込|条件達成|対象者限定|期間限定|高還元|ポイント還元|承認待ち|成果対象|成果条件/i.test(
+      raw
+    )
+  ) {
+    return true;
+  }
+
+  if (
     /モッピー|moppy/i.test(raw) &&
     !/カード|証券|モバイル|回線|paypay|楽天|sbi|olive/i.test(raw)
   ) {
@@ -484,6 +492,14 @@ function isNoiseCandidateName(name: string) {
 
   if (
     /キャンペーン|%off|％off|off|半額|投稿|口コミ|レビュー|レシート|チラシ|ニュース|お知らせ|抽選|当選|プレゼント|ゲット|無料|get|チケット|クーポン|アンケート|診断|口座開設完了/i.test(
+      normalized
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    /リピートOK|リピート可|再利用OK|何度でも|初回限定|初回のみ|初回購入|初回利用|初回登録|新規登録|新規入会|新規申込|条件達成|対象者限定|期間限定|高還元|ポイント還元|承認待ち|成果対象|成果条件/i.test(
       normalized
     )
   ) {
@@ -549,6 +565,14 @@ function isSafeTrendWord(word: string) {
 
   if (
     /キャンペーン|%off|％off|off|半額|投稿|口コミ|レビュー|レシート|チラシ|ニュース|お知らせ|抽選|当選|プレゼント|ゲット|無料|get|モッピー|moppy|ログイン|会員登録|利用規約|詳細|チケット|クーポン|アンケート|診断|毎日貯める|ツールバー|レシ活|Olive口座開設|新規Olive口座|三井住友銀行/i.test(
+      normalized
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    /リピートOK|リピート可|再利用OK|何度でも|初回限定|初回のみ|初回購入|初回利用|初回登録|新規登録|新規入会|新規申込|条件達成|対象者限定|期間限定|高還元|ポイント還元|承認待ち|成果対象|成果条件/i.test(
       normalized
     )
   ) {
@@ -1017,6 +1041,7 @@ export async function GET() {
       noise_filter_enabled: true,
       auto_discovery_strict_noise_filter: true,
       raw_noise_filter_enabled: true,
+      condition_phrase_filter_enabled: true,
       ...offersSyncResult,
       sample: balancedCandidates.slice(0, 5),
     });
