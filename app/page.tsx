@@ -12,10 +12,10 @@ type CategoryScore = {
   rank: number;
   trend_keyword: string;
   offer_name?: string;
-  reward?: number;
+  reward?: number | null;
   reason: string;
-  primary_site_name: string;
-  primary_site_url: string;
+  primary_site_name?: string;
+  primary_site_url?: string;
   updated_at?: string;
 };
 
@@ -49,19 +49,25 @@ export default function Page() {
   const [trendTags, setTrendTags] = useState<TrendTag[]>([]);
 
   useEffect(() => {
-    fetch("/api/trends")
+    fetch("/api/trends", { cache: "no-store" })
       .then((res) => res.json())
       .then((json) => setTrendTags(json.data || []));
 
-    fetch("/api/score")
+    fetch("/api/score", { cache: "no-store" })
       .then((res) => res.json())
       .then((json) => {
         const data = json.data || [];
         setItems(data.slice(0, 50));
 
-        if (data[0]?.updated_at) {
+        const latestUpdatedAt = data
+          .map((item: CategoryScore) => item.updated_at)
+          .filter(Boolean)
+          .sort()
+          .reverse()[0];
+
+        if (latestUpdatedAt) {
           setUpdatedAt(
-            new Date(data[0].updated_at).toLocaleString("ja-JP", {
+            new Date(latestUpdatedAt).toLocaleString("ja-JP", {
               year: "numeric",
               month: "numeric",
               day: "numeric",
@@ -158,9 +164,13 @@ export default function Page() {
     });
   };
 
-  const formatReward = (reward?: number) => {
-    if (!reward || reward <= 0) return "データが取れませんでした";
-    return `${reward.toLocaleString()}P`;
+  const isRewardMissing = (reward?: number | null) => {
+    return !reward || reward <= 0;
+  };
+
+  const formatReward = (reward?: number | null) => {
+    if (isRewardMissing(reward)) return "データが取れませんでした";
+    return `${reward!.toLocaleString("ja-JP")}P`;
   };
 
   const getTrendBadges = (item: CategoryScore): TrendBadge[] => {
@@ -221,54 +231,56 @@ export default function Page() {
   };
 
   const getDynamicReason = (item: CategoryScore) => {
+    if (item.reason) return item.reason;
+
     const category = item.category;
     const offerName = (item.offer_name || "").toLowerCase();
 
     if (offerName.includes("tiktok")) {
-      return "友達招待系キャンペーンとしてSNSで急拡散しており、短期間で利用者が急増しています。";
+      return "友達招待系キャンペーンとしてSNSで注目されている案件です。";
     }
 
     if (offerName.includes("楽天市場")) {
-      return "買い回り・ポイントアップ需要の増加により、検索数が急上昇しています。";
+      return "買い回りやポイントアップ需要と相性がよく、比較しやすい案件です。";
     }
 
     if (offerName.includes("amazon")) {
-      return "サブスク需要と大型セール時期の影響で、継続的に注目を集めています。";
+      return "日常利用と組み合わせやすく、継続的に注目されやすい案件です。";
     }
 
     if (offerName.includes("u-next")) {
-      return "無料トライアル案件として安定した人気があり、動画サブスク需要も拡大しています。";
+      return "動画サブスク系として安定した人気があり、条件確認しやすい案件です。";
     }
 
     if (offerName.includes("paypay")) {
-      return "キャッシュレス決済需要の拡大により、検索数と利用者数が増加しています。";
+      return "キャッシュレス決済需要と相性がよく、比較候補に入れやすい案件です。";
     }
 
     if (offerName.includes("楽天カード")) {
-      return "高還元キャンペーンが継続しており、クレジットカード案件の中でも人気が高い状態です。";
+      return "カード案件の中でも認知度が高く、報酬面でも注目されやすい案件です。";
     }
 
     if (offerName.includes("楽天モバイル")) {
-      return "高額ポイント還元と通信費節約需要により、申し込み数が急増しています。";
+      return "通信費見直し需要と相性がよく、条件を確認したい候補です。";
     }
 
     if (category.includes("通信")) {
-      return "高額ポイント案件としてSNS流入が増加しており、短期間で申し込みが伸びています。";
+      return "通信系は固定費の見直しと相性がよく、比較しやすい案件です。";
     }
 
     if (category.includes("カード")) {
-      return "比較検索ユーザーが増加しており、高還元案件として注目を集めています。";
+      return "カード系は高額ポイントを狙いやすく、条件確認が大切な案件です。";
     }
 
     if (category.includes("証券")) {
-      return "NISA・投資需要の拡大により、口座開設系案件の人気が急上昇しています。";
+      return "証券・金融系は報酬が高めになりやすく、条件達成の確認が重要です。";
     }
 
     if (category.includes("ゲーム") || category.includes("アプリ")) {
-      return "SNSでの拡散が強く、短期間で条件達成しやすい案件として注目されています。";
+      return "アプリ系は始めやすく、ポイ活初心者でも確認しやすい案件です。";
     }
 
-    return "Google検索とSNS流入の両方で注目度が上昇している案件です。";
+    return "検索需要と案件内容の分かりやすさをもとに評価しています。";
   };
 
   const getRankStyle = (index: number) => {
@@ -532,7 +544,14 @@ export default function Page() {
                     <div className="text-base font-black text-slate-600 lg:text-lg">
                       報酬ポイントの目安
                     </div>
-                    <div className="mt-2 text-2xl font-black tracking-tight text-pink-500 lg:text-4xl">
+
+                    <div
+                      className={
+                        isRewardMissing(item.reward)
+                          ? "mt-2 text-sm font-black leading-5 text-pink-500 lg:text-base"
+                          : "mt-2 text-2xl font-black tracking-tight text-pink-500 lg:text-4xl"
+                      }
+                    >
                       {formatReward(item.reward)}
                     </div>
                   </div>
@@ -612,7 +631,14 @@ export default function Page() {
                     <div className="text-sm font-black text-slate-600 lg:text-base">
                       報酬ポイントの目安
                     </div>
-                    <div className="mt-1 text-xl font-black text-pink-500 lg:text-2xl">
+
+                    <div
+                      className={
+                        isRewardMissing(item.reward)
+                          ? "mt-1 text-xs font-black leading-5 text-pink-500 lg:text-sm"
+                          : "mt-1 text-xl font-black text-pink-500 lg:text-2xl"
+                      }
+                    >
                       {formatReward(item.reward)}
                     </div>
                   </div>
