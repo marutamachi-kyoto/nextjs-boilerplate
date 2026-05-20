@@ -75,6 +75,78 @@ export const metadata: Metadata = {
 const rankingDisplayScript = `
 (() => {
   const phrase = "のポイ活口コミを見る";
+  const suggestCache = new Map();
+
+  const normalizeKeyword = (value) => {
+    return (value || "")
+      .toLowerCase()
+      .replace(/　/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const extractSuggestionHint = (suggestion, offerName) => {
+    const cleaned = (suggestion || "")
+      .replace(new RegExp(offerName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "")
+      .replace(/ポイ活|口コミ|評判|おすすめ|キャンペーン/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return cleaned || suggestion;
+  };
+
+  const getCategorySuffix = (category) => {
+    if ((category || "").includes("カード")) {
+      return "年会費、入会特典、ポイント還元の条件を見比べたい案件です。";
+    }
+
+    if ((category || "").includes("証券") || (category || "").includes("金融")) {
+      return "口座開設条件や取引条件を申し込み前に確認したい案件です。";
+    }
+
+    if ((category || "").includes("通信")) {
+      return "料金、乗り換え条件、キャンペーン内容をあわせて確認したい案件です。";
+    }
+
+    if ((category || "").includes("アプリ") || (category || "").includes("エンタメ")) {
+      return "無料期間、利用条件、解約まわりを先に確認したい案件です。";
+    }
+
+    if ((category || "").includes("旅行")) {
+      return "予約時期や対象プランによって条件が変わりやすい案件です。";
+    }
+
+    return "報酬だけでなく、申し込み条件とポイント付与条件を確認したい案件です。";
+  };
+
+  const buildTrendReason = (offerName, category, suggestions) => {
+    const hints = suggestions
+      .map((suggestion) => extractSuggestionHint(suggestion, offerName))
+      .filter(Boolean)
+      .filter((hint, index, self) => self.indexOf(hint) === index)
+      .slice(0, 2);
+
+    if (hints.length === 0) return "";
+
+    const quotedHints = hints.map((hint) => "「" + hint + "」").join("や");
+    return offerName + "は、Googleの検索動向で" + quotedHints + "も一緒に調べられています。" + getCategorySuffix(category);
+  };
+
+  const fetchSuggestions = async (offerName) => {
+    const key = normalizeKeyword(offerName);
+    if (!key) return [];
+    if (suggestCache.has(key)) return suggestCache.get(key);
+
+    const promise = fetch("/api/search-suggest?q=" + encodeURIComponent(offerName), {
+      cache: "no-store",
+    })
+      .then((response) => response.json())
+      .then((json) => Array.isArray(json.suggestions) ? json.suggestions : [])
+      .catch(() => []);
+
+    suggestCache.set(key, promise);
+    return promise;
+  };
 
   const applyRankingStyle = () => {
     if (document.getElementById("ranking-readable-style")) return;
@@ -148,11 +220,42 @@ const rankingDisplayScript = `
     if (firstLine) firstLine.textContent = offerName + "の";
   };
 
+  const enhanceRankingReason = async (article, index) => {
+    if (article.dataset.trendReasonEnhanced === "true") return;
+
+    const heading = article.querySelector("h3");
+    const reason = heading?.nextElementSibling;
+    if (!heading || !reason || reason.tagName !== "P") return;
+    if (index >= 30) return;
+
+    const offerName = (heading.textContent || "").trim();
+    if (!offerName) return;
+
+    article.dataset.trendReasonEnhanced = "true";
+
+    const category = (article.querySelector(".inline-flex")?.textContent || "").trim();
+    const suggestions = await fetchSuggestions(offerName);
+    const trendReason = buildTrendReason(offerName, category, suggestions);
+
+    if (trendReason) {
+      reason.textContent = trendReason;
+    }
+  };
+
+  const enhanceRankingReasons = () => {
+    document
+      .querySelectorAll("main article")
+      .forEach((article, index) => {
+        enhanceRankingReason(article, index);
+      });
+  };
+
   const scanReviewLinks = () => {
     applyRankingStyle();
     document
       .querySelectorAll('a[href*="/reviews/"]')
       .forEach(splitReviewLink);
+    enhanceRankingReasons();
   };
 
   scanReviewLinks();
