@@ -312,7 +312,7 @@ export default async function ReviewPage({ params }: PageProps) {
 
             <p className="mt-5 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
               {offerName}
-              のポイ活案件について、確認したい口コミのポイントをまとめています。
+              のポイ活について、確認したい口コミのポイントをまとめています。
             </p>
 
             {updatedDateText && (
@@ -340,7 +340,7 @@ export default async function ReviewPage({ params }: PageProps) {
 
               <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-pink-100">
                 <div className="text-sm font-black text-slate-500">
-                  注目カテゴリ
+                  カテゴリ
                 </div>
                 <div className="mt-2 text-2xl font-black text-slate-900">
                   {displayItem.category}
@@ -354,7 +354,7 @@ export default async function ReviewPage({ params }: PageProps) {
           <section className="rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
             <h2 className="flex items-center gap-3 text-2xl font-black text-slate-900 lg:text-3xl">
               <span className="text-3xl">👍</span>
-              良い口コミで見られやすいポイント
+              良い口コミ
             </h2>
 
             <ul className="mt-5 space-y-4">
@@ -372,7 +372,7 @@ export default async function ReviewPage({ params }: PageProps) {
           <section className="rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
             <h2 className="flex items-center gap-3 text-2xl font-black text-slate-900 lg:text-3xl">
               <span className="text-3xl">⚠️</span>
-              悪い口コミで確認したい注意点
+              悪い口コミ
             </h2>
 
             <ul className="mt-5 space-y-4">
