@@ -93,7 +93,7 @@ const getReviewPageUrl = (offerName: string) => {
 };
 
 const getSeoTitle = (offerName: string) => {
-  return `${offerName}のポイ活案件はお得？口コミをAIが整理`;
+  return `${offerName}のポイ活はお得？口コミをAIが整理`;
 };
 
 const getSeoDescription = (offerName: string, rewardText?: string) => {
@@ -102,7 +102,7 @@ const getSeoDescription = (offerName: string, rewardText?: string) => {
       ? `報酬目安は${rewardText}。`
       : "";
 
-  return `${offerName}のポイ活案件について、口コミ・評判で確認したいポイント、報酬条件、申し込み前の注意点をAIが整理。${rewardPart}ポイ活案件を比較する前の確認に役立ちます。`;
+  return `${offerName}のポイ活について、口コミ・評判で確認したいポイント、報酬条件、申し込み前の注意点をAIが整理。${rewardPart}ポイ活を比較する前の確認に役立ちます。`;
 };
 
 async function getRankingItem(slug: string) {
@@ -179,7 +179,7 @@ export default async function ReviewPage({ params }: PageProps) {
   const item = await getRankingItem(slug);
 
   const fallbackItem: RankingItem = {
-    category: "ポイ活案件",
+    category: "ポイ活",
     rank: 0,
     trend_keyword: decodedSlug,
     offer_name: decodedSlug,
@@ -191,6 +191,10 @@ export default async function ReviewPage({ params }: PageProps) {
   const displayItem = item || fallbackItem;
 
   const offerName = getOfferName(displayItem);
+  const categoryLabel =
+    displayItem.category === "ポイ活"
+      ? "ポイ活"
+      : `${displayItem.category}のポイ活`;
   const rewardText = formatReward(displayItem.reward);
   const updatedDateText = formatDate(displayItem.updated_at);
   const isoDate = getIsoDate(displayItem.updated_at);
@@ -297,11 +301,11 @@ export default async function ReviewPage({ params }: PageProps) {
         <section className="overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-pink-100">
           <div className="bg-gradient-to-r from-pink-50 via-white to-orange-50 p-7 lg:p-10">
             <p className="mb-4 inline-flex rounded-full bg-white px-5 py-2 text-sm font-black text-pink-600 shadow-sm ring-1 ring-pink-100">
-              {displayItem.category}のポイ活案件
+              {categoryLabel}
             </p>
 
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 lg:text-6xl">
-              {offerName}のポイ活案件はお得？
+              {offerName}のポイ活はお得？
               <br />
               口コミを
               <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
