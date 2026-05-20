@@ -178,58 +178,22 @@ export default async function ReviewPage({ params }: PageProps) {
   const decodedSlug = decodeURIComponent(slug);
   const item = await getRankingItem(slug);
 
-  if (!item) {
-    const fallbackPageUrl = `${BASE_URL}/reviews/${encodeURIComponent(
-      decodedSlug
-    )}`;
+  const fallbackItem: RankingItem = {
+    category: "ポイ活案件",
+    rank: 0,
+    trend_keyword: decodedSlug,
+    offer_name: decodedSlug,
+    reward: undefined,
+    reason: undefined,
+    updated_at: undefined,
+  };
 
-    const notFoundJsonLd = {
-      "@context": "https://schema.org",
-      "@type": "WebPage",
-      name: `${decodedSlug}の口コミ・評判`,
-      url: fallbackPageUrl,
-      inLanguage: "ja",
-      isPartOf: {
-        "@type": "WebSite",
-        name: "ポイ活AI判定",
-        url: BASE_URL,
-      },
-    };
+  const displayItem = item || fallbackItem;
 
-    return (
-      <main className="min-h-screen bg-[#fff8fb] px-5 py-10">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(notFoundJsonLd),
-          }}
-        />
-
-        <div className="mx-auto max-w-[900px] rounded-[2rem] bg-white p-8 shadow-lg ring-1 ring-pink-100">
-          <h1 className="text-3xl font-black text-slate-900">
-            口コミページが見つかりませんでした
-          </h1>
-
-          <p className="mt-4 text-base font-bold leading-8 text-slate-600">
-            「{decodedSlug}」に一致するランキング案件が見つかりませんでした。
-            ランキングが更新された可能性があります。
-          </p>
-
-          <a
-            href="/#ranking-section"
-            className="mt-6 inline-flex min-h-[64px] items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-8 py-4 text-base font-black text-white shadow-xl transition hover:scale-105"
-          >
-            ランキングに戻る
-          </a>
-        </div>
-      </main>
-    );
-  }
-
-  const offerName = getOfferName(item);
-  const rewardText = formatReward(item.reward);
-  const updatedDateText = formatDate(item.updated_at);
-  const isoDate = getIsoDate(item.updated_at);
+  const offerName = getOfferName(displayItem);
+  const rewardText = formatReward(displayItem.reward);
+  const updatedDateText = formatDate(displayItem.updated_at);
+  const isoDate = getIsoDate(displayItem.updated_at);
   const googleReviewUrl = getReviewSearchUrl(offerName);
   const pageUrl = getReviewPageUrl(offerName);
   const seoTitle = getSeoTitle(offerName);
@@ -307,7 +271,7 @@ export default async function ReviewPage({ params }: PageProps) {
           "口コミ",
           "評判",
           "ポイント還元",
-          item.category,
+          displayItem.category,
         ],
       },
     ],
@@ -333,7 +297,7 @@ export default async function ReviewPage({ params }: PageProps) {
         <section className="overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-pink-100">
           <div className="bg-gradient-to-r from-pink-50 via-white to-orange-50 p-7 lg:p-10">
             <p className="mb-4 inline-flex rounded-full bg-white px-5 py-2 text-sm font-black text-pink-600 shadow-sm ring-1 ring-pink-100">
-              {item.category}のポイ活案件
+              {displayItem.category}のポイ活案件
             </p>
 
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 lg:text-6xl">
@@ -379,44 +343,9 @@ export default async function ReviewPage({ params }: PageProps) {
                   注目カテゴリ
                 </div>
                 <div className="mt-2 text-2xl font-black text-slate-900">
-                  {item.category}
+                  {displayItem.category}
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-6 rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
-          <h2 className="text-2xl font-black text-slate-900 lg:text-3xl">
-            {offerName}のポイ活案件で確認したいポイント
-          </h2>
-
-          <div className="mt-5 grid gap-4 lg:grid-cols-3">
-            <div className="rounded-2xl bg-pink-50 p-5">
-              <h3 className="text-lg font-black text-slate-900">
-                報酬条件
-              </h3>
-              <p className="mt-3 text-base font-bold leading-8 text-slate-700">
-                ポイント獲得には、申し込み条件・利用条件・対象外条件が設定されていることがあります。
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-orange-50 p-5">
-              <h3 className="text-lg font-black text-slate-900">
-                付与時期
-              </h3>
-              <p className="mt-3 text-base font-bold leading-8 text-slate-700">
-                ポイントが反映されるまでの期間は案件によって異なります。申し込み前に予定時期を確認しておくと安心です。
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-yellow-50 p-5">
-              <h3 className="text-lg font-black text-slate-900">
-                口コミ・評判
-              </h3>
-              <p className="mt-3 text-base font-bold leading-8 text-slate-700">
-                実際の利用感や注意点は変わることがあるため、最新の評判もあわせて確認するのがおすすめです。
-              </p>
             </div>
           </div>
         </section>
@@ -458,29 +387,6 @@ export default async function ReviewPage({ params }: PageProps) {
             </ul>
           </section>
         </div>
-
-        <section className="mt-6 rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
-          <h2 className="text-2xl font-black text-slate-900 lg:text-3xl">
-            {offerName}はどんな人に向いている？
-          </h2>
-
-          <p className="mt-4 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
-            {offerName}
-            は、ポイ活でポイント還元を狙いながら、サービス内容や申し込み条件を比較したい人に向いています。
-            特に、報酬ポイントだけで判断せず、条件達成のしやすさ、ポイント付与時期、対象外条件を確認してから申し込むことが大切です。
-          </p>
-
-          {item.reason && (
-            <div className="mt-5 rounded-2xl bg-pink-50 p-5">
-              <h3 className="text-lg font-black text-slate-900">
-                AIによる注目理由
-              </h3>
-              <p className="mt-3 text-base font-bold leading-8 text-slate-700">
-                {item.reason}
-              </p>
-            </div>
-          )}
-        </section>
 
         <section className="mt-6 rounded-[2rem] bg-gradient-to-r from-pink-50 via-white to-orange-50 p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
           <h2 className="text-2xl font-black text-slate-900 lg:text-3xl">
