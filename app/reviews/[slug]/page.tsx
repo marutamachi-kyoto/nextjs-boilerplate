@@ -312,7 +312,7 @@ export default async function ReviewPage({ params }: PageProps) {
 
             <p className="mt-5 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
               {offerName}
-              のポイ活案件について、口コミ・評判で確認したいポイント、報酬ポイントの目安、申し込み前の注意点をまとめています。
+              のポイ活案件について、確認したい口コミのポイントをまとめています。
             </p>
 
             {updatedDateText && (
@@ -395,7 +395,6 @@ export default async function ReviewPage({ params }: PageProps) {
 
           <p className="mt-3 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
             最新の口コミは日々変わるため、申し込み前には外部検索でも確認するのがおすすめです。
-            ポイント付与条件やキャンペーン内容も、必ず申し込み前に最新情報を確認してください。
           </p>
 
           <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row">
