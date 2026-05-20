@@ -85,9 +85,13 @@ const rankingDisplayScript = `
       .trim();
   };
 
+  const escapeRegExp = (value) => {
+    return (value || "").replace(/[.*+?^\${}()|[\]\\]/g, "\\$&");
+  };
+
   const extractSuggestionHint = (suggestion, offerName) => {
     const cleaned = (suggestion || "")
-      .replace(new RegExp(offerName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "")
+      .replace(new RegExp(escapeRegExp(offerName), "gi"), "")
       .replace(/ポイ活|口コミ|評判|おすすめ|キャンペーン/g, "")
       .replace(/\s+/g, " ")
       .trim();
