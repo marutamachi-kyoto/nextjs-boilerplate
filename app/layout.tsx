@@ -72,9 +72,58 @@ export const metadata: Metadata = {
   },
 };
 
-const splitReviewLinkScript = `
+const rankingDisplayScript = `
 (() => {
   const phrase = "のポイ活口コミを見る";
+
+  const applyRankingStyle = () => {
+    if (document.getElementById("lower-ranking-readable-style")) return;
+
+    const style = document.createElement("style");
+    style.id = "lower-ranking-readable-style";
+    style.textContent = \`
+      main > section.mt-6 article h3 {
+        font-size: 2rem !important;
+        line-height: 1.2 !important;
+      }
+
+      main > section.mt-6 article p {
+        font-size: 1rem !important;
+        line-height: 1.9 !important;
+      }
+
+      main > section.mt-6 article .inline-flex {
+        font-size: 0.9rem !important;
+      }
+
+      main > section.mt-6 article a[href*="/reviews/"] {
+        min-height: 3.9rem !important;
+        max-width: 230px !important;
+        overflow: hidden !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        font-size: 0.92rem !important;
+        line-height: 1.35 !important;
+      }
+
+      main > section.mt-6 article a[href*="/reviews/"] .review-label-text {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow-wrap: anywhere !important;
+        word-break: normal !important;
+        white-space: normal !important;
+      }
+
+      main > section.mt-6 article a[href*="/reviews/"] .review-label-text span {
+        display: block !important;
+      }
+
+      main > section.mt-6 article a[href*="/reviews/"] .review-label-arrow {
+        flex: 0 0 auto !important;
+      }
+    \`;
+    document.head.appendChild(style);
+  };
 
   const splitReviewLink = (link) => {
     if (link.dataset.reviewLabelSplit === "true") return;
@@ -89,14 +138,17 @@ const splitReviewLinkScript = `
     if (!offerName) return;
 
     link.dataset.reviewLabelSplit = "true";
-    link.style.minHeight = "3.75rem";
+    link.style.minHeight = "3.9rem";
+    link.style.overflow = "hidden";
+    link.style.whiteSpace = "normal";
 
-    link.innerHTML = '<span class="leading-5"><span class="block"></span><span class="block">ポイ活口コミを見る</span></span><span class="ml-2 text-xl leading-none">›</span>';
-    const firstLine = link.querySelector("span span");
+    link.innerHTML = '<span class="review-label-text leading-5"><span></span><span>ポイ活口コミを見る</span></span><span class="review-label-arrow ml-2 text-base leading-none">›</span>';
+    const firstLine = link.querySelector(".review-label-text span");
     if (firstLine) firstLine.textContent = offerName + "の";
   };
 
   const scanReviewLinks = () => {
+    applyRankingStyle();
     document
       .querySelectorAll('a[href*="/reviews/"]')
       .forEach(splitReviewLink);
@@ -119,9 +171,9 @@ export default function RootLayout({
     <html lang="ja">
       <body>
         <Script
-          id="split-review-link-labels"
+          id="ranking-display-adjustments"
           strategy="afterInteractive"
-          dangerouslySetInnerHTML={{ __html: splitReviewLinkScript }}
+          dangerouslySetInnerHTML={{ __html: rankingDisplayScript }}
         />
         {children}
       </body>
