@@ -77,10 +77,10 @@ const rankingDisplayScript = `
   const phrase = "のポイ活口コミを見る";
 
   const applyRankingStyle = () => {
-    if (document.getElementById("lower-ranking-readable-style")) return;
+    if (document.getElementById("ranking-readable-style")) return;
 
     const style = document.createElement("style");
-    style.id = "lower-ranking-readable-style";
+    style.id = "ranking-readable-style";
     style.textContent = \`
       main > section.mt-6 article h3 {
         font-size: 2rem !important;
@@ -96,7 +96,7 @@ const rankingDisplayScript = `
         font-size: 0.9rem !important;
       }
 
-      main > section.mt-6 article a[href*="/reviews/"] {
+      main article a[href*="/reviews/"] {
         min-height: 3.9rem !important;
         max-width: 230px !important;
         overflow: hidden !important;
@@ -104,9 +104,10 @@ const rankingDisplayScript = `
         padding-right: 0.75rem !important;
         font-size: 0.92rem !important;
         line-height: 1.35 !important;
+        white-space: normal !important;
       }
 
-      main > section.mt-6 article a[href*="/reviews/"] .review-label-text {
+      main article a[href*="/reviews/"] .review-label-text {
         min-width: 0 !important;
         max-width: 100% !important;
         overflow-wrap: anywhere !important;
@@ -114,11 +115,11 @@ const rankingDisplayScript = `
         white-space: normal !important;
       }
 
-      main > section.mt-6 article a[href*="/reviews/"] .review-label-text span {
+      main article a[href*="/reviews/"] .review-label-text span {
         display: block !important;
       }
 
-      main > section.mt-6 article a[href*="/reviews/"] .review-label-arrow {
+      main article a[href*="/reviews/"] .review-label-arrow {
         flex: 0 0 auto !important;
       }
     \`;
