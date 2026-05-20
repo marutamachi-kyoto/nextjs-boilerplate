@@ -93,7 +93,7 @@ const getReviewPageUrl = (offerName: string) => {
 };
 
 const getSeoTitle = (offerName: string) => {
-  return `${offerName}のポイ活案件はお得？口コミ・評判とポイント還元をAIが整理`;
+  return `${offerName}のポイ活案件はお得？口コミをAIが整理`;
 };
 
 const getSeoDescription = (offerName: string, rewardText?: string) => {
@@ -303,7 +303,7 @@ export default async function ReviewPage({ params }: PageProps) {
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 lg:text-6xl">
               {offerName}のポイ活案件はお得？
               <br />
-              口コミ・評判を
+              口コミを
               <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
                 AI
               </span>
