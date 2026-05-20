@@ -569,7 +569,7 @@ export default function Page() {
                       href={getReviewPath(offerName)}
                       className="flex h-14 w-full max-w-[260px] items-center justify-center rounded-2xl border-2 border-pink-200 bg-white px-5 text-center text-base font-black text-pink-600 shadow-md transition hover:scale-105 hover:bg-pink-50"
                     >
-                      口コミ・評判を見る
+                      {offerName}のポイ活口コミを見る
                       <span className="ml-2 text-xl leading-none">›</span>
                     </Link>
                   </div>
@@ -656,7 +656,7 @@ export default function Page() {
                       href={getReviewPath(offerName)}
                       className="flex h-11 w-full max-w-[210px] items-center justify-center rounded-xl border-2 border-pink-200 bg-white px-4 text-xs font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50"
                     >
-                      口コミ・評判を見る
+                      {offerName}のポイ活口コミを見る
                       <span className="ml-2 text-base leading-none">›</span>
                     </Link>
                   </div>
