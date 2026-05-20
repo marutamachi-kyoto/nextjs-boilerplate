@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -71,6 +72,44 @@ export const metadata: Metadata = {
   },
 };
 
+const splitReviewLinkScript = `
+(() => {
+  const phrase = "のポイ活口コミを見る";
+
+  const splitReviewLink = (link) => {
+    if (link.dataset.reviewLabelSplit === "true") return;
+
+    const compactText = (link.textContent || "")
+      .replace(/\s+/g, "")
+      .replace(/›$/g, "");
+
+    if (!compactText.endsWith(phrase)) return;
+
+    const offerName = compactText.slice(0, -phrase.length);
+    if (!offerName) return;
+
+    link.dataset.reviewLabelSplit = "true";
+    link.style.minHeight = "3.75rem";
+
+    link.innerHTML = '<span class="leading-5"><span class="block"></span><span class="block">ポイ活口コミを見る</span></span><span class="ml-2 text-xl leading-none">›</span>';
+    const firstLine = link.querySelector("span span");
+    if (firstLine) firstLine.textContent = offerName + "の";
+  };
+
+  const scanReviewLinks = () => {
+    document
+      .querySelectorAll('a[href*="/reviews/"]')
+      .forEach(splitReviewLink);
+  };
+
+  scanReviewLinks();
+  new MutationObserver(scanReviewLinks).observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  });
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -78,7 +117,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body>
+        <Script
+          id="split-review-link-labels"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{ __html: splitReviewLinkScript }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
