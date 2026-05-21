@@ -76,6 +76,8 @@ const rankingDisplayScript = `
 (() => {
   const phrase = "のポイ活口コミを見る";
   const suggestCache = new Map();
+  let reviewBackLinkUpdated = false;
+  let lastScrolledHash = "";
   const hiddenCopyTexts = [
     "いま注目されているポイ活関連ワードをAIが整理しています。",
     "「Googleでの話題度」や「モッピーで確認した案件情報」などをもとに、AIが毎日おすすめ順を見直しています。",
@@ -86,6 +88,18 @@ const rankingDisplayScript = `
       .toLowerCase()
       .replace(/　/g, " ")
       .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const normalizeRankingIdText = (value) => {
+    return (value || "")
+      .toLowerCase()
+      .replace(/　/g, "")
+      .replace(/\s+/g, "")
+      .replace(/（/g, "(")
+      .replace(/）/g, ")")
+      .replace(/[・･]/g, "")
+      .replace(/[ーｰ−]/g, "-")
       .trim();
   };
 
@@ -100,6 +114,14 @@ const rankingDisplayScript = `
 
   const escapeRegExp = (value) => {
     return (value || "").replace(/[.*+?^\${}()|[\]\\]/g, "\\$&");
+  };
+
+  const getOfferName = (item) => {
+    return item?.offer_name || item?.trend_keyword || item?.category || "";
+  };
+
+  const getRankingIdFromItem = (item, index) => {
+    return "ranking-" + (index + 1) + "-" + normalizeRankingIdText(getOfferName(item));
   };
 
   const extractSuggestionHint = (suggestion, offerName) => {
@@ -263,6 +285,50 @@ const rankingDisplayScript = `
     if (firstLine) firstLine.textContent = offerName + "の";
   };
 
+  const updateReviewBackLink = async () => {
+    if (reviewBackLinkUpdated) return;
+    if (!location.pathname.startsWith("/reviews/")) return;
+
+    reviewBackLinkUpdated = true;
+    const backLink = document.querySelector('main a[href="/#ranking-section"]');
+    if (!backLink) return;
+
+    const slug = decodeURIComponent(location.pathname.split("/reviews/")[1] || "");
+    if (!slug) return;
+
+    try {
+      const response = await fetch("/api/score", { cache: "no-store" });
+      const json = await response.json();
+      const items = Array.isArray(json.data) ? json.data.slice(0, 50) : [];
+      const normalizedSlug = normalizeRankingIdText(slug);
+      const index = items.findIndex((item) => {
+        return [getOfferName(item), item?.trend_keyword, item?.category]
+          .filter(Boolean)
+          .some((value) => normalizeRankingIdText(value) === normalizedSlug);
+      });
+
+      if (index >= 0) {
+        backLink.setAttribute("href", "/#" + getRankingIdFromItem(items[index], index));
+      }
+    } catch (error) {}
+  };
+
+  const scrollToHashTarget = () => {
+    if (location.pathname !== "/") return;
+    const hash = decodeURIComponent((location.hash || "").slice(1));
+    if (!hash.startsWith("ranking-")) return;
+    if (lastScrolledHash === hash) return;
+
+    const target = document.getElementById(hash);
+    if (!target) return;
+
+    lastScrolledHash = hash;
+    target.scrollIntoView({
+      behavior: "auto",
+      block: "center",
+    });
+  };
+
   const enhanceRankingReason = async (article, index) => {
     if (article.dataset.trendReasonEnhanced === "true") return;
 
@@ -296,10 +362,12 @@ const rankingDisplayScript = `
   const scanReviewLinks = () => {
     applyRankingStyle();
     removeRequestedCopy();
+    updateReviewBackLink();
     document
       .querySelectorAll('a[href*="/reviews/"]')
       .forEach(splitReviewLink);
     enhanceRankingReasons();
+    scrollToHashTarget();
   };
 
   scanReviewLinks();
