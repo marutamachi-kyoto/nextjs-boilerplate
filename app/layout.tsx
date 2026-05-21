@@ -76,6 +76,10 @@ const rankingDisplayScript = `
 (() => {
   const phrase = "のポイ活口コミを見る";
   const suggestCache = new Map();
+  const hiddenCopyTexts = [
+    "いま注目されているポイ活関連ワードをAIが整理しています。",
+    "「Googleでの話題度」や「モッピーで確認した案件情報」などをもとに、AIが毎日おすすめ順を見直しています。",
+  ];
 
   const normalizeKeyword = (value) => {
     return (value || "")
@@ -83,6 +87,15 @@ const rankingDisplayScript = `
       .replace(/　/g, " ")
       .replace(/\s+/g, " ")
       .trim();
+  };
+
+  const escapeHtml = (value) => {
+    return (value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   };
 
   const escapeRegExp = (value) => {
@@ -132,8 +145,11 @@ const rankingDisplayScript = `
 
     if (hints.length === 0) return "";
 
-    const quotedHints = hints.map((hint) => "「" + hint + "」").join("や");
-    return offerName + "は、Googleの検索動向で" + quotedHints + "も一緒に調べられています。" + getCategorySuffix(category);
+    const quotedHints = hints
+      .map((hint) => '<span class="trend-reason-keyword">「' + escapeHtml(hint) + '」</span>')
+      .join("や");
+
+    return escapeHtml(offerName) + "は、Googleの検索動向で" + quotedHints + "も一緒に調べられています。" + getCategorySuffix(category);
   };
 
   const fetchSuggestions = async (offerName) => {
@@ -150,6 +166,19 @@ const rankingDisplayScript = `
 
     suggestCache.set(key, promise);
     return promise;
+  };
+
+  const removeRequestedCopy = () => {
+    document.querySelectorAll("main p").forEach((paragraph) => {
+      const text = (paragraph.textContent || "").replace(/\s+/g, "").trim();
+      const shouldHide = hiddenCopyTexts.some((copyText) => {
+        return text === copyText.replace(/\s+/g, "");
+      });
+
+      if (shouldHide) {
+        paragraph.style.display = "none";
+      }
+    });
   };
 
   const applyRankingStyle = () => {
@@ -198,6 +227,16 @@ const rankingDisplayScript = `
       main article a[href*="/reviews/"] .review-label-arrow {
         flex: 0 0 auto !important;
       }
+
+      .trend-reason-keyword {
+        color: #ec4899 !important;
+        font-weight: 900 !important;
+        background: #fff1f7 !important;
+        border-radius: 999px !important;
+        padding: 0.05rem 0.35rem !important;
+        box-decoration-break: clone !important;
+        -webkit-box-decoration-break: clone !important;
+      }
     \`;
     document.head.appendChild(style);
   };
@@ -242,7 +281,7 @@ const rankingDisplayScript = `
     const trendReason = buildTrendReason(offerName, category, suggestions);
 
     if (trendReason) {
-      reason.textContent = trendReason;
+      reason.innerHTML = trendReason;
     }
   };
 
@@ -256,6 +295,7 @@ const rankingDisplayScript = `
 
   const scanReviewLinks = () => {
     applyRankingStyle();
+    removeRequestedCopy();
     document
       .querySelectorAll('a[href*="/reviews/"]')
       .forEach(splitReviewLink);
