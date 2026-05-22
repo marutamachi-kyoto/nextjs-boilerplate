@@ -83,41 +83,35 @@ const rankingDisplayScript = `
     "「Googleでの話題度」や「モッピーで確認した案件情報」などをもとに、AIが毎日おすすめ順を見直しています。",
   ];
 
-  const normalizeKeyword = (value) => {
-    return (value || "")
-      .toLowerCase()
-      .replace(/　/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+  const toText = (value) => value || "";
+
+  const compactSpaces = (value) => {
+    let text = toText(value).replaceAll("　", " ").replaceAll("\n", " ").replaceAll("\t", " ");
+    while (text.includes("  ")) text = text.replaceAll("  ", " ");
+    return text.trim();
   };
 
+  const normalizeKeyword = (value) => compactSpaces(value).toLowerCase();
+
   const normalizeCompact = (value) => {
-    return (value || "")
-      .toLowerCase()
-      .replace(/　/g, "")
-      .replace(/\s+/g, "")
-      .replace(/（/g, "(")
-      .replace(/）/g, ")")
-      .replace(/[・･]/g, "")
-      .replace(/[ーｰ−]/g, "-")
-      .trim();
+    return normalizeKeyword(value)
+      .replaceAll(" ", "")
+      .replaceAll("（", "(")
+      .replaceAll("）", ")")
+      .replaceAll("・", "")
+      .replaceAll("･", "")
+      .replaceAll("ー", "-")
+      .replaceAll("ｰ", "-")
+      .replaceAll("−", "-");
   };
 
   const escapeHtml = (value) => {
-    return (value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  };
-
-  const escapeRegExp = (value) => {
-    const specialChars = "\\^$.*+?()[]{}|-/";
-    const slash = String.fromCharCode(92);
-    return Array.from(value || "")
-      .map((char) => (specialChars.includes(char) ? slash + char : char))
-      .join("");
+    return toText(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
   };
 
   const getOfferName = (item) => item?.offer_name || item?.trend_keyword || item?.category || "";
@@ -126,35 +120,49 @@ const rankingDisplayScript = `
     return "ranking-" + (index + 1) + "-" + normalizeCompact(getOfferName(item));
   };
 
-  const cleanSuggestionHint = (suggestion, offerName) => {
-    const hint = (suggestion || "")
-      .replace(new RegExp(escapeRegExp(offerName), "gi"), "")
-      .replace(/ポイ活|口コミを見る|口コミ|評判|おすすめ|比較|ランキング/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
+  const removeOfferName = (value, offerName) => {
+    let text = toText(value);
+    const names = [offerName, offerName.toLowerCase(), offerName.toUpperCase()].filter(Boolean);
+    names.forEach((name) => {
+      text = text.split(name).join("");
+    });
+    return text;
+  };
 
+  const cleanSuggestionHint = (suggestion, offerName) => {
+    let hint = removeOfferName(suggestion, offerName);
+    ["ポイ活", "口コミを見る", "口コミ", "評判", "おすすめ", "比較", "ランキング"].forEach((word) => {
+      hint = hint.split(word).join("");
+    });
+
+    hint = compactSpaces(hint);
     if (!hint) return "";
     if (normalizeCompact(hint) === normalizeCompact(offerName)) return "";
     return hint;
+  };
+
+  const containsAny = (text, words) => {
+    const lower = text.toLowerCase();
+    return words.some((word) => lower.includes(word.toLowerCase()));
   };
 
   const getFallbackQueries = (offerName, category) => {
     const text = offerName + " " + category;
     let seeds = ["キャンペーン", "評判", "口コミ", "ポイント", "条件"];
 
-    if (/通信|回線|光|モバイル|ahamo|linemo|povo|uq|mineo|ワイモバイル/i.test(text)) {
+    if (containsAny(text, ["通信", "回線", "光", "モバイル", "ahamo", "linemo", "povo", "uq", "mineo", "ワイモバイル"])) {
       seeds = ["料金", "キャンペーン", "評判", "乗り換え", "解約", "工事"];
-    } else if (/カード|クレカ|paypay|jcb|visa|master|olive/i.test(text)) {
+    } else if (containsAny(text, ["カード", "クレカ", "paypay", "jcb", "visa", "master", "olive"])) {
       seeds = ["年会費", "キャンペーン", "審査", "還元率", "海外", "締め日"];
-    } else if (/証券|金融|銀行|nisa|fx|暗号資産|仮想通貨/i.test(text)) {
+    } else if (containsAny(text, ["証券", "金融", "銀行", "nisa", "fx", "暗号資産", "仮想通貨"])) {
       seeds = ["キャンペーン", "口座開設", "手数料", "nisa", "評判", "デメリット"];
-    } else if (/アプリ|ゲーム|漫画|マンガ|動画|u-next|dmm|abema/i.test(text)) {
+    } else if (containsAny(text, ["アプリ", "ゲーム", "漫画", "マンガ", "動画", "u-next", "dmm", "abema"])) {
       seeds = ["キャンペーン", "無料", "解約", "評判", "料金", "ポイント"];
-    } else if (/旅行|ホテル|宿泊|トラベル/i.test(text)) {
+    } else if (containsAny(text, ["旅行", "ホテル", "宿泊", "トラベル"])) {
       seeds = ["キャンペーン", "クーポン", "予約", "評判", "ポイント"];
     }
 
-    return [offerName, ...seeds.map((seed) => offerName + " " + seed)];
+    return [offerName].concat(seeds.map((seed) => offerName + " " + seed));
   };
 
   const fetchSuggestionQuery = async (query) => {
@@ -198,15 +206,15 @@ const rankingDisplayScript = `
     const text = hints.join(" ").toLowerCase();
     const advice = [];
 
-    if (/料金|月額|価格|費用|安い|高い/.test(text)) advice.push("料金や月額条件");
-    if (/キャンペーン|特典|入会|新規|クーポン/.test(text)) advice.push("キャンペーン内容");
-    if (/審査|発行|本人確認/.test(text)) advice.push("申し込みや審査条件");
-    if (/還元|ポイント|付与|反映/.test(text)) advice.push("ポイント還元条件");
-    if (/評判|口コミ|デメリット|危険|使えない/.test(text)) advice.push("口コミや注意点");
-    if (/海外|手数料|為替/.test(text)) advice.push("海外利用や手数料");
-    if (/解約|退会|無料|期間/.test(text)) advice.push("無料期間や解約条件");
-    if (/乗り換え|工事|エリア|速度/.test(text)) advice.push("回線条件や利用エリア");
-    if (/口座|nisa|取引|手数料/.test(text)) advice.push("口座開設や取引条件");
+    if (containsAny(text, ["料金", "月額", "価格", "費用", "安い", "高い"])) advice.push("料金や月額条件");
+    if (containsAny(text, ["キャンペーン", "特典", "入会", "新規", "クーポン"])) advice.push("キャンペーン内容");
+    if (containsAny(text, ["審査", "発行", "本人確認"])) advice.push("申し込みや審査条件");
+    if (containsAny(text, ["還元", "ポイント", "付与", "反映"])) advice.push("ポイント還元条件");
+    if (containsAny(text, ["評判", "口コミ", "デメリット", "危険", "使えない"])) advice.push("口コミや注意点");
+    if (containsAny(text, ["海外", "手数料", "為替"])) advice.push("海外利用や手数料");
+    if (containsAny(text, ["解約", "退会", "無料", "期間"])) advice.push("無料期間や解約条件");
+    if (containsAny(text, ["乗り換え", "工事", "エリア", "速度"])) advice.push("回線条件や利用エリア");
+    if (containsAny(text, ["口座", "nisa", "取引", "手数料"])) advice.push("口座開設や取引条件");
 
     return Array.from(new Set(advice)).slice(0, 2);
   };
@@ -225,8 +233,8 @@ const rankingDisplayScript = `
 
   const removeRequestedCopy = () => {
     document.querySelectorAll("main p").forEach((paragraph) => {
-      const text = (paragraph.textContent || "").replace(/\s+/g, "").trim();
-      const shouldHide = hiddenCopyTexts.some((copyText) => text === copyText.replace(/\s+/g, ""));
+      const text = compactSpaces(paragraph.textContent).replaceAll(" ", "");
+      const shouldHide = hiddenCopyTexts.some((copyText) => text === compactSpaces(copyText).replaceAll(" ", ""));
       if (shouldHide) paragraph.style.display = "none";
     });
   };
@@ -252,10 +260,8 @@ const rankingDisplayScript = `
   const splitReviewLink = (link) => {
     if (link.dataset.reviewLabelSplit === "true") return;
 
-    const compactText = (link.textContent || "")
-      .replace(/\s+/g, "")
-      .replace(/›$/g, "");
-
+    let compactText = compactSpaces(link.textContent).replaceAll(" ", "");
+    if (compactText.endsWith("›")) compactText = compactText.slice(0, -1);
     if (!compactText.endsWith(phrase)) return;
 
     const offerName = compactText.slice(0, -phrase.length);
@@ -320,12 +326,12 @@ const rankingDisplayScript = `
     if (!heading || !reason || reason.tagName !== "P") return;
     if (index >= 50) return;
 
-    const offerName = (heading.textContent || "").trim();
+    const offerName = compactSpaces(heading.textContent);
     if (!offerName) return;
 
     article.dataset.trendReasonEnhanced = "true";
 
-    const category = (article.querySelector(".inline-flex")?.textContent || "").trim();
+    const category = compactSpaces(article.querySelector(".inline-flex")?.textContent);
     const hints = await fetchSuggestionHints(offerName, category);
     const trendReason = buildTrendReason(offerName, hints);
 
