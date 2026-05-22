@@ -25,9 +25,7 @@ export const metadata: Metadata = {
   title: "無料でできるポイ活特集｜お金をかけずに始めるポイ活一覧",
   description:
     "商品購入や有料サービスの申し込みではなく、お金をかけずに始めたい人向けに、無料登録・資料請求・アプリ利用などのポイ活をまとめます。モッピーで確認できる案件を中心に報酬額が高い順で掲載します。",
-  alternates: {
-    canonical: `${BASE_URL}/free-poikatsu`,
-  },
+  alternates: { canonical: `${BASE_URL}/free-poikatsu` },
   openGraph: {
     title: "無料でできるポイ活特集｜ポイ活AI判定",
     description:
@@ -37,10 +35,7 @@ export const metadata: Metadata = {
     type: "article",
     locale: "ja_JP",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 const stripTags = (html: string) => {
@@ -65,33 +60,28 @@ const toAbsoluteUrl = (url: string, baseUrl: string) => {
 };
 
 const getImageUrl = (html: string, baseUrl: string) => {
-  const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
-  if (!imgMatch?.[1]) return undefined;
-  return toAbsoluteUrl(imgMatch[1], baseUrl);
+  const match = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+  return match?.[1] ? toAbsoluteUrl(match[1], baseUrl) : undefined;
 };
 
 const getTitle = (html: string) => {
-  const altMatch = html.match(/<img[^>]+alt=["']([^"']+)["'][^>]*>/i);
-  const altText = altMatch?.[1]?.trim();
-  if (altText && altText.length >= 3) return altText;
+  const alt = html.match(/<img[^>]+alt=["']([^"']+)["'][^>]*>/i)?.[1]?.trim();
+  if (alt && alt.length >= 3) return alt.slice(0, 60);
 
-  const text = stripTags(html);
-  return text
+  return stripTags(html)
     .replace(/\d{1,3}(,\d{3})*P/g, " ")
     .replace(/★\d(\.\d)?/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 48);
+    .slice(0, 60);
 };
 
 const getReward = (text: string) => {
-  const matches = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)];
-  const values = matches
+  const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
     .map((match) => Number(match[1].replace(/,/g, "")))
     .filter((value) => Number.isFinite(value) && value > 0);
 
-  if (values.length === 0) return 0;
-  return Math.max(...values);
+  return values.length > 0 ? Math.max(...values) : 0;
 };
 
 const isFreeOffer = (text: string) => {
@@ -102,10 +92,10 @@ const isFreeOffer = (text: string) => {
     "資料請求",
     "アプリ",
     "インストール",
-    "口座開設",
     "LINE友達追加",
     "アンケート",
     "無料トライアル",
+    "無料相談",
   ];
 
   const excludeWords = [
@@ -115,7 +105,14 @@ const isFreeOffer = (text: string) => {
     "月額",
     "課金",
     "入金",
+    "投資",
+    "投資完了",
+    "不動産投資",
+    "100万円",
+    "取引",
     "取引完了",
+    "証券",
+    "FX",
     "カード利用",
     "ショッピング",
     "来店",
@@ -123,6 +120,7 @@ const isFreeOffer = (text: string) => {
   ];
 
   return (
+    text.includes("無料") &&
     includeWords.some((word) => text.includes(word)) &&
     !excludeWords.some((word) => text.includes(word))
   );
@@ -148,7 +146,7 @@ const parseMoppyOffers = (html: string, sourceUrl: string) => {
       .replace(/\d{1,3}(,\d{3})*P/g, "")
       .replace(/\s+/g, " ")
       .trim()
-      .slice(0, 80);
+      .slice(0, 84);
 
     offers.push({
       title,
@@ -177,20 +175,15 @@ async function fetchFreeOffers() {
       });
 
       if (!response.ok) return [];
-      const html = await response.text();
-      return parseMoppyOffers(html, url);
+      return parseMoppyOffers(await response.text(), url);
     })
   );
 
-  const allOffers = results.flatMap((result) =>
+  const offers = results.flatMap((result) =>
     result.status === "fulfilled" ? result.value : []
   );
 
-  const uniqueOffers = Array.from(
-    new Map(allOffers.map((offer) => [offer.title, offer])).values()
-  );
-
-  return uniqueOffers
+  return Array.from(new Map(offers.map((offer) => [offer.title, offer])).values())
     .sort((a, b) => b.reward - a.reward)
     .slice(0, 10);
 }
@@ -205,6 +198,12 @@ const formatDate = () => {
     minute: "2-digit",
   }).format(new Date());
 };
+
+function FallbackImage() {
+  return (
+    <div className="relative aspect-[1.35/1] overflow-hidden border-b border-pink-100 bg-gradient-to-br from-pink-50 to-orange-50 before:absolute before:inset-4 before:rounded-[1rem] before:bg-[radial-gradient(circle_at_30%_32%,#ffd84d_0_18%,transparent_19%),radial-gradient(circle_at_72%_24%,#ff7db8_0_15%,transparent_16%),linear-gradient(135deg,#ffffff_0%,#fff8ea_100%)] before:shadow-inner after:absolute after:bottom-4 after:right-5 after:grid after:h-14 after:w-14 after:place-items-center after:rounded-full after:bg-gradient-to-br after:from-yellow-300 after:to-orange-400 after:text-3xl after:font-black after:text-white after:content-['P']" />
+  );
+}
 
 export default async function FreePoikatsuPage() {
   const offers = await fetchFreeOffers();
@@ -276,7 +275,7 @@ export default async function FreePoikatsuPage() {
                     loading="lazy"
                   />
                 ) : (
-                  <div className="relative aspect-[1.35/1] overflow-hidden border-b border-pink-100 bg-gradient-to-br from-pink-50 to-orange-50 before:absolute before:inset-4 before:rounded-[1rem] before:bg-[radial-gradient(circle_at_30%_32%,#ffd84d_0_18%,transparent_19%),radial-gradient(circle_at_72%_24%,#ff7db8_0_15%,transparent_16%),linear-gradient(135deg,#ffffff_0%,#fff8ea_100%)] before:shadow-inner after:absolute after:bottom-4 after:right-5 after:grid after:h-14 after:w-14 after:place-items-center after:rounded-full after:bg-gradient-to-br after:from-yellow-300 after:to-orange-400 after:text-3xl after:font-black after:text-white after:content-['P']" />
+                  <FallbackImage />
                 )}
 
                 <div className="flex flex-1 flex-col p-5">
