@@ -2,6 +2,21 @@ import Script from "next/script";
 
 const freePoikatsuLinkScript = `
 (() => {
+  let moppyImagesPromise = null;
+
+  const normalizeText = (text) => {
+    return (text || "")
+      .toLowerCase()
+      .replace(/　/g, "")
+      .replace(/\s+/g, "")
+      .replace(/（/g, "(")
+      .replace(/）/g, ")")
+      .replace(/[・･]/g, "")
+      .replace(/[ーｰ−]/g, "-")
+      .replace(/[\[\]【】!！?？。、「」『』()（）]/g, "")
+      .trim();
+  };
+
   const insertFreePoikatsuLink = () => {
     const aboutLink = document.querySelector('a[href="/about-poikatsu"]');
     if (!aboutLink) return;
@@ -33,13 +48,206 @@ const freePoikatsuLinkScript = `
     });
   };
 
+  const loadMoppyImages = () => {
+    if (!moppyImagesPromise) {
+      moppyImagesPromise = fetch("/api/moppy-offer-images", { cache: "force-cache" })
+        .then((response) => (response.ok ? response.json() : { data: [] }))
+        .then((json) => Array.isArray(json.data) ? json.data : [])
+        .catch(() => []);
+    }
+
+    return moppyImagesPromise;
+  };
+
+  const findImageForOffer = (offerName, images) => {
+    const normalizedOfferName = normalizeText(offerName);
+    if (!normalizedOfferName) return null;
+
+    return images.find((image) => {
+      const normalizedTitle = normalizeText(image.title);
+      return (
+        normalizedTitle === normalizedOfferName ||
+        normalizedTitle.includes(normalizedOfferName) ||
+        normalizedOfferName.includes(normalizedTitle)
+      );
+    }) || null;
+  };
+
+  const ensureRankingImageStyle = () => {
+    if (document.getElementById("ranking-image-style")) return;
+
+    const style = document.createElement("style");
+    style.id = "ranking-image-style";
+    style.textContent = `
+      .ranking-image-enhanced > div:first-child {
+        align-items: center;
+      }
+
+      .ranking-image-box {
+        width: 150px;
+        aspect-ratio: 1.35 / 1;
+        overflow: hidden;
+        border: 1px solid #ffd7e8;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+      }
+
+      .ranking-image-box img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .ranking-fallback-image {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background:
+          radial-gradient(circle at 30% 32%, #ffd84d 0 20%, transparent 21%),
+          radial-gradient(circle at 72% 24%, #ff7db8 0 17%, transparent 18%),
+          linear-gradient(135deg, #fff, #fff8ea);
+      }
+
+      .ranking-fallback-image::after {
+        content: "P";
+        position: absolute;
+        right: 12px;
+        bottom: 10px;
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 999px;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 950;
+        background: linear-gradient(135deg, #ffd84d, #ff9f00);
+      }
+
+      @media (min-width: 1280px) {
+        article.ranking-image-top > div:first-child {
+          grid-template-columns: 120px 160px minmax(0, 1.45fr) 260px 260px !important;
+        }
+
+        article.ranking-image-list > div:first-child {
+          grid-template-columns: 58px 150px minmax(0, 1.3fr) 220px 210px !important;
+        }
+      }
+
+      @media (min-width: 1024px) and (max-width: 1279px) {
+        article.ranking-image-top > div:first-child,
+        article.ranking-image-list > div:first-child {
+          grid-template-columns: 90px 150px minmax(0, 1fr) !important;
+        }
+      }
+
+      @media (max-width: 1023px) {
+        .ranking-image-box {
+          width: min(100%, 260px);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  };
+
+  const createRankingImageBox = (offerName, imageUrl) => {
+    const box = document.createElement("div");
+    box.className = "ranking-image-box";
+    box.setAttribute("data-ranking-image", "true");
+
+    if (imageUrl) {
+      const image = document.createElement("img");
+      image.src = imageUrl;
+      image.alt = offerName;
+      image.loading = "lazy";
+      image.onerror = () => {
+        box.innerHTML = '<div class="ranking-fallback-image" aria-hidden="true"></div>';
+      };
+      box.appendChild(image);
+    } else {
+      box.innerHTML = '<div class="ranking-fallback-image" aria-hidden="true"></div>';
+    }
+
+    return box;
+  };
+
+  const removeLabelAreas = (article, contentBlock) => {
+    if (contentBlock) {
+      const heading = contentBlock.querySelector("h3");
+      if (heading) {
+        Array.from(contentBlock.children).forEach((child) => {
+          if (child === heading) return;
+          if (child.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING) {
+            child.remove();
+          }
+        });
+      }
+    }
+
+    const grid = article.firstElementChild;
+    if (!grid) return;
+
+    Array.from(grid.children).forEach((child) => {
+      if (child === contentBlock) return;
+      if (child.querySelector("h3")) return;
+      if (child.querySelector('[data-ranking-image="true"]')) return;
+      const text = child.textContent || "";
+      const looksLikeLabelArea =
+        text.includes("検索急増") ||
+        text.includes("高単価") ||
+        text.includes("高還元") ||
+        text.includes("急上昇") ||
+        text.includes("トレンド") ||
+        text.includes("人気拡大") ||
+        text.includes("SNS話題") ||
+        text.includes("クレジットカード") ||
+        text.includes("通信・回線") ||
+        text.includes("証券・FX") ||
+        text.includes("アプリ・ゲーム");
+
+      if (looksLikeLabelArea) child.remove();
+    });
+  };
+
+  const enhanceRankingCards = async () => {
+    if (window.location.pathname !== "/") return;
+
+    ensureRankingImageStyle();
+    const images = await loadMoppyImages();
+    const rankingArticles = Array.from(document.querySelectorAll('article[id^="ranking-"]'));
+
+    rankingArticles.forEach((article, index) => {
+      const heading = article.querySelector("h3");
+      const offerName = heading?.textContent?.trim();
+      const grid = article.firstElementChild;
+      const contentBlock = heading?.parentElement;
+
+      if (!offerName || !grid || !contentBlock) return;
+
+      article.classList.add("ranking-image-enhanced");
+      article.classList.add(index < 3 ? "ranking-image-top" : "ranking-image-list");
+
+      removeLabelAreas(article, contentBlock);
+
+      let imageBox = article.querySelector('[data-ranking-image="true"]');
+      if (!imageBox) {
+        const matchedImage = findImageForOffer(offerName, images);
+        imageBox = createRankingImageBox(offerName, matchedImage?.imageUrl);
+        grid.insertBefore(imageBox, contentBlock);
+      }
+    });
+  };
+
   const applyAdjustments = () => {
     insertFreePoikatsuLink();
     trimRankingKeywordDescriptions();
+    enhanceRankingCards();
   };
 
   applyAdjustments();
-  [300, 900, 1800, 3200].forEach((delay) => {
+  [300, 900, 1800, 3200, 5200].forEach((delay) => {
     window.setTimeout(applyAdjustments, delay);
   });
 
