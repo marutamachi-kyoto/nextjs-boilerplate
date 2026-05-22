@@ -86,7 +86,9 @@ const rankingDisplayScript = `
   const toText = (value) => value || "";
 
   const compactSpaces = (value) => {
-    let text = toText(value).replaceAll("　", " ").replaceAll("\n", " ").replaceAll("\t", " ");
+    const lineBreak = String.fromCharCode(10);
+    const tab = String.fromCharCode(9);
+    let text = toText(value).replaceAll("　", " ").replaceAll(lineBreak, " ").replaceAll(tab, " ");
     while (text.includes("  ")) text = text.replaceAll("  ", " ");
     return text.trim();
   };
@@ -253,7 +255,7 @@ const rankingDisplayScript = `
       'main article a[href*="/reviews/"] .review-label-text span { display: block !important; }',
       'main article a[href*="/reviews/"] .review-label-arrow { flex: 0 0 auto !important; }',
       '.trend-reason-keyword { color: #ec4899 !important; font-weight: 900 !important; background: #fff1f7 !important; border-radius: 999px !important; padding: 0.05rem 0.35rem !important; box-decoration-break: clone !important; -webkit-box-decoration-break: clone !important; }',
-    ].join("\n");
+    ].join(String.fromCharCode(10));
     document.head.appendChild(style);
   };
 
