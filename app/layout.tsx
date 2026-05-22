@@ -113,7 +113,7 @@ const rankingDisplayScript = `
   };
 
   const escapeRegExp = (value) => {
-    return (value || "").replace(/[.*+?^\${}()|[\]\\]/g, "\\$&");
+    return (value || "").replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
   };
 
   const getOfferName = (item) => item?.offer_name || item?.trend_keyword || item?.category || "";
