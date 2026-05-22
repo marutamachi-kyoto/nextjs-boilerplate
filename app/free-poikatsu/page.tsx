@@ -12,6 +12,8 @@ const SOURCE_URLS = [
   "https://pc.moppy.jp/ad/?c_id=1010",
 ];
 
+const MAX_OFFERS = 12;
+
 type FreeOffer = {
   title: string;
   description: string;
@@ -59,9 +61,30 @@ const toAbsoluteUrl = (url: string, baseUrl: string) => {
   }
 };
 
+const isUsableImageUrl = (url?: string) => {
+  if (!url) return false;
+
+  const lowerUrl = url.toLowerCase();
+  const trackingImagePatterns = [
+    "ad-track.jp/ad/p/img",
+    "ad-track.jp/ad/p/",
+    "doubleclick",
+    "pixel",
+    "1x1",
+  ];
+
+  return !trackingImagePatterns.some((pattern) => lowerUrl.includes(pattern));
+};
+
 const getImageUrl = (html: string, baseUrl: string) => {
-  const match = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
-  return match?.[1] ? toAbsoluteUrl(match[1], baseUrl) : undefined;
+  const imageMatches = [...html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi)];
+
+  for (const match of imageMatches) {
+    const imageUrl = toAbsoluteUrl(match[1], baseUrl);
+    if (isUsableImageUrl(imageUrl)) return imageUrl;
+  }
+
+  return undefined;
 };
 
 const getTitle = (html: string) => {
@@ -185,7 +208,7 @@ async function fetchFreeOffers() {
 
   return Array.from(new Map(offers.map((offer) => [offer.title, offer])).values())
     .sort((a, b) => b.reward - a.reward)
-    .slice(0, 10);
+    .slice(0, MAX_OFFERS);
 }
 
 const formatDate = () => {
@@ -211,42 +234,24 @@ export default async function FreePoikatsuPage() {
   return (
     <main className="min-h-screen bg-[#fff8fb]">
       <section className="border-b border-pink-100 bg-gradient-to-r from-pink-50 via-white to-orange-50">
-        <div className="mx-auto grid max-w-[1120px] gap-10 px-5 py-12 lg:grid-cols-[1fr_330px] lg:items-center lg:py-14">
-          <div>
-            <div className="inline-flex rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-lg">
-              ￥0ではじめる特集
-            </div>
-
-            <h1 className="mt-7 text-5xl font-black leading-tight tracking-tight text-slate-950 lg:text-7xl">
-              <span className="text-pink-600">無料でできる</span>
-              <br />
-              ポイ活特集
-            </h1>
-
-            <p className="mt-6 max-w-[720px] text-xl font-black leading-10 text-slate-900 lg:text-2xl lg:leading-[2]">
-              商品購入や有料サービスの申し込みではなく、
-              <span className="rounded-full bg-pink-50 px-2 text-pink-600">
-                お金をかけずに始めたい人向け
-              </span>
-              に、無料登録・資料請求・アプリ利用などのポイ活をまとめます。
-              案件情報はモッピーで確認できるものを中心に、報酬額が高い順で毎日更新します。
-            </p>
+        <div className="mx-auto max-w-[1120px] px-5 py-12 lg:py-14">
+          <div className="inline-flex rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-lg">
+            ￥0ではじめる特集
           </div>
 
-          <div className="relative min-h-[280px]" aria-hidden="true">
-            <div className="absolute right-0 top-8 h-[210px] w-[260px] overflow-hidden rounded-[2rem] border-[8px] border-slate-950 bg-gradient-to-br from-white to-orange-50 shadow-2xl">
-              <div className="h-14 bg-gradient-to-r from-pink-400 to-orange-300" />
-              <div className="absolute bottom-8 left-8 h-16 w-36 rounded-full bg-white shadow-inner ring-1 ring-pink-100" />
-              <div className="absolute right-16 top-20 h-5 w-5 rounded-full bg-white shadow-[0_0_0_10px_rgba(255,255,255,0.22)]" />
-            </div>
-            <div className="absolute left-4 top-24 grid h-28 w-28 place-items-center rounded-full bg-gradient-to-br from-yellow-300 to-orange-400 text-5xl font-black text-white shadow-xl">
-              P
-            </div>
-            <div className="absolute left-28 top-10 grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-yellow-300 to-orange-400 text-2xl font-black text-white shadow-xl">
-              0
-            </div>
-            <div className="absolute bottom-4 left-16 h-28 w-44 -rotate-6 rounded-[1.5rem] bg-gradient-to-br from-white to-orange-50 shadow-2xl ring-1 ring-pink-100 before:absolute before:left-6 before:top-7 before:h-3 before:w-20 before:rounded-full before:bg-pink-50 after:absolute after:left-6 after:top-14 after:h-3 after:w-28 after:rounded-full after:bg-pink-50" />
-          </div>
+          <h1 className="mt-7 text-5xl font-black leading-tight tracking-tight text-slate-950 lg:text-7xl">
+            <span className="text-pink-600">無料でできる</span>
+            <br />
+            ポイ活特集
+          </h1>
+
+          <p className="mt-6 max-w-[760px] text-xl font-black leading-10 text-slate-900 lg:text-2xl lg:leading-[2]">
+            商品購入や有料サービスの申し込みではなく、
+            <span className="rounded-full bg-pink-50 px-2 text-pink-600">
+              お金をかけずに始めたい人向け
+            </span>
+            に、無料登録・資料請求・アプリ利用などのポイ活をまとめます。
+          </p>
         </div>
       </section>
 
