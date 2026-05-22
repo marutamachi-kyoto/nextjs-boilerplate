@@ -18,10 +18,27 @@ const freePoikatsuLinkScript = `
     aboutLink.insertAdjacentElement("afterend", link);
   };
 
-  insertFreePoikatsuLink();
-  new MutationObserver(insertFreePoikatsuLink).observe(document.documentElement, {
+  const trimRankingKeywordDescriptions = () => {
+    document.querySelectorAll("main article p").forEach((paragraph) => {
+      const html = paragraph.innerHTML || "";
+      const marker = "も一緒に調べられています。";
+      if (!html.includes("Googleの検索動向で") || !html.includes(marker)) return;
+
+      const endIndex = html.indexOf(marker) + marker.length;
+      paragraph.innerHTML = html.slice(0, endIndex);
+    });
+  };
+
+  const applyAdjustments = () => {
+    insertFreePoikatsuLink();
+    trimRankingKeywordDescriptions();
+  };
+
+  applyAdjustments();
+  new MutationObserver(applyAdjustments).observe(document.documentElement, {
     childList: true,
     subtree: true,
+    characterData: true,
   });
 })();
 `;
