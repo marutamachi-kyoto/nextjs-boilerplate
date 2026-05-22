@@ -19,13 +19,17 @@ const freePoikatsuLinkScript = `
   };
 
   const trimRankingKeywordDescriptions = () => {
-    document.querySelectorAll("main article p").forEach((paragraph) => {
+    if (window.location.pathname !== "/") return;
+
+    document.querySelectorAll("main p").forEach((paragraph) => {
       const html = paragraph.innerHTML || "";
       const marker = "も一緒に調べられています。";
       if (!html.includes("Googleの検索動向で") || !html.includes(marker)) return;
 
-      const endIndex = html.indexOf(marker) + marker.length;
-      paragraph.innerHTML = html.slice(0, endIndex);
+      const trimmedHtml = html.slice(0, html.indexOf(marker) + marker.length);
+      if (html !== trimmedHtml) {
+        paragraph.innerHTML = trimmedHtml;
+      }
     });
   };
 
@@ -35,6 +39,10 @@ const freePoikatsuLinkScript = `
   };
 
   applyAdjustments();
+  [300, 900, 1800, 3200].forEach((delay) => {
+    window.setTimeout(applyAdjustments, delay);
+  });
+
   new MutationObserver(applyAdjustments).observe(document.documentElement, {
     childList: true,
     subtree: true,
