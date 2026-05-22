@@ -79,13 +79,14 @@ const freePoikatsuLinkScript = `
     const style = document.createElement("style");
     style.id = "ranking-image-style";
     style.textContent =
+      ".ranking-image-enhanced{align-items:center;}" +
       ".ranking-image-enhanced > div:first-child{align-items:center;}" +
       ".ranking-image-box{width:150px;aspect-ratio:1.35/1;overflow:hidden;border:1px solid #ffd7e8;border-radius:18px;background:#fff;box-shadow:0 10px 20px rgba(15,23,42,.08);}" +
       ".ranking-image-box img{display:block;width:100%;height:100%;object-fit:cover;}" +
       ".ranking-fallback-image{position:relative;width:100%;height:100%;background:radial-gradient(circle at 30% 32%,#ffd84d 0 20%,transparent 21%),radial-gradient(circle at 72% 24%,#ff7db8 0 17%,transparent 18%),linear-gradient(135deg,#fff,#fff8ea);}" +
       ".ranking-fallback-image::after{content:'P';position:absolute;right:12px;bottom:10px;display:grid;place-items:center;width:44px;height:44px;border-radius:999px;color:#fff;font-size:24px;font-weight:950;background:linear-gradient(135deg,#ffd84d,#ff9f00);}" +
-      "@media (min-width:1280px){article.ranking-image-top > div:first-child{grid-template-columns:120px 160px minmax(0,1.45fr) 260px 260px !important;}article.ranking-image-list > div:first-child{grid-template-columns:58px 150px minmax(0,1.3fr) 220px 210px !important;}}" +
-      "@media (min-width:1024px) and (max-width:1279px){article.ranking-image-top > div:first-child,article.ranking-image-list > div:first-child{grid-template-columns:90px 150px minmax(0,1fr) !important;}}" +
+      "@media (min-width:1280px){article.ranking-image-top > div:first-child{grid-template-columns:120px 160px minmax(0,1.45fr) 260px 260px !important;}article.ranking-image-list{grid-template-columns:58px 150px minmax(0,1.3fr) 220px 210px !important;}}" +
+      "@media (min-width:1024px) and (max-width:1279px){article.ranking-image-top > div:first-child{grid-template-columns:90px 150px minmax(0,1fr) !important;}article.ranking-image-list{grid-template-columns:70px 150px minmax(0,1fr) !important;}}" +
       "@media (max-width:1023px){.ranking-image-box{width:min(100%,260px);}}";
     document.head.appendChild(style);
   };
@@ -111,7 +112,12 @@ const freePoikatsuLinkScript = `
     return box;
   };
 
-  const removeLabelAreas = (article, contentBlock) => {
+  const getGridContainer = (article, index) => {
+    if (index < 3 && article.firstElementChild) return article.firstElementChild;
+    return article;
+  };
+
+  const removeLabelAreas = (grid, contentBlock) => {
     if (contentBlock) {
       const heading = contentBlock.querySelector("h3");
       if (heading) {
@@ -124,12 +130,10 @@ const freePoikatsuLinkScript = `
       }
     }
 
-    const grid = article.firstElementChild;
-    if (!grid) return;
-
     Array.from(grid.children).forEach((child) => {
       if (child === contentBlock) return;
       if (child.querySelector("h3")) return;
+      if (child.matches('[data-ranking-image="true"]')) return;
       if (child.querySelector('[data-ranking-image="true"]')) return;
       const text = child.textContent || "";
       const looksLikeLabelArea =
@@ -159,7 +163,7 @@ const freePoikatsuLinkScript = `
     rankingArticles.forEach((article, index) => {
       const heading = article.querySelector("h3");
       const offerName = heading?.textContent?.trim();
-      const grid = article.firstElementChild;
+      const grid = getGridContainer(article, index);
       const contentBlock = heading?.parentElement;
 
       if (!offerName || !grid || !contentBlock) return;
@@ -167,7 +171,7 @@ const freePoikatsuLinkScript = `
       article.classList.add("ranking-image-enhanced");
       article.classList.add(index < 3 ? "ranking-image-top" : "ranking-image-list");
 
-      removeLabelAreas(article, contentBlock);
+      removeLabelAreas(grid, contentBlock);
 
       let imageBox = article.querySelector('[data-ranking-image="true"]');
       if (!imageBox) {
