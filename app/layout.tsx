@@ -113,7 +113,11 @@ const rankingDisplayScript = `
   };
 
   const escapeRegExp = (value) => {
-    return (value || "").replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+    const specialChars = "\\^$.*+?()[]{}|-/";
+    const slash = String.fromCharCode(92);
+    return Array.from(value || "")
+      .map((char) => (specialChars.includes(char) ? slash + char : char))
+      .join("");
   };
 
   const getOfferName = (item) => item?.offer_name || item?.trend_keyword || item?.category || "";
@@ -122,14 +126,14 @@ const rankingDisplayScript = `
     return "ranking-" + (index + 1) + "-" + normalizeCompact(getOfferName(item));
   };
 
-  const extractSuggestionHint = (suggestion, offerName) => {
-    const cleaned = (suggestion || "")
+  const cleanSuggestionHint = (suggestion, offerName) => {
+    const hint = (suggestion || "")
       .replace(new RegExp(escapeRegExp(offerName), "gi"), "")
-      .replace(/ポイ活|口コミを見る|おすすめ|比較/g, "")
+      .replace(/ポイ活|口コミを見る|口コミ|評判|おすすめ|比較|ランキング/g, "")
       .replace(/\s+/g, " ")
       .trim();
 
-    const hint = cleaned || suggestion;
+    if (!hint) return "";
     if (normalizeCompact(hint) === normalizeCompact(offerName)) return "";
     return hint;
   };
@@ -162,32 +166,32 @@ const rankingDisplayScript = `
       cache: "no-store",
     })
       .then((response) => response.json())
-      .then((json) => Array.isArray(json.suggestions) ? json.suggestions : [])
+      .then((json) => (Array.isArray(json.suggestions) ? json.suggestions : []))
       .catch(() => []);
 
     suggestCache.set(key, promise);
     return promise;
   };
 
-  const fetchSuggestions = async (offerName, category) => {
-    const collected = [];
+  const fetchSuggestionHints = async (offerName, category) => {
+    const hints = [];
     const seen = new Set();
 
     for (const query of getFallbackQueries(offerName, category)) {
       const suggestions = await fetchSuggestionQuery(query);
 
       for (const suggestion of suggestions) {
-        const hint = extractSuggestionHint(suggestion, offerName);
+        const hint = cleanSuggestionHint(suggestion, offerName);
         const key = normalizeCompact(hint);
         if (!hint || seen.has(key)) continue;
 
         seen.add(key);
-        collected.push(suggestion);
-        if (collected.length >= 3) return collected;
+        hints.push(hint);
+        if (hints.length >= 2) return hints;
       }
     }
 
-    return collected;
+    return hints;
   };
 
   const getAdviceFromHints = (hints) => {
@@ -207,13 +211,7 @@ const rankingDisplayScript = `
     return Array.from(new Set(advice)).slice(0, 2);
   };
 
-  const buildTrendReason = (offerName, category, suggestions) => {
-    const hints = suggestions
-      .map((suggestion) => extractSuggestionHint(suggestion, offerName))
-      .filter(Boolean)
-      .filter((hint, index, self) => self.indexOf(hint) === index)
-      .slice(0, 2);
-
+  const buildTrendReason = (offerName, hints) => {
     if (hints.length === 0) return "";
 
     const quotedHints = hints
@@ -222,7 +220,7 @@ const rankingDisplayScript = `
     const advice = getAdviceFromHints(hints);
     const adviceText = advice.length > 0 ? advice.join("、") : "関連条件";
 
-    return escapeHtml(offerName) + "は、Googleの検索動向で" + quotedHints + "が一緒に調べられています。" + adviceText + "を申し込み前に確認したい案件です。";
+    return escapeHtml(offerName) + "は、Googleの検索動向で" + quotedHints + "も一緒に調べられています。" + adviceText + "を申し込み前に確認したい案件です。";
   };
 
   const removeRequestedCopy = () => {
@@ -238,58 +236,16 @@ const rankingDisplayScript = `
 
     const style = document.createElement("style");
     style.id = "ranking-readable-style";
-    style.textContent = \`
-      main > section.mt-6 article h3 {
-        font-size: 2rem !important;
-        line-height: 1.2 !important;
-      }
-
-      main > section.mt-6 article p {
-        font-size: 1rem !important;
-        line-height: 1.9 !important;
-      }
-
-      main > section.mt-6 article .inline-flex {
-        font-size: 0.9rem !important;
-      }
-
-      main article a[href*="/reviews/"] {
-        min-height: 3.9rem !important;
-        max-width: 230px !important;
-        overflow: hidden !important;
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-        font-size: 0.92rem !important;
-        line-height: 1.35 !important;
-        white-space: normal !important;
-      }
-
-      main article a[href*="/reviews/"] .review-label-text {
-        min-width: 0 !important;
-        max-width: 100% !important;
-        overflow-wrap: anywhere !important;
-        word-break: normal !important;
-        white-space: normal !important;
-      }
-
-      main article a[href*="/reviews/"] .review-label-text span {
-        display: block !important;
-      }
-
-      main article a[href*="/reviews/"] .review-label-arrow {
-        flex: 0 0 auto !important;
-      }
-
-      .trend-reason-keyword {
-        color: #ec4899 !important;
-        font-weight: 900 !important;
-        background: #fff1f7 !important;
-        border-radius: 999px !important;
-        padding: 0.05rem 0.35rem !important;
-        box-decoration-break: clone !important;
-        -webkit-box-decoration-break: clone !important;
-      }
-    \`;
+    style.textContent = [
+      'main > section.mt-6 article h3 { font-size: 2rem !important; line-height: 1.2 !important; }',
+      'main > section.mt-6 article p { font-size: 1rem !important; line-height: 1.9 !important; }',
+      'main > section.mt-6 article .inline-flex { font-size: 0.9rem !important; }',
+      'main article a[href*="/reviews/"] { min-height: 3.9rem !important; max-width: 230px !important; overflow: hidden !important; padding-left: 0.75rem !important; padding-right: 0.75rem !important; font-size: 0.92rem !important; line-height: 1.35 !important; white-space: normal !important; }',
+      'main article a[href*="/reviews/"] .review-label-text { min-width: 0 !important; max-width: 100% !important; overflow-wrap: anywhere !important; word-break: normal !important; white-space: normal !important; }',
+      'main article a[href*="/reviews/"] .review-label-text span { display: block !important; }',
+      'main article a[href*="/reviews/"] .review-label-arrow { flex: 0 0 auto !important; }',
+      '.trend-reason-keyword { color: #ec4899 !important; font-weight: 900 !important; background: #fff1f7 !important; border-radius: 999px !important; padding: 0.05rem 0.35rem !important; box-decoration-break: clone !important; -webkit-box-decoration-break: clone !important; }',
+    ].join("\n");
     document.head.appendChild(style);
   };
 
@@ -370,8 +326,8 @@ const rankingDisplayScript = `
     article.dataset.trendReasonEnhanced = "true";
 
     const category = (article.querySelector(".inline-flex")?.textContent || "").trim();
-    const suggestions = await fetchSuggestions(offerName, category);
-    const trendReason = buildTrendReason(offerName, category, suggestions);
+    const hints = await fetchSuggestionHints(offerName, category);
+    const trendReason = buildTrendReason(offerName, hints);
 
     if (trendReason) reason.innerHTML = trendReason;
   };
