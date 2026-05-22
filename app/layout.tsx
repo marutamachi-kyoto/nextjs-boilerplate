@@ -91,7 +91,7 @@ const rankingDisplayScript = `
       .trim();
   };
 
-  const normalizeRankingIdText = (value) => {
+  const normalizeCompact = (value) => {
     return (value || "")
       .toLowerCase()
       .replace(/　/g, "")
@@ -116,46 +116,95 @@ const rankingDisplayScript = `
     return (value || "").replace(/[.*+?^\${}()|[\]\\]/g, "\\$&");
   };
 
-  const getOfferName = (item) => {
-    return item?.offer_name || item?.trend_keyword || item?.category || "";
-  };
+  const getOfferName = (item) => item?.offer_name || item?.trend_keyword || item?.category || "";
 
   const getRankingIdFromItem = (item, index) => {
-    return "ranking-" + (index + 1) + "-" + normalizeRankingIdText(getOfferName(item));
+    return "ranking-" + (index + 1) + "-" + normalizeCompact(getOfferName(item));
   };
 
   const extractSuggestionHint = (suggestion, offerName) => {
     const cleaned = (suggestion || "")
       .replace(new RegExp(escapeRegExp(offerName), "gi"), "")
-      .replace(/ポイ活|口コミ|評判|おすすめ|キャンペーン/g, "")
+      .replace(/ポイ活|口コミを見る|おすすめ|比較/g, "")
       .replace(/\s+/g, " ")
       .trim();
 
-    return cleaned || suggestion;
+    const hint = cleaned || suggestion;
+    if (normalizeCompact(hint) === normalizeCompact(offerName)) return "";
+    return hint;
   };
 
-  const getCategorySuffix = (category) => {
-    if ((category || "").includes("カード")) {
-      return "年会費、入会特典、ポイント還元の条件を見比べたい案件です。";
+  const getFallbackQueries = (offerName, category) => {
+    const text = offerName + " " + category;
+    let seeds = ["キャンペーン", "評判", "口コミ", "ポイント", "条件"];
+
+    if (/通信|回線|光|モバイル|ahamo|linemo|povo|uq|mineo|ワイモバイル/i.test(text)) {
+      seeds = ["料金", "キャンペーン", "評判", "乗り換え", "解約", "工事"];
+    } else if (/カード|クレカ|paypay|jcb|visa|master|olive/i.test(text)) {
+      seeds = ["年会費", "キャンペーン", "審査", "還元率", "海外", "締め日"];
+    } else if (/証券|金融|銀行|nisa|fx|暗号資産|仮想通貨/i.test(text)) {
+      seeds = ["キャンペーン", "口座開設", "手数料", "nisa", "評判", "デメリット"];
+    } else if (/アプリ|ゲーム|漫画|マンガ|動画|u-next|dmm|abema/i.test(text)) {
+      seeds = ["キャンペーン", "無料", "解約", "評判", "料金", "ポイント"];
+    } else if (/旅行|ホテル|宿泊|トラベル/i.test(text)) {
+      seeds = ["キャンペーン", "クーポン", "予約", "評判", "ポイント"];
     }
 
-    if ((category || "").includes("証券") || (category || "").includes("金融")) {
-      return "口座開設条件や取引条件を申し込み前に確認したい案件です。";
+    return [offerName, ...seeds.map((seed) => offerName + " " + seed)];
+  };
+
+  const fetchSuggestionQuery = async (query) => {
+    const key = normalizeKeyword(query);
+    if (!key) return [];
+    if (suggestCache.has(key)) return suggestCache.get(key);
+
+    const promise = fetch("/api/search-suggest?q=" + encodeURIComponent(query), {
+      cache: "no-store",
+    })
+      .then((response) => response.json())
+      .then((json) => Array.isArray(json.suggestions) ? json.suggestions : [])
+      .catch(() => []);
+
+    suggestCache.set(key, promise);
+    return promise;
+  };
+
+  const fetchSuggestions = async (offerName, category) => {
+    const collected = [];
+    const seen = new Set();
+
+    for (const query of getFallbackQueries(offerName, category)) {
+      const suggestions = await fetchSuggestionQuery(query);
+
+      for (const suggestion of suggestions) {
+        const hint = extractSuggestionHint(suggestion, offerName);
+        const key = normalizeCompact(hint);
+        if (!hint || seen.has(key)) continue;
+
+        seen.add(key);
+        collected.push(suggestion);
+        if (collected.length >= 3) return collected;
+      }
     }
 
-    if ((category || "").includes("通信")) {
-      return "料金、乗り換え条件、キャンペーン内容をあわせて確認したい案件です。";
-    }
+    return collected;
+  };
 
-    if ((category || "").includes("アプリ") || (category || "").includes("エンタメ")) {
-      return "無料期間、利用条件、解約まわりを先に確認したい案件です。";
-    }
+  const getAdviceFromHints = (hints) => {
+    const text = hints.join(" ").toLowerCase();
+    const advice = [];
 
-    if ((category || "").includes("旅行")) {
-      return "予約時期や対象プランによって条件が変わりやすい案件です。";
-    }
+    if (/料金|月額|価格|費用|安い|高い/.test(text)) advice.push("料金や月額条件");
+    if (/キャンペーン|特典|入会|新規|クーポン/.test(text)) advice.push("キャンペーン内容");
+    if (/審査|発行|本人確認/.test(text)) advice.push("申し込みや審査条件");
+    if (/還元|ポイント|付与|反映/.test(text)) advice.push("ポイント還元条件");
+    if (/評判|口コミ|デメリット|危険|使えない/.test(text)) advice.push("口コミや注意点");
+    if (/海外|手数料|為替/.test(text)) advice.push("海外利用や手数料");
+    if (/解約|退会|無料|期間/.test(text)) advice.push("無料期間や解約条件");
+    if (/乗り換え|工事|エリア|速度/.test(text)) advice.push("回線条件や利用エリア");
+    if (/口座|nisa|取引|手数料/.test(text)) advice.push("口座開設や取引条件");
 
-    return "報酬だけでなく、申し込み条件とポイント付与条件を確認したい案件です。";
+    return Array.from(new Set(advice)).slice(0, 2);
   };
 
   const buildTrendReason = (offerName, category, suggestions) => {
@@ -170,36 +219,17 @@ const rankingDisplayScript = `
     const quotedHints = hints
       .map((hint) => '<span class="trend-reason-keyword">「' + escapeHtml(hint) + '」</span>')
       .join("や");
+    const advice = getAdviceFromHints(hints);
+    const adviceText = advice.length > 0 ? advice.join("、") : "関連条件";
 
-    return escapeHtml(offerName) + "は、Googleの検索動向で" + quotedHints + "も一緒に調べられています。" + getCategorySuffix(category);
-  };
-
-  const fetchSuggestions = async (offerName) => {
-    const key = normalizeKeyword(offerName);
-    if (!key) return [];
-    if (suggestCache.has(key)) return suggestCache.get(key);
-
-    const promise = fetch("/api/search-suggest?q=" + encodeURIComponent(offerName), {
-      cache: "no-store",
-    })
-      .then((response) => response.json())
-      .then((json) => Array.isArray(json.suggestions) ? json.suggestions : [])
-      .catch(() => []);
-
-    suggestCache.set(key, promise);
-    return promise;
+    return escapeHtml(offerName) + "は、Googleの検索動向で" + quotedHints + "が一緒に調べられています。" + adviceText + "を申し込み前に確認したい案件です。";
   };
 
   const removeRequestedCopy = () => {
     document.querySelectorAll("main p").forEach((paragraph) => {
       const text = (paragraph.textContent || "").replace(/\s+/g, "").trim();
-      const shouldHide = hiddenCopyTexts.some((copyText) => {
-        return text === copyText.replace(/\s+/g, "");
-      });
-
-      if (shouldHide) {
-        paragraph.style.display = "none";
-      }
+      const shouldHide = hiddenCopyTexts.some((copyText) => text === copyText.replace(/\s+/g, ""));
+      if (shouldHide) paragraph.style.display = "none";
     });
   };
 
@@ -300,11 +330,11 @@ const rankingDisplayScript = `
       const response = await fetch("/api/score", { cache: "no-store" });
       const json = await response.json();
       const items = Array.isArray(json.data) ? json.data.slice(0, 50) : [];
-      const normalizedSlug = normalizeRankingIdText(slug);
+      const normalizedSlug = normalizeCompact(slug);
       const index = items.findIndex((item) => {
         return [getOfferName(item), item?.trend_keyword, item?.category]
           .filter(Boolean)
-          .some((value) => normalizeRankingIdText(value) === normalizedSlug);
+          .some((value) => normalizeCompact(value) === normalizedSlug);
       });
 
       if (index >= 0) {
@@ -323,10 +353,7 @@ const rankingDisplayScript = `
     if (!target) return;
 
     lastScrolledHash = hash;
-    target.scrollIntoView({
-      behavior: "auto",
-      block: "center",
-    });
+    target.scrollIntoView({ behavior: "auto", block: "center" });
   };
 
   const enhanceRankingReason = async (article, index) => {
@@ -335,7 +362,7 @@ const rankingDisplayScript = `
     const heading = article.querySelector("h3");
     const reason = heading?.nextElementSibling;
     if (!heading || !reason || reason.tagName !== "P") return;
-    if (index >= 30) return;
+    if (index >= 50) return;
 
     const offerName = (heading.textContent || "").trim();
     if (!offerName) return;
@@ -343,29 +370,23 @@ const rankingDisplayScript = `
     article.dataset.trendReasonEnhanced = "true";
 
     const category = (article.querySelector(".inline-flex")?.textContent || "").trim();
-    const suggestions = await fetchSuggestions(offerName);
+    const suggestions = await fetchSuggestions(offerName, category);
     const trendReason = buildTrendReason(offerName, category, suggestions);
 
-    if (trendReason) {
-      reason.innerHTML = trendReason;
-    }
+    if (trendReason) reason.innerHTML = trendReason;
   };
 
   const enhanceRankingReasons = () => {
-    document
-      .querySelectorAll("main article")
-      .forEach((article, index) => {
-        enhanceRankingReason(article, index);
-      });
+    document.querySelectorAll("main article").forEach((article, index) => {
+      enhanceRankingReason(article, index);
+    });
   };
 
   const scanReviewLinks = () => {
     applyRankingStyle();
     removeRequestedCopy();
     updateReviewBackLink();
-    document
-      .querySelectorAll('a[href*="/reviews/"]')
-      .forEach(splitReviewLink);
+    document.querySelectorAll('a[href*="/reviews/"]').forEach(splitReviewLink);
     enhanceRankingReasons();
     scrollToHashTarget();
   };
