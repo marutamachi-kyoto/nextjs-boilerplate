@@ -77,6 +77,7 @@ const rankingDisplayScript = `
   const phrase = "のポイ活口コミを見る";
   const suggestCache = new Map();
   let reviewBackLinkUpdated = false;
+  let reviewListsEnhanced = false;
   let lastScrolledHash = "";
   const hiddenCopyTexts = [
     "いま注目されているポイ活関連ワードをAIが整理しています。",
@@ -167,6 +168,13 @@ const rankingDisplayScript = `
     return [offerName].concat(seeds.map((seed) => offerName + " " + seed));
   };
 
+  const getReviewQueries = (offerName, type) => {
+    const goodSeeds = ["メリット", "キャンペーン", "特典", "還元率", "ポイント", "年会費", "無料", "お得"];
+    const badSeeds = ["デメリット", "注意点", "審査", "解約", "使えない", "手数料", "遅い", "悪い"];
+    const seeds = type === "bad" ? badSeeds : goodSeeds;
+    return seeds.map((seed) => offerName + " " + seed);
+  };
+
   const fetchSuggestionQuery = async (query) => {
     const key = normalizeKeyword(query);
     if (!key) return [];
@@ -183,11 +191,11 @@ const rankingDisplayScript = `
     return promise;
   };
 
-  const fetchSuggestionHints = async (offerName, category) => {
+  const collectHintsFromQueries = async (offerName, queries, limit) => {
     const hints = [];
     const seen = new Set();
 
-    for (const query of getFallbackQueries(offerName, category)) {
+    for (const query of queries) {
       const suggestions = await fetchSuggestionQuery(query);
 
       for (const suggestion of suggestions) {
@@ -197,11 +205,15 @@ const rankingDisplayScript = `
 
         seen.add(key);
         hints.push(hint);
-        if (hints.length >= 2) return hints;
+        if (hints.length >= limit) return hints;
       }
     }
 
     return hints;
+  };
+
+  const fetchSuggestionHints = async (offerName, category) => {
+    return collectHintsFromQueries(offerName, getFallbackQueries(offerName, category), 2);
   };
 
   const getAdviceFromHints = (hints) => {
@@ -231,6 +243,67 @@ const rankingDisplayScript = `
     const adviceText = advice.length > 0 ? advice.join("、") : "関連条件";
 
     return escapeHtml(offerName) + "は、Googleの検索動向で" + quotedHints + "も一緒に調べられています。" + adviceText + "を申し込み前に確認したい案件です。";
+  };
+
+  const buildReviewPoint = (offerName, hint, type, index) => {
+    const quotedHint = '<span class="trend-reason-keyword">「' + escapeHtml(hint) + '」</span>';
+    if (type === "bad") {
+      const badTemplates = [
+        escapeHtml(offerName) + "は、Google検索候補で" + quotedHint + "も一緒に調べられています。悪い口コミでは、この点を不安に感じる声がないか確認したいところです。",
+        quotedHint + "に関する検索があるため、申し込み前に条件や注意事項を公式ページで確認しておくと安心です。",
+        "ポイント獲得を目的に申し込む場合は、" + quotedHint + "に関係する条件で想定外の負担がないか見ておきたい案件です。",
+      ];
+      return badTemplates[index % badTemplates.length];
+    }
+
+    const goodTemplates = [
+      escapeHtml(offerName) + "は、Google検索候補で" + quotedHint + "も一緒に調べられています。良い口コミでは、この点を魅力として見ている人がいそうです。",
+      quotedHint + "を重視する人にとって、キャンペーン内容やポイント還元条件を比較しやすい案件です。",
+      "検索されている" + quotedHint + "を見ると、申し込み前にメリットを具体的に確認したい人が多い案件と考えられます。",
+    ];
+    return goodTemplates[index % goodTemplates.length];
+  };
+
+  const findReviewSection = (label) => {
+    const sections = Array.from(document.querySelectorAll("main section"));
+    return sections.find((section) => compactSpaces(section.querySelector("h2")?.textContent).includes(label));
+  };
+
+  const getReviewOfferName = () => {
+    const heading = compactSpaces(document.querySelector("main h1")?.textContent);
+    if (heading.includes("のポイ活")) return heading.split("のポイ活")[0].trim();
+    return decodeURIComponent(location.pathname.split("/reviews/")[1] || "");
+  };
+
+  const updateReviewList = (section, points) => {
+    if (!section || points.length === 0) return;
+    const items = Array.from(section.querySelectorAll("li"));
+    items.forEach((item, index) => {
+      if (points[index]) item.innerHTML = points[index];
+    });
+  };
+
+  const enhanceReviewPageLists = async () => {
+    if (reviewListsEnhanced) return;
+    if (!location.pathname.startsWith("/reviews/")) return;
+
+    const offerName = getReviewOfferName();
+    if (!offerName) return;
+
+    const goodSection = findReviewSection("良い口コミ");
+    const badSection = findReviewSection("悪い口コミ");
+    if (!goodSection && !badSection) return;
+
+    reviewListsEnhanced = true;
+
+    const goodHints = await collectHintsFromQueries(offerName, getReviewQueries(offerName, "good"), 3);
+    const badHints = await collectHintsFromQueries(offerName, getReviewQueries(offerName, "bad"), 3);
+
+    const goodPoints = goodHints.map((hint, index) => buildReviewPoint(offerName, hint, "good", index));
+    const badPoints = badHints.map((hint, index) => buildReviewPoint(offerName, hint, "bad", index));
+
+    updateReviewList(goodSection, goodPoints);
+    updateReviewList(badSection, badPoints);
   };
 
   const removeRequestedCopy = () => {
@@ -350,6 +423,7 @@ const rankingDisplayScript = `
     applyRankingStyle();
     removeRequestedCopy();
     updateReviewBackLink();
+    enhanceReviewPageLists();
     document.querySelectorAll('a[href*="/reviews/"]').forEach(splitReviewLink);
     enhanceRankingReasons();
     scrollToHashTarget();
