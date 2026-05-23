@@ -12,7 +12,7 @@ const SOURCE_URLS = [
   "https://pc.moppy.jp/ad/?c_id=1010",
 ];
 
-const MAX_OFFERS = 12;
+const MAX_OFFERS = 20;
 
 type FreeOffer = {
   title: string;
@@ -63,7 +63,6 @@ const toAbsoluteUrl = (url: string, baseUrl: string) => {
 
 const isUsableImageUrl = (url?: string) => {
   if (!url) return false;
-
   const lowerUrl = url.toLowerCase();
   const trackingImagePatterns = [
     "ad-track.jp/ad/p/img",
