@@ -24,63 +24,27 @@ const freePoikatsuLinkScript = `
     const style = document.createElement("style");
     style.id = "hero-nav-button-style";
     style.textContent = [
-      'header .hero-link-row { display: flex !important; flex-wrap: nowrap !important; align-items: center !important; gap: 1rem !important; width: 100% !important; margin-top: 1.1rem !important; }',
-      'header a[href="/about-poikatsu"], header a[href="/free-poikatsu"] { min-height: 76px !important; padding: 1.1rem 2rem !important; border-radius: 999px !important; font-size: 1.24rem !important; line-height: 1.25 !important; font-weight: 950 !important; gap: 0.65rem !important; box-shadow: 0 16px 36px rgba(15, 23, 42, 0.10) !important; white-space: nowrap !important; }',
+      'header div:has(> a[href="/about-poikatsu"]) { display: flex !important; flex-wrap: wrap !important; align-items: center !important; gap: 1rem !important; max-width: 100% !important; }',
+      'header div:has(> a[href="/about-poikatsu"]) > div:first-child { flex: 0 0 100% !important; }',
+      'header a[href="/about-poikatsu"], header a[href="/free-poikatsu"] { flex: 0 1 auto !important; min-height: 76px !important; padding: 1.1rem 2rem !important; border-radius: 999px !important; font-size: 1.24rem !important; line-height: 1.25 !important; font-weight: 950 !important; gap: 0.65rem !important; box-shadow: 0 16px 36px rgba(15, 23, 42, 0.10) !important; white-space: nowrap !important; }',
       'header a[href="/about-poikatsu"] span:first-child { width: 3rem !important; height: 3rem !important; margin-right: 0.65rem !important; font-size: 1.75rem !important; line-height: 1 !important; flex: 0 0 auto !important; }',
       'header a[href="/free-poikatsu"] span:first-child { width: 2.45rem !important; height: 2.45rem !important; margin-right: 0.65rem !important; font-size: 1.16rem !important; flex: 0 0 auto !important; }',
-      'header a[href="/about-poikatsu"] { order: 1 !important; border-width: 3px !important; }',
-      'header a[href="/free-poikatsu"] { order: 2 !important; border-width: 3px !important; }',
       '@media (min-width: 1024px) { header a[href="/about-poikatsu"], header a[href="/free-poikatsu"] { min-height: 82px !important; padding-left: 2.25rem !important; padding-right: 2.25rem !important; font-size: 1.36rem !important; } }',
-      '@media (max-width: 720px) { header .hero-link-row { gap: 0.65rem !important; overflow-x: auto !important; padding-bottom: 0.25rem !important; } header a[href="/about-poikatsu"], header a[href="/free-poikatsu"] { flex: 0 0 auto !important; justify-content: center !important; min-height: 62px !important; padding: 0.85rem 1rem !important; font-size: 0.98rem !important; } header a[href="/about-poikatsu"] span:first-child { width: 2.4rem !important; height: 2.4rem !important; font-size: 1.45rem !important; } header a[href="/free-poikatsu"] span:first-child { width: 2.1rem !important; height: 2.1rem !important; font-size: 1rem !important; } }',
+      '@media (max-width: 720px) { header div:has(> a[href="/about-poikatsu"]) { flex-wrap: nowrap !important; overflow-x: auto !important; padding-bottom: 0.25rem !important; } header div:has(> a[href="/about-poikatsu"]) > div:first-child { display: none !important; } header a[href="/about-poikatsu"], header a[href="/free-poikatsu"] { flex: 0 0 auto !important; justify-content: center !important; min-height: 62px !important; padding: 0.85rem 1rem !important; font-size: 0.98rem !important; } header a[href="/about-poikatsu"] span:first-child { width: 2.4rem !important; height: 2.4rem !important; font-size: 1.45rem !important; } header a[href="/free-poikatsu"] span:first-child { width: 2.1rem !important; height: 2.1rem !important; font-size: 1rem !important; } }',
     ].join(String.fromCharCode(10));
     document.head.appendChild(style);
   };
 
-  const arrangeHeroButtons = () => {
-    if (window.location.pathname !== "/") return;
-
-    const aboutLink = document.querySelector('header a[href="/about-poikatsu"]');
-    const freeLink = document.querySelector('header a[href="/free-poikatsu"]');
-    if (!aboutLink || !freeLink) return;
-
-    const existingRow = aboutLink.closest('.hero-link-row');
-    const controlsContainer =
-      existingRow?.parentElement ||
-      Array.from(document.querySelectorAll('header div')).find((element) => {
-        return element.contains(aboutLink) && (element.textContent || '').includes('最終更新');
-      }) ||
-      aboutLink.parentElement;
-    if (!controlsContainer) return;
-
-    let row = controlsContainer.querySelector('.hero-link-row');
-    if (!row) {
-      row = document.createElement('div');
-      row.className = 'hero-link-row';
-      const updateBadge = Array.from(controlsContainer.children).find((child) => {
-        return (child.textContent || '').includes('最終更新');
-      });
-      if (updateBadge?.nextSibling) {
-        controlsContainer.insertBefore(row, updateBadge.nextSibling);
-      } else {
-        controlsContainer.appendChild(row);
-      }
-    }
-
-    if (aboutLink.parentElement !== row) row.appendChild(aboutLink);
-    if (freeLink.parentElement !== row) row.appendChild(freeLink);
-  };
-
   const insertFreePoikatsuLink = () => {
-    const aboutLink = document.querySelector('a[href="/about-poikatsu"]');
+    const aboutLink = document.querySelector('header a[href="/about-poikatsu"]');
     if (!aboutLink) return;
 
-    const existingLink = document.querySelector('a[href="/free-poikatsu"]');
+    const existingLink = document.querySelector('header a[href="/free-poikatsu"]');
     if (existingLink) {
       const label = existingLink.querySelector("span:last-child");
       if (label && label.textContent !== "無料でできるポイ活特集") {
         label.textContent = "無料でできるポイ活特集";
       }
-      arrangeHeroButtons();
       return;
     }
 
@@ -93,7 +57,6 @@ const freePoikatsuLinkScript = `
     link.innerHTML = '<span style="display:inline-grid;width:2.45rem;height:2.45rem;place-items:center;border-radius:999px;background:linear-gradient(135deg,#ffd84d,#ff9f00);color:white;font-size:1.16rem;font-weight:950;margin-right:0.65rem;">0</span><span>無料でできるポイ活特集</span>';
 
     aboutLink.insertAdjacentElement("afterend", link);
-    arrangeHeroButtons();
   };
 
   const updateTopCopy = () => {
@@ -300,7 +263,6 @@ const freePoikatsuLinkScript = `
   const applyAdjustments = () => {
     ensureHeroButtonStyle();
     insertFreePoikatsuLink();
-    arrangeHeroButtons();
     updateTopCopy();
     updateTopLabels();
     trimRankingKeywordDescriptions();
