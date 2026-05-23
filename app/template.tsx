@@ -3,6 +3,7 @@ import OfferLikes from "./offer-likes";
 
 const freePoikatsuLinkScript = `
 (() => {
+  const MOPPY_INVITE_URL = "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
   let moppyImagesPromise = null;
   let rankingCardsEnhancementRunning = false;
 
@@ -36,6 +37,24 @@ const freePoikatsuLinkScript = `
     document.head.appendChild(style);
   };
 
+  const ensureTopMoppySignupStyle = () => {
+    if (document.getElementById("top-moppy-signup-style")) return;
+    const style = document.createElement("style");
+    style.id = "top-moppy-signup-style";
+    style.textContent = [
+      '.top-moppy-signup-cta { margin: 3rem 0 3.5rem; border: 1px solid #ffd4e8; border-radius: 2rem; background: rgba(255,255,255,0.96); padding: 2rem 1.5rem; text-align: center; box-shadow: 0 22px 46px rgba(236,72,153,0.14); }',
+      '.top-moppy-signup-badge { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; background: #ec2f91; color: #fff; padding: 0.55rem 1.45rem; font-size: 0.95rem; font-weight: 950; box-shadow: 0 8px 18px rgba(236,72,153,0.20); }',
+      '.top-moppy-signup-title { margin-top: 1.2rem; color: #07142d; font-size: clamp(2.1rem, 4.2vw, 3.4rem); line-height: 1.15; font-weight: 950; letter-spacing: 0; }',
+      '.top-moppy-signup-copy { margin: 1.1rem auto 0; max-width: 46rem; color: #27364f; font-size: clamp(1rem, 2vw, 1.25rem); line-height: 1.9; font-weight: 900; }',
+      '.top-moppy-signup-copy strong { color: #e60073; font-weight: 950; }',
+      '.top-moppy-signup-button { display: flex; min-height: 4rem; width: min(100%, 38rem); align-items: center; justify-content: center; margin: 1.8rem auto 0; border-radius: 1rem; background: linear-gradient(90deg,#ec2f91,#ff6500); color: #fff; font-size: clamp(1.05rem, 2vw, 1.35rem); font-weight: 950; text-decoration: none; box-shadow: 0 18px 34px rgba(236,72,153,0.20); transition: transform 0.16s ease; }',
+      '.top-moppy-signup-button:hover { transform: scale(1.035); }',
+      '.top-moppy-signup-note { margin-top: 1rem; color: #8190a9; font-size: 0.85rem; font-weight: 800; }',
+      '@media (max-width: 720px) { .top-moppy-signup-cta { margin: 2rem 0 2.6rem; padding: 1.55rem 1rem; border-radius: 1.45rem; } .top-moppy-signup-button { border-radius: 0.9rem; } }',
+    ].join(String.fromCharCode(10));
+    document.head.appendChild(style);
+  };
+
   const insertFreePoikatsuLink = () => {
     const aboutLink = document.querySelector('header a[href="/about-poikatsu"]');
     if (!aboutLink) return;
@@ -58,6 +77,26 @@ const freePoikatsuLinkScript = `
     link.innerHTML = '<span style="display:inline-grid;width:2.45rem;height:2.45rem;place-items:center;border-radius:999px;background:linear-gradient(135deg,#ffd84d,#ff9f00);color:white;font-size:1.16rem;font-weight:950;margin-right:0.65rem;">0</span><span>無料でできるポイ活特集</span>';
 
     aboutLink.insertAdjacentElement("afterend", link);
+  };
+
+  const insertTopMoppySignupCta = () => {
+    if (window.location.pathname !== "/") return;
+    ensureTopMoppySignupStyle();
+    if (document.getElementById("top-moppy-signup-cta")) return;
+    const trendSection = document.getElementById("trend-keywords");
+    if (!trendSection) return;
+
+    const cta = document.createElement("section");
+    cta.id = "top-moppy-signup-cta";
+    cta.className = "top-moppy-signup-cta";
+    cta.innerHTML = [
+      '<div class="top-moppy-signup-badge">ポイ活サイト最大手！</div>',
+      '<h2 class="top-moppy-signup-title">モッピーでポイ活を始める</h2>',
+      '<p class="top-moppy-signup-copy">はじめての人は、モッピーの<strong>会員登録（無料）</strong>からスタート</p>',
+      '<a class="top-moppy-signup-button" href="' + MOPPY_INVITE_URL + '" target="_blank" rel="noopener noreferrer">モッピーでポイ活を始める ›</a>',
+      '<p class="top-moppy-signup-note">※このページには広告・紹介リンクを含みます。</p>',
+    ].join("");
+    trendSection.insertAdjacentElement("afterend", cta);
   };
 
   const updateTopCopy = () => {
@@ -170,6 +209,27 @@ const freePoikatsuLinkScript = `
     }
   };
 
+  const updateMoppyActionLink = (article, matchedOffer) => {
+    if (!matchedOffer?.url) return;
+    const button = Array.from(article.querySelectorAll("button")).find((element) => {
+      return (element.textContent || "").includes("モッピーで探す");
+    });
+    if (!button || button.dataset.moppyDirectUrl === matchedOffer.url) return;
+
+    button.dataset.moppyDirectUrl = matchedOffer.url;
+    button.setAttribute("aria-label", "モッピーの案件ページで確認する");
+    button.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+        window.open(matchedOffer.url, "_blank", "noopener,noreferrer");
+      },
+      true
+    );
+  };
+
   const ensureRankingImageStyle = () => {
     if (document.getElementById("ranking-image-style")) return;
 
@@ -277,6 +337,7 @@ const freePoikatsuLinkScript = `
 
         removeLabelAreas(grid, contentBlock);
         updateArticleReward(article, matchedOffer);
+        updateMoppyActionLink(article, matchedOffer);
 
         let imageBox = article.querySelector('[data-ranking-image="true"]');
         if (!imageBox) {
@@ -292,6 +353,7 @@ const freePoikatsuLinkScript = `
   const applyAdjustments = () => {
     ensureHeroButtonStyle();
     insertFreePoikatsuLink();
+    insertTopMoppySignupCta();
     updateTopCopy();
     updateTopLabels();
     trimRankingKeywordDescriptions();
