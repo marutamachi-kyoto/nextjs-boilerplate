@@ -48,7 +48,7 @@ const isRewardAvailable = (reward?: number | null) => {
   return Number.isFinite(Number(reward)) && Number(reward) > 0;
 };
 
-const fetchMoppyOffers = async () => {
+const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
   try {
     const response = await fetch(MOPPY_OFFER_URL, {
       next: { revalidate: 3600 },
@@ -73,7 +73,7 @@ const fetchMoppyOffers = async () => {
 const findMoppyOffer = (item: RankingItem, offers: MoppyOffer[]) => {
   const names = [item.offer_name, item.trend_keyword, item.category]
     .map((name) => normalizeText(name))
-    .filter(Boolean);
+    .filter((name): name is string => Boolean(name));
 
   if (names.length === 0) return null;
 
@@ -144,18 +144,16 @@ const formatRankingItem = (
 
 export async function GET() {
   try {
-    const [{ data, error }, moppyOffers] = await Promise.all([
-      supabase
-        .from("rankings")
-        .select("*")
-        .order("updated_at", { ascending: false })
-        .order("rank", { ascending: true })
-        .limit(50),
-      fetchMoppyOffers(),
-    ]);
+    const rankingResult = await supabase
+      .from("rankings")
+      .select("*")
+      .order("updated_at", { ascending: false })
+      .order("rank", { ascending: true })
+      .limit(50);
+    const moppyOffers = await fetchMoppyOffers();
 
-    if (error) {
-      console.error(error);
+    if (rankingResult.error) {
+      console.error(rankingResult.error);
       return Response.json(
         { error: "ランキング取得に失敗しました" },
         { status: 500 }
@@ -163,7 +161,7 @@ export async function GET() {
     }
 
     const usedOfferTitles = new Set<string>();
-    const sourceItems = (data || []) as RankingItem[];
+    const sourceItems = (rankingResult.data || []) as RankingItem[];
 
     const formatted = sourceItems.map((item, index) => {
       const matchedOffer = findMoppyOffer(item, moppyOffers);
