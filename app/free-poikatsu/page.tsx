@@ -255,6 +255,25 @@ export default async function FreePoikatsuPage() {
           <p className="mt-6 max-w-[1040px] text-lg font-bold leading-9 text-slate-900 lg:text-xl lg:leading-10">
             商品購入や有料サービスの申し込みではなく、お金をかけずに始めたい人向けの、無料でできるポイ活をまとめます。
           </p>
+
+          <div className="mt-8 rounded-[1.4rem] border-2 border-pink-200 bg-white px-6 py-5 shadow-xl shadow-pink-100/70 lg:flex lg:items-center lg:justify-between lg:gap-8">
+            <div>
+              <div className="inline-flex items-center rounded-full border border-pink-200 bg-pink-50 px-5 py-2 text-sm font-black text-pink-600">
+                広告・紹介リンクを含みます
+              </div>
+              <p className="mt-3 text-lg font-black leading-8 text-slate-800 lg:text-xl">
+                モッピーに無料登録して、気になる無料案件を確認しよう
+              </p>
+            </div>
+            <a
+              href={MOPPY_INVITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 flex min-h-[58px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-8 text-lg font-black text-white shadow-lg transition hover:scale-105 lg:mt-0 lg:w-[260px] lg:shrink-0"
+            >
+              無料登録する ›
+            </a>
+          </div>
         </div>
       </section>
 
