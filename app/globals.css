@@ -24,3 +24,66 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.ranking-image-box {
+  border-color: #dbe3ed !important;
+  background: #f8fafc !important;
+}
+
+.ranking-fallback-image {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: linear-gradient(135deg, #ffffff, #f1f5f9) !important;
+}
+
+.ranking-fallback-image::before {
+  content: "画像が取れませんでした" !important;
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: calc(100% - 28px) !important;
+  padding: 0.55rem 0.75rem !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  color: #64748b !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  line-height: 1.35 !important;
+  text-align: center !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.ranking-fallback-image::after {
+  display: none !important;
+}
+
+main article > div[class*="from-[#fffefe]"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-color: #dbe3ed !important;
+  background: linear-gradient(135deg, #ffffff, #f1f5f9) !important;
+}
+
+main article > div[class*="from-[#fffefe]"] > div {
+  display: none !important;
+}
+
+main article > div[class*="from-[#fffefe]"]::before {
+  content: "画像が取れませんでした";
+  max-width: calc(100% - 32px);
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.35;
+  text-align: center;
+}
