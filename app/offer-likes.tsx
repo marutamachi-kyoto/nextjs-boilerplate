@@ -6,12 +6,10 @@ const offerLikesScript = `
 (() => {
   const likedPrefix = "poikatu-liked:";
   let likeDataPromise = null;
-
   const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
   const ensureOfferLikeStyle = () => {
     if (document.getElementById("offer-like-style")) return;
-
     const style = document.createElement("style");
     style.id = "offer-like-style";
     style.textContent = [
@@ -25,6 +23,7 @@ const offerLikesScript = `
       '.offer-like-burst { position: absolute; left: 50%; top: 8px; pointer-events: none; color: #ec4899; font-size: 1.35rem; font-weight: 950; transform: translate(-50%, -50%); animation: offerLikeBurst 0.7s ease-out forwards; text-shadow: 0 8px 18px rgba(236, 72, 153, 0.25); }',
       '.offer-like-button[data-liked="true"] .offer-like-burst { color: #fff; }',
       '.free-poikatsu-lead-emphasis { color: #e6007e; background: #fff1f7; padding: 0 0.22em; border-radius: 0.35em; }',
+      '@media (min-width: 721px) { header a[href="/about-poikatsu"] > span:last-child, header a[href="/free-poikatsu"] > span:last-child { font-size: 1.12em !important; } }',
       '@keyframes offerLikePop { 0% { transform: scale(1); } 45% { transform: scale(1.08); } 100% { transform: scale(1); } }',
       '@keyframes offerLikeBurst { 0% { opacity: 0; transform: translate(-50%, 0) scale(0.75); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px) scale(1.22); } }',
       '@media (max-width: 720px) { body header div:has(> a[href="/about-poikatsu"]) { grid-template-columns: 1fr !important; justify-content: stretch !important; overflow-x: visible !important; gap: 0.8rem !important; } body header a[href="/about-poikatsu"], body header a[href="/free-poikatsu"] { width: 100% !important; max-width: 100% !important; } main article { text-align: center !important; } main article h3, main article p { text-align: center !important; } main article > div, main article div:has(> h3), main article div:has(> a[href*="/reviews/"]), main article div:has(> button) { justify-items: center !important; align-items: center !important; } main article .ranking-image-box { margin-left: auto !important; margin-right: auto !important; } .offer-like-button { max-width: 260px; } }',
@@ -43,26 +42,11 @@ const offerLikesScript = `
   };
 
   const getLikedKey = (offerName, likeDate) => likedPrefix + (likeDate || "today") + ":" + offerName;
-
   const hasLiked = (offerName, likeDate) => {
-    try {
-      return localStorage.getItem(getLikedKey(offerName, likeDate)) === "1";
-    } catch {
-      return false;
-    }
+    try { return localStorage.getItem(getLikedKey(offerName, likeDate)) === "1"; } catch { return false; }
   };
-
-  const markLiked = (offerName, likeDate) => {
-    try {
-      localStorage.setItem(getLikedKey(offerName, likeDate), "1");
-    } catch {}
-  };
-
-  const unmarkLiked = (offerName, likeDate) => {
-    try {
-      localStorage.removeItem(getLikedKey(offerName, likeDate));
-    } catch {}
-  };
+  const markLiked = (offerName, likeDate) => { try { localStorage.setItem(getLikedKey(offerName, likeDate), "1"); } catch {} };
+  const unmarkLiked = (offerName, likeDate) => { try { localStorage.removeItem(getLikedKey(offerName, likeDate)); } catch {} };
 
   const setButtonState = (button, liked, count) => {
     const safeCount = Math.max(0, Number(count) || 0);
@@ -78,7 +62,6 @@ const offerLikesScript = `
     void button.offsetWidth;
     button.classList.add("offer-like-pop");
     window.setTimeout(() => button.classList.remove("offer-like-pop"), 380);
-
     const burst = document.createElement("span");
     burst.className = "offer-like-burst";
     burst.textContent = liked ? "♥" : "－1";
@@ -102,7 +85,6 @@ const offerLikesScript = `
     button.dataset.offerName = offerName;
     button.dataset.likeDate = likeDate || "";
     button.innerHTML = '<span class="offer-like-icon" aria-hidden="true">♡</span><span class="offer-like-text">いいね！</span><span class="offer-like-count">0</span>';
-
     setButtonState(button, hasLiked(offerName, likeDate), count);
 
     button.addEventListener("click", async () => {
@@ -111,32 +93,19 @@ const offerLikesScript = `
       const nextLiked = !currentLiked;
       const nextCount = nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
       const currentDate = button.dataset.likeDate || likeDate;
-
       setButtonState(button, nextLiked, nextCount);
       showLikeEffect(button, nextLiked);
-
-      if (nextLiked) {
-        markLiked(offerName, currentDate);
-      } else {
-        unmarkLiked(offerName, currentDate);
-      }
+      if (nextLiked) markLiked(offerName, currentDate); else unmarkLiked(offerName, currentDate);
 
       try {
         const json = await sendLikeAction(offerName, nextLiked ? "like" : "unlike");
         if (json.likeDate) {
           button.dataset.likeDate = json.likeDate;
-          if (nextLiked) {
-            markLiked(offerName, json.likeDate);
-          } else {
-            unmarkLiked(offerName, json.likeDate);
-          }
+          if (nextLiked) markLiked(offerName, json.likeDate); else unmarkLiked(offerName, json.likeDate);
         }
-        if (Number.isFinite(Number(json.count))) {
-          setButtonState(button, nextLiked, Number(json.count));
-        }
+        if (Number.isFinite(Number(json.count))) setButtonState(button, nextLiked, Number(json.count));
       } catch {}
     });
-
     return button;
   };
 
@@ -150,7 +119,6 @@ const offerLikesScript = `
 
   const updateFreePoikatsuCopy = () => {
     if (location.pathname !== "/free-poikatsu") return;
-
     const lead = Array.from(document.querySelectorAll("main p")).find((element) => {
       const text = normalizeText(element.textContent);
       return text.includes("商品購入や有料サービス") && text.includes("無料でできるポイ活");
@@ -179,32 +147,24 @@ const offerLikesScript = `
 
   const adjustRankingSpacing = () => {
     if (location.pathname !== "/") return;
-
     const heading = Array.from(document.querySelectorAll("main h2")).find((element) => normalizeText(element.textContent).includes("いま注目されているポイ活ランキング"));
     const section = heading?.closest("section") || document.getElementById("ranking-section");
-    if (section) {
-      section.style.marginTop = "5.5rem";
-    }
+    if (section) section.style.marginTop = "5.5rem";
   };
 
   const enhanceOfferLikes = async () => {
     if (location.pathname !== "/" && location.pathname !== "/free-poikatsu") return;
-
     ensureOfferLikeStyle();
     updateFreePoikatsuCopy();
     adjustRankingSpacing();
-
     const likeData = await getLikeData();
     document.querySelectorAll("main article").forEach((article) => {
       if (article.querySelector(".offer-like-button")) return;
-
       const heading = article.querySelector("h3");
       const offerName = normalizeText(heading?.textContent);
       if (!offerName) return;
-
       const actionArea = findActionArea(article);
       if (!actionArea) return;
-
       const button = createLikeButton(offerName, likeData.counts[offerName] || 0, likeData.likeDate);
       actionArea.insertBefore(button, actionArea.firstChild);
     });
@@ -215,11 +175,8 @@ const offerLikesScript = `
     [400, 1000, 2200, 4200, 7000].forEach((delay) => window.setTimeout(enhanceOfferLikes, delay));
   };
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", run, { once: true });
-  } else {
-    run();
-  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run, { once: true });
+  else run();
 })();
 `;
 
