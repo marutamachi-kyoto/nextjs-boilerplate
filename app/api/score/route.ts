@@ -69,6 +69,15 @@ const isRewardAvailable = (reward?: number | null) => {
   return Number.isFinite(Number(reward)) && Number(reward) > 0;
 };
 
+const isVerifiedMoppyOffer = (offer?: MoppyOffer | null): offer is MoppyOffer => {
+  return Boolean(
+    offer?.url &&
+      offer.url.includes("pc.moppy.jp/") &&
+      !offer.url.includes("/entry/invite.php") &&
+      isRewardAvailable(offer.reward)
+  );
+};
+
 const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
   try {
     const response = await fetch(MOPPY_OFFER_URL, {
@@ -147,18 +156,18 @@ const getFallbackReason = (offerName: string, trendKeyword?: string | null) => {
 const formatRankingItem = (
   item: RankingItem,
   index: number,
-  matchedOffer?: MoppyOffer | null
+  matchedOffer: MoppyOffer
 ) => {
   const offerName =
     item.offer_name ||
     item.trend_keyword ||
     item.category ||
-    matchedOffer?.title ||
+    matchedOffer.title ||
     `おすすめ案件 ${index + 1}`;
-  const reward = matchedOffer?.reward ?? item.reward ?? 0;
+  const reward = matchedOffer.reward;
 
   return {
-    rank: item.rank ?? index + 1,
+    rank: index + 1,
 
     offer_name: offerName,
 
@@ -172,9 +181,8 @@ const formatRankingItem = (
       item.reason ||
       getFallbackReason(offerName, item.trend_keyword ?? item.category),
 
-    primary_site_name: item.primary_site_name ?? "モッピー",
-    primary_site_url:
-      matchedOffer?.url || item.primary_site_url || "https://pc.moppy.jp/",
+    primary_site_name: "モッピー",
+    primary_site_url: matchedOffer.url,
 
     secondary_site_name: item.secondary_site_name ?? "ポイントインカム",
     secondary_site_url: item.secondary_site_url ?? "https://pointi.jp/",
@@ -202,24 +210,30 @@ export async function GET() {
     }
 
     const sourceItems = (rankingResult.data || []) as RankingItem[];
-    const matchedOffers = await Promise.all(
+    const verifiedPairs = await Promise.all(
       sourceItems.map(async (item) => {
         const matchedOffer = findMoppyOffer(item, moppyOffers);
-        if (!matchedOffer?.url) return matchedOffer;
+        if (!isVerifiedMoppyOffer(matchedOffer)) return null;
 
         const detailReward = await fetchMoppyDetailReward(matchedOffer.url);
-        if (!isRewardAvailable(detailReward)) return matchedOffer;
+        const verifiedOffer = isRewardAvailable(detailReward)
+          ? { ...matchedOffer, reward: detailReward }
+          : matchedOffer;
 
-        return {
-          ...matchedOffer,
-          reward: detailReward,
-        };
+        return isVerifiedMoppyOffer(verifiedOffer)
+          ? { item, matchedOffer: verifiedOffer }
+          : null;
       })
     );
 
-    const formatted = sourceItems.map((item, index) => {
-      return formatRankingItem(item, index, matchedOffers[index]);
-    });
+    const formatted = verifiedPairs
+      .filter(
+        (pair): pair is { item: RankingItem; matchedOffer: MoppyOffer } =>
+          Boolean(pair)
+      )
+      .map(({ item, matchedOffer }, index) => {
+        return formatRankingItem(item, index, matchedOffer);
+      });
 
     return Response.json({
       data: formatted,
