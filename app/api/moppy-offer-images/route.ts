@@ -2,19 +2,16 @@ import { NextResponse } from "next/server";
 
 export const revalidate = 86400;
 
+const CATEGORY_IDS = Array.from({ length: 20 }, (_, index) => 1001 + index);
+
 const SOURCE_URLS = [
   "https://pc.moppy.jp/service/?order=1",
-  "https://pc.moppy.jp/ad/?c_id=1011",
-  "https://pc.moppy.jp/ad/?c_id=1010",
-  "https://pc.moppy.jp/ad/?c_id=1001",
-  "https://pc.moppy.jp/ad/?c_id=1002",
-  "https://pc.moppy.jp/ad/?c_id=1003",
-  "https://pc.moppy.jp/ad/?c_id=1004",
-  "https://pc.moppy.jp/ad/?c_id=1005",
-  "https://pc.moppy.jp/ad/?c_id=1006",
-  "https://pc.moppy.jp/ad/?c_id=1007",
-  "https://pc.moppy.jp/ad/?c_id=1008",
-  "https://pc.moppy.jp/ad/?c_id=1009",
+  "https://pc.moppy.jp/ad/?c_id=1083",
+  ...CATEGORY_IDS.map((categoryId) => `https://pc.moppy.jp/ad/?c_id=${categoryId}`),
+];
+
+const DETAIL_SOURCE_URLS = [
+  "https://pc.moppy.jp/ad/detail.php?site_id=160472",
 ];
 
 type MoppyOfferImage = {
@@ -85,6 +82,17 @@ const getTitle = (html: string) => {
     .slice(0, 80);
 };
 
+const getDetailTitle = (html: string) => {
+  const heading = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1];
+  const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["'][^>]*>/i)?.[1];
+  const title = stripTags(heading || ogTitle || "")
+    .replace(/の詳細.*$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return title.length >= 3 ? title.slice(0, 80) : "";
+};
+
 const getReward = (text: string) => {
   const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
     .map((match) => Number(match[1].replace(/,/g, "")))
@@ -116,8 +124,25 @@ const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
   return offers;
 };
 
+const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
+  const title = getDetailTitle(html);
+  const mainHtml = html.split("ポイ活応援サービス")[0]?.split("ポイントの交換先")[0] || html;
+  const reward = getReward(stripTags(mainHtml));
+
+  if (!title || reward <= 0) return [];
+
+  return [
+    {
+      title,
+      imageUrl: getImageUrl(mainHtml, sourceUrl),
+      url: sourceUrl,
+      reward,
+    },
+  ];
+};
+
 export async function GET() {
-  const results = await Promise.allSettled(
+  const listResults = await Promise.allSettled(
     SOURCE_URLS.map(async (url) => {
       const response = await fetch(url, {
         next: { revalidate: 86400 },
@@ -132,13 +157,28 @@ export async function GET() {
     })
   );
 
-  const offers = results.flatMap((result) =>
+  const detailResults = await Promise.allSettled(
+    DETAIL_SOURCE_URLS.map(async (url) => {
+      const response = await fetch(url, {
+        next: { revalidate: 86400 },
+        headers: {
+          "user-agent":
+            "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
+        },
+      });
+
+      if (!response.ok) return [];
+      return parseMoppyDetailOffer(await response.text(), url);
+    })
+  );
+
+  const offers = [...listResults, ...detailResults].flatMap((result) =>
     result.status === "fulfilled" ? result.value : []
   );
 
   const uniqueOffers = Array.from(
     new Map(offers.map((offer) => [offer.title, offer])).values()
-  ).slice(0, 300);
+  ).slice(0, 500);
 
   return NextResponse.json({ data: uniqueOffers });
 }
