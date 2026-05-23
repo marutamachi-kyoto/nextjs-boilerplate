@@ -165,6 +165,16 @@ const offerLikesScript = `
       heading.innerHTML = '<span class="text-orange-400">🔥</span> 【<span style="color:#f59e0b;">AI</span>判定】いま注目されているポイ活ランキング';
       heading.dataset.freePoikatsuHeadingUpdated = "true";
     }
+
+    const headingWrap = heading?.parentElement;
+    if (headingWrap && !headingWrap.dataset.freePoikatsuHeadingLayoutUpdated) {
+      headingWrap.classList.remove("lg:flex-row", "lg:items-end", "lg:justify-between");
+      headingWrap.classList.add("items-start");
+      headingWrap.style.flexDirection = "column";
+      headingWrap.style.alignItems = "flex-start";
+      headingWrap.style.justifyContent = "flex-start";
+      headingWrap.dataset.freePoikatsuHeadingLayoutUpdated = "true";
+    }
   };
 
   const adjustRankingSpacing = () => {
