@@ -247,22 +247,14 @@ export default async function FreePoikatsuPage() {
             ← TOPページに戻る
           </a>
 
-          <div className="mt-8 inline-flex rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-lg">
-            ￥0ではじめる特集
-          </div>
-
-          <h1 className="mt-7 text-5xl font-black leading-tight tracking-tight text-slate-950 lg:text-7xl">
+          <h1 className="mt-10 text-5xl font-black leading-tight tracking-tight text-slate-950 lg:text-7xl">
             <span className="text-pink-600">無料でできる</span>
             <br />
             ポイ活特集
           </h1>
 
-          <p className="mt-6 max-w-[820px] text-xl font-black leading-10 text-slate-900 lg:text-2xl lg:leading-[2]">
-            商品購入や有料サービスの申し込みではなく、お金をかけずに始めたい人向けの、
-            <span className="rounded-full bg-pink-50 px-2 text-pink-600">
-              無料でできるポイ活
-            </span>
-            をまとめます。
+          <p className="mt-6 max-w-[920px] text-xl font-black leading-10 text-slate-900 lg:text-2xl lg:leading-[2]">
+            商品購入や有料サービスの申し込みではなく、お金をかけずに始めたい人向けの、無料でできるポイ活をまとめます。
           </p>
         </div>
       </section>
