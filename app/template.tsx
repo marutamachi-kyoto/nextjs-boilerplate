@@ -119,6 +119,25 @@ const freePoikatsuLinkScript = `
     }
   };
 
+  const updateTopLabels = () => {
+    if (window.location.pathname !== "/") return;
+
+    const badge = Array.from(document.querySelectorAll("header div")).find((element) => {
+      return (element.textContent || "").includes("AIが毎日自動で判定中！");
+    });
+
+    if (badge && badge.dataset.aiBadgeUpdated !== "true") {
+      const icon = badge.querySelector("span:first-child")?.outerHTML || "<span>🤖</span>";
+      badge.innerHTML = icon + '<span><span style="color:#f59e0b;">AI</span><span style="color:#0f172a;">が毎日自動で判定中！</span></span>';
+      badge.dataset.aiBadgeUpdated = "true";
+    }
+
+    const keywordHeading = document.querySelector("#trend-keywords h2");
+    if (keywordHeading && keywordHeading.textContent?.includes("ポイ活関連キーワード")) {
+      keywordHeading.innerHTML = keywordHeading.innerHTML.replace("ポイ活関連キーワード", "ポイ活関連ワード");
+    }
+  };
+
   const trimRankingKeywordDescriptions = () => {
     if (window.location.pathname !== "/") return;
 
@@ -283,6 +302,7 @@ const freePoikatsuLinkScript = `
     insertFreePoikatsuLink();
     arrangeHeroButtons();
     updateTopCopy();
+    updateTopLabels();
     trimRankingKeywordDescriptions();
     enhanceRankingCards();
   };
