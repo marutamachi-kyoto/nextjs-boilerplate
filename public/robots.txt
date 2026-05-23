@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://poikatu-ai.vercel.app/sitemap.xml
