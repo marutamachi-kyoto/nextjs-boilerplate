@@ -29,6 +29,41 @@ body {
   margin-top: 1rem;
 }
 
+main section:has(> a[href*="pc.moppy.jp/entry/invite.php"]) > a[href*="pc.moppy.jp/entry/invite.php"],
+.top-moppy-signup-cta > a[href*="pc.moppy.jp/entry/invite.php"] {
+  margin-top: calc(1.8rem + 250px) !important;
+  overflow: visible !important;
+  position: relative !important;
+}
+
+main section:has(> a[href*="pc.moppy.jp/entry/invite.php"]) > a[href*="pc.moppy.jp/entry/invite.php"]::before,
+.top-moppy-signup-cta > a[href*="pc.moppy.jp/entry/invite.php"]::before {
+  background: #fff url("https://img.moppy.jp/pub/pc/friend/300x250-1.jpg") center / cover no-repeat;
+  border: 1px solid #ffd4e8;
+  border-radius: 18px;
+  bottom: calc(100% + 1.4rem);
+  box-shadow: 0 18px 36px rgba(236, 72, 153, 0.16);
+  content: "";
+  height: 250px;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
+  width: 300px;
+}
+
+@media (max-width: 420px) {
+  main section:has(> a[href*="pc.moppy.jp/entry/invite.php"]) > a[href*="pc.moppy.jp/entry/invite.php"],
+  .top-moppy-signup-cta > a[href*="pc.moppy.jp/entry/invite.php"] {
+    margin-top: calc(1.4rem + min(250px, 78vw)) !important;
+  }
+
+  main section:has(> a[href*="pc.moppy.jp/entry/invite.php"]) > a[href*="pc.moppy.jp/entry/invite.php"]::before,
+  .top-moppy-signup-cta > a[href*="pc.moppy.jp/entry/invite.php"]::before {
+    height: min(250px, 78vw);
+    width: min(300px, 94vw);
+  }
+}
+
 .ranking-image-box {
   border-color: #dbe3ed !important;
   background: #f8fafc !important;
