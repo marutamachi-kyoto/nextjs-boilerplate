@@ -20,7 +20,13 @@ const freePoikatsuLinkScript = `
   const insertFreePoikatsuLink = () => {
     const aboutLink = document.querySelector('a[href="/about-poikatsu"]');
     if (!aboutLink) return;
-    if (document.querySelector('a[href="/free-poikatsu"]')) return;
+
+    const existingLink = document.querySelector('a[href="/free-poikatsu"]');
+    if (existingLink) {
+      const label = existingLink.querySelector("span:last-child");
+      if (label) label.textContent = "無料でできるポイ活特集";
+      return;
+    }
 
     const link = document.createElement("a");
     link.href = "/free-poikatsu";
@@ -28,9 +34,27 @@ const freePoikatsuLinkScript = `
     link.style.color = "#e6007e";
     link.style.borderColor = "#ff9dcc";
     link.style.boxShadow = "0 12px 28px rgba(236, 15, 124, 0.12)";
-    link.innerHTML = '<span style="display:inline-grid;width:1.6rem;height:1.6rem;place-items:center;border-radius:999px;background:linear-gradient(135deg,#ffd84d,#ff9f00);color:white;font-size:0.85rem;font-weight:900;margin-right:0.5rem;">0</span><span>無料でできるポイ活</span>';
+    link.innerHTML = '<span style="display:inline-grid;width:1.6rem;height:1.6rem;place-items:center;border-radius:999px;background:linear-gradient(135deg,#ffd84d,#ff9f00);color:white;font-size:0.85rem;font-weight:900;margin-right:0.5rem;">0</span><span>無料でできるポイ活特集</span>';
 
     aboutLink.insertAdjacentElement("afterend", link);
+  };
+
+  const updateTopCopy = () => {
+    if (window.location.pathname !== "/") return;
+
+    const heroParagraph = Array.from(document.querySelectorAll("header p")).find((paragraph) => {
+      const text = paragraph.textContent || "";
+      return text.includes("Google") && text.includes("ランキングに反映");
+    });
+
+    if (heroParagraph) {
+      heroParagraph.innerHTML = '<span class="text-pink-600">「Google検索」</span>のデータをもとに、<span class="text-pink-600">いま世間で注目されているポイ活</span>をAIが判定し、<span class="text-pink-600">毎日（0:00～1:00頃）</span>ランキングに反映しています。';
+    }
+
+    const rankingHeading = document.querySelector('#ranking-section h2');
+    if (rankingHeading) {
+      rankingHeading.innerHTML = '【<span style="color:#f59e0b;">AI</span>判定】いま注目されているポイ活ランキング';
+    }
   };
 
   const trimRankingKeywordDescriptions = () => {
@@ -184,6 +208,7 @@ const freePoikatsuLinkScript = `
 
   const applyAdjustments = () => {
     insertFreePoikatsuLink();
+    updateTopCopy();
     trimRankingKeywordDescriptions();
     enhanceRankingCards();
   };
