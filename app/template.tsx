@@ -8,13 +8,13 @@ const freePoikatsuLinkScript = `
   const normalizeText = (text) => {
     return (text || "")
       .toLowerCase()
-      .replace(/　/g, "")
+      .replace(/\u3000/g, "")
       .replace(/\s+/g, "")
-      .replace(/（/g, "(")
-      .replace(/）/g, ")")
-      .replace(/[・･]/g, "")
-      .replace(/[ーｰ−]/g, "-")
-      .replace(/[\[\]【】!！?？。、「」『』()（）]/g, "")
+      .replace(/\uff08/g, "(")
+      .replace(/\uff09/g, ")")
+      .replace(/[\u30fb\uff65]/g, "")
+      .replace(/[\u30fc\uff70\u2212]/g, "-")
+      .replace(/[\[\]\u3010\u3011!\uff01?\uff1f\u3002\u3001\u300c\u300d\u300e\u300f()\uff08\uff09]/g, "")
       .trim();
   };
 
@@ -275,13 +275,8 @@ const freePoikatsuLinkScript = `
   };
 
   applyAdjustments();
-  [300, 900, 1800, 3200, 5200].forEach((delay) => {
+  [300, 900, 1800, 3200, 5200, 8000].forEach((delay) => {
     window.setTimeout(applyAdjustments, delay);
-  });
-
-  new MutationObserver(applyAdjustments).observe(document.documentElement, {
-    childList: true,
-    subtree: true,
   });
 })();
 `;
