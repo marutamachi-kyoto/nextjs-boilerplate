@@ -1,31 +1,35 @@
 const offerLikesScript = `
 (() => {
   const likedPrefix = "poikatu-liked:";
-  let countsPromise = null;
+  let likeDataPromise = null;
 
   const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
 
-  const getCounts = () => {
-    if (!countsPromise) {
-      countsPromise = fetch("/api/likes", { cache: "no-store" })
-        .then((response) => (response.ok ? response.json() : { counts: {} }))
-        .then((json) => json.counts || {})
-        .catch(() => ({}));
+  const getLikeData = () => {
+    if (!likeDataPromise) {
+      likeDataPromise = fetch("/api/likes", { cache: "no-store" })
+        .then((response) => (response.ok ? response.json() : { counts: {}, likeDate: "" }))
+        .then((json) => ({ counts: json.counts || {}, likeDate: json.likeDate || "" }))
+        .catch(() => ({ counts: {}, likeDate: "" }));
     }
-    return countsPromise;
+    return likeDataPromise;
   };
 
-  const hasLiked = (offerName) => {
+  const getLikedKey = (offerName, likeDate) => {
+    return likedPrefix + (likeDate || "today") + ":" + offerName;
+  };
+
+  const hasLiked = (offerName, likeDate) => {
     try {
-      return localStorage.getItem(likedPrefix + offerName) === "1";
+      return localStorage.getItem(getLikedKey(offerName, likeDate)) === "1";
     } catch {
       return false;
     }
   };
 
-  const markLiked = (offerName) => {
+  const markLiked = (offerName, likeDate) => {
     try {
-      localStorage.setItem(likedPrefix + offerName, "1");
+      localStorage.setItem(getLikedKey(offerName, likeDate), "1");
     } catch {}
   };
 
@@ -37,21 +41,22 @@ const offerLikesScript = `
     button.querySelector(".offer-like-text").textContent = liked ? "いいね済み" : "いいね！";
   };
 
-  const createLikeButton = (offerName, count) => {
+  const createLikeButton = (offerName, count, likeDate) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "offer-like-button";
     button.dataset.offerName = offerName;
+    button.dataset.likeDate = likeDate || "";
     button.innerHTML = '<span class="offer-like-icon" aria-hidden="true">♡</span><span class="offer-like-text">いいね！</span><span class="offer-like-count">0</span>';
 
-    setButtonState(button, hasLiked(offerName), count);
+    setButtonState(button, hasLiked(offerName, likeDate), count);
 
     button.addEventListener("click", async () => {
       if (button.dataset.liked === "true") return;
 
       const currentCount = Number(button.querySelector(".offer-like-count").textContent || "0");
       setButtonState(button, true, currentCount + 1);
-      markLiked(offerName);
+      markLiked(offerName, button.dataset.likeDate || likeDate);
 
       try {
         const response = await fetch("/api/likes", {
@@ -60,6 +65,10 @@ const offerLikesScript = `
           body: JSON.stringify({ offer_name: offerName }),
         });
         const json = await response.json();
+        if (json.likeDate) {
+          button.dataset.likeDate = json.likeDate;
+          markLiked(offerName, json.likeDate);
+        }
         if (Number.isFinite(Number(json.count))) {
           setButtonState(button, true, Number(json.count));
         }
@@ -80,7 +89,7 @@ const offerLikesScript = `
   const enhanceOfferLikes = async () => {
     if (location.pathname !== "/" && location.pathname !== "/free-poikatsu") return;
 
-    const counts = await getCounts();
+    const likeData = await getLikeData();
     document.querySelectorAll("main article").forEach((article) => {
       if (article.querySelector(".offer-like-button")) return;
 
@@ -91,7 +100,7 @@ const offerLikesScript = `
       const actionArea = findActionArea(article);
       if (!actionArea) return;
 
-      const button = createLikeButton(offerName, counts[offerName] || 0);
+      const button = createLikeButton(offerName, likeData.counts[offerName] || 0, likeData.likeDate);
       actionArea.insertBefore(button, actionArea.firstChild);
     });
   };
