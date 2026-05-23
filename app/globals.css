@@ -25,6 +25,10 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.offer-like-button {
+  margin-top: 1rem;
+}
+
 .ranking-image-box {
   border-color: #dbe3ed !important;
   background: #f8fafc !important;
