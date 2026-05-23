@@ -23,10 +23,11 @@ const offerLikesScript = `
       '.offer-like-burst { position: absolute; left: 50%; top: 8px; pointer-events: none; color: #ec4899; font-size: 1.35rem; font-weight: 950; transform: translate(-50%, -50%); animation: offerLikeBurst 0.7s ease-out forwards; text-shadow: 0 8px 18px rgba(236, 72, 153, 0.25); }',
       '.offer-like-button[data-liked="true"] .offer-like-burst { color: #fff; }',
       '.free-poikatsu-lead-emphasis { color: #e6007e; background: #fff1f7; padding: 0 0.22em; border-radius: 0.35em; }',
+      '.free-poikatsu-ranking-heading { white-space: nowrap !important; }',
       '@media (min-width: 721px) { header a[href="/about-poikatsu"] > span:last-child, header a[href="/free-poikatsu"] > span:last-child { font-size: 1.12em !important; } }',
       '@keyframes offerLikePop { 0% { transform: scale(1); } 45% { transform: scale(1.08); } 100% { transform: scale(1); } }',
       '@keyframes offerLikeBurst { 0% { opacity: 0; transform: translate(-50%, 0) scale(0.75); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px) scale(1.22); } }',
-      '@media (max-width: 720px) { body header div:has(> a[href="/about-poikatsu"]) { grid-template-columns: 1fr !important; justify-content: stretch !important; overflow-x: visible !important; gap: 0.8rem !important; } body header a[href="/about-poikatsu"], body header a[href="/free-poikatsu"] { width: 100% !important; max-width: 100% !important; } main article { text-align: center !important; } main article h3, main article p { text-align: center !important; } main article > div, main article div:has(> h3), main article div:has(> a[href*="/reviews/"]), main article div:has(> button) { justify-items: center !important; align-items: center !important; } main article .ranking-image-box { margin-left: auto !important; margin-right: auto !important; } .offer-like-button { max-width: 260px; } }',
+      '@media (max-width: 720px) { .free-poikatsu-ranking-heading { white-space: normal !important; } body header div:has(> a[href="/about-poikatsu"]) { grid-template-columns: 1fr !important; justify-content: stretch !important; overflow-x: visible !important; gap: 0.8rem !important; } body header a[href="/about-poikatsu"], body header a[href="/free-poikatsu"] { width: 100% !important; max-width: 100% !important; } main article { text-align: center !important; } main article h3, main article p { text-align: center !important; } main article > div, main article div:has(> h3), main article div:has(> a[href*="/reviews/"]), main article div:has(> button) { justify-items: center !important; align-items: center !important; } main article .ranking-image-box { margin-left: auto !important; margin-right: auto !important; } .offer-like-button { max-width: 260px; } }',
     ].join(String.fromCharCode(10));
     document.head.appendChild(style);
   };
@@ -109,11 +110,15 @@ const offerLikesScript = `
     return button;
   };
 
-  const findActionArea = (article) => {
-    const action = Array.from(article.querySelectorAll("a, button")).find((element) => {
+  const findMoppyAction = (container) => {
+    return Array.from(container.querySelectorAll("a, button")).find((element) => {
       const text = normalizeText(element.textContent);
       return text.includes("モッピーで探す") || text.includes("モッピーで確認");
-    });
+    }) || null;
+  };
+
+  const findActionArea = (article) => {
+    const action = findMoppyAction(article);
     return action?.parentElement || null;
   };
 
@@ -128,9 +133,13 @@ const offerLikesScript = `
       lead.dataset.freePoikatsuCopyUpdated = "true";
     }
 
-    const heading = Array.from(document.querySelectorAll("main h2")).find((element) => normalizeText(element.textContent).includes("無料でできるポイ活一覧"));
-    if (heading && !heading.dataset.freePoikatsuHeadingUpdated) {
-      heading.innerHTML = '<span class="text-orange-400">🔥</span> 【<span style="color:#f59e0b;">AI</span>判定】いま注目されているポイ活ランキング';
+    const heading = Array.from(document.querySelectorAll("main h2")).find((element) => {
+      const text = normalizeText(element.textContent);
+      return text.includes("無料でできるポイ活一覧") || text.includes("いま注目されているポイ活ランキング");
+    });
+    if (heading) {
+      heading.innerHTML = '【<span style="color:#f59e0b;">AI</span>判定】いま注目されているポイ活ランキング';
+      heading.classList.add("free-poikatsu-ranking-heading");
       heading.dataset.freePoikatsuHeadingUpdated = "true";
     }
 
@@ -142,6 +151,15 @@ const offerLikesScript = `
       headingWrap.style.alignItems = "flex-start";
       headingWrap.style.justifyContent = "flex-start";
       headingWrap.dataset.freePoikatsuHeadingLayoutUpdated = "true";
+    }
+
+    const note = Array.from(document.querySelectorAll("main p")).find((element) => {
+      const text = normalizeText(element.textContent);
+      return text.includes("モッピー上で確認できる情報") && text.includes("申し込み前に必ず");
+    });
+    if (note && !note.dataset.freePoikatsuNoteUpdated) {
+      note.innerHTML = '※ モッピー上で確認できる情報をもとに表示しています。ポイント数や条件は変わることがあります。<br />申し込み前に必ずモッピーの案件詳細ページで最新条件を確認してください。';
+      note.dataset.freePoikatsuNoteUpdated = "true";
     }
   };
 
@@ -166,7 +184,8 @@ const offerLikesScript = `
       const actionArea = findActionArea(article);
       if (!actionArea) return;
       const button = createLikeButton(offerName, likeData.counts[offerName] || 0, likeData.likeDate);
-      actionArea.insertBefore(button, actionArea.firstChild);
+      const moppyAction = findMoppyAction(actionArea);
+      actionArea.insertBefore(button, moppyAction || actionArea.firstChild);
     });
   };
 
