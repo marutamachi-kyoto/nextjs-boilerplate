@@ -1,4 +1,5 @@
 import Script from "next/script";
+import OfferLikes from "./offer-likes";
 
 const freePoikatsuLinkScript = `
 (() => {
@@ -30,7 +31,7 @@ const freePoikatsuLinkScript = `
       'header a[href="/about-poikatsu"] span:first-child { display: inline-grid !important; place-items: center !important; width: 3rem !important; height: 3rem !important; margin-right: 0.65rem !important; font-size: 1.75rem !important; line-height: 1 !important; flex: 0 0 auto !important; vertical-align: middle !important; }',
       'header a[href="/free-poikatsu"] span:first-child { display: inline-grid !important; place-items: center !important; width: 2.45rem !important; height: 2.45rem !important; margin-right: 0.65rem !important; font-size: 1.16rem !important; flex: 0 0 auto !important; vertical-align: middle !important; }',
       '@media (min-width: 1024px) { header a[href="/about-poikatsu"], header a[href="/free-poikatsu"] { min-height: 82px !important; padding-left: 2.25rem !important; padding-right: 2.25rem !important; font-size: 1.36rem !important; } }',
-      '@media (max-width: 720px) { header div:has(> a[href="/about-poikatsu"]) { grid-template-columns: max-content max-content !important; overflow-x: auto !important; padding-bottom: 0.25rem !important; } header div:has(> a[href="/about-poikatsu"]) > div:first-child { display: none !important; } header a[href="/about-poikatsu"], header a[href="/free-poikatsu"] { justify-content: center !important; min-height: 62px !important; padding: 0.85rem 1rem !important; font-size: 0.98rem !important; } header a[href="/about-poikatsu"] span:first-child { width: 2.4rem !important; height: 2.4rem !important; font-size: 1.45rem !important; } header a[href="/free-poikatsu"] span:first-child { width: 2.1rem !important; height: 2.1rem !important; font-size: 1rem !important; } }',
+      '@media (max-width: 720px) { header div:has(> a[href="/about-poikatsu"]) { grid-template-columns: 1fr !important; justify-content: stretch !important; overflow-x: visible !important; gap: 0.8rem !important; padding-bottom: 0 !important; } header div:has(> a[href="/about-poikatsu"]) > div:first-child { display: none !important; } header a[href="/about-poikatsu"], header a[href="/free-poikatsu"] { width: 100% !important; max-width: 100% !important; justify-content: center !important; min-height: 62px !important; padding: 0.85rem 1rem !important; font-size: 0.98rem !important; } header a[href="/about-poikatsu"] span:first-child { width: 2.4rem !important; height: 2.4rem !important; font-size: 1.45rem !important; } header a[href="/free-poikatsu"] span:first-child { width: 2.1rem !important; height: 2.1rem !important; font-size: 1rem !important; } }',
     ].join(String.fromCharCode(10));
     document.head.appendChild(style);
   };
@@ -313,6 +314,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{ __html: freePoikatsuLinkScript }}
       />
+      <OfferLikes />
     </>
   );
 }
