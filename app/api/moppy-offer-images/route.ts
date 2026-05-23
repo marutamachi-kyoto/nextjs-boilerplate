@@ -19,8 +19,9 @@ const SOURCE_URLS = [
 
 type MoppyOfferImage = {
   title: string;
-  imageUrl: string;
+  imageUrl?: string;
   url: string;
+  reward: number;
 };
 
 const stripTags = (html: string) => {
@@ -84,6 +85,14 @@ const getTitle = (html: string) => {
     .slice(0, 80);
 };
 
+const getReward = (text: string) => {
+  const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
+    .map((match) => Number(match[1].replace(/,/g, "")))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  return values.length > 0 ? Math.max(...values) : 0;
+};
+
 const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
   const offers: MoppyOfferImage[] = [];
   const linkPattern = /<a\b[^>]*href=["']([^"']*(?:detail\.php|\/ad\/detail)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
@@ -92,14 +101,15 @@ const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
     const href = match[1];
     const chunk = match[2];
     const title = getTitle(chunk);
-    const imageUrl = getImageUrl(chunk, sourceUrl);
+    const text = stripTags(chunk);
 
-    if (!href || !title || !imageUrl) continue;
+    if (!href || !title) continue;
 
     offers.push({
       title,
-      imageUrl,
+      imageUrl: getImageUrl(chunk, sourceUrl),
       url: toAbsoluteUrl(href, sourceUrl),
+      reward: getReward(text),
     });
   }
 
