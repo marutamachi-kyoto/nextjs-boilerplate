@@ -44,6 +44,27 @@ const normalizeText = (text?: string | null) => {
     .trim();
 };
 
+const stripTags = (html: string) => {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const getReward = (text: string) => {
+  const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
+    .map((match) => Number(match[1].replace(/,/g, "")))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  return values.length > 0 ? Math.max(...values) : 0;
+};
+
 const isRewardAvailable = (reward?: number | null) => {
   return Number.isFinite(Number(reward)) && Number(reward) > 0;
 };
@@ -67,6 +88,31 @@ const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
   } catch (error) {
     console.error(error);
     return [];
+  }
+};
+
+const fetchMoppyDetailReward = async (url?: string) => {
+  if (!url) return 0;
+
+  try {
+    const response = await fetch(url, {
+      next: { revalidate: 1800 },
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
+      },
+    });
+
+    if (!response.ok) return 0;
+
+    const html = await response.text();
+    const mainHtml =
+      html.split("ポイ活応援サービス")[0]?.split("ポイントの交換先")[0] || html;
+
+    return getReward(stripTags(mainHtml));
+  } catch (error) {
+    console.error(error);
+    return 0;
   }
 };
 
@@ -156,10 +202,23 @@ export async function GET() {
     }
 
     const sourceItems = (rankingResult.data || []) as RankingItem[];
+    const matchedOffers = await Promise.all(
+      sourceItems.map(async (item) => {
+        const matchedOffer = findMoppyOffer(item, moppyOffers);
+        if (!matchedOffer?.url) return matchedOffer;
+
+        const detailReward = await fetchMoppyDetailReward(matchedOffer.url);
+        if (!isRewardAvailable(detailReward)) return matchedOffer;
+
+        return {
+          ...matchedOffer,
+          reward: detailReward,
+        };
+      })
+    );
 
     const formatted = sourceItems.map((item, index) => {
-      const matchedOffer = findMoppyOffer(item, moppyOffers);
-      return formatRankingItem(item, index, matchedOffer);
+      return formatRankingItem(item, index, matchedOffers[index]);
     });
 
     return Response.json({
