@@ -6,6 +6,7 @@ const supabase = createClient(
 );
 
 const LIKE_SITE_NAME = "LIKE";
+const UNLIKE_SITE_NAME = "UNLIKE";
 
 const normalizeOfferName = (value: unknown) => {
   return String(value || "")
@@ -35,13 +36,35 @@ const getTodayWindow = () => {
   return { likeDate, since, until };
 };
 
+const getOfferCount = async (offerName: string, since: string, until: string) => {
+  const { data, error } = await supabase
+    .from("category_clicks")
+    .select("site_name")
+    .eq("category", offerName)
+    .in("site_name", [LIKE_SITE_NAME, UNLIKE_SITE_NAME])
+    .gte("created_at", since)
+    .lt("created_at", until)
+    .limit(10000);
+
+  if (error) throw error;
+
+  return Math.max(
+    0,
+    (data || []).reduce((count, row) => {
+      if (row.site_name === LIKE_SITE_NAME) return count + 1;
+      if (row.site_name === UNLIKE_SITE_NAME) return count - 1;
+      return count;
+    }, 0)
+  );
+};
+
 export async function GET() {
   try {
     const { likeDate, since, until } = getTodayWindow();
     const { data, error } = await supabase
       .from("category_clicks")
-      .select("category")
-      .eq("site_name", LIKE_SITE_NAME)
+      .select("category, site_name")
+      .in("site_name", [LIKE_SITE_NAME, UNLIKE_SITE_NAME])
       .gte("created_at", since)
       .lt("created_at", until)
       .limit(10000);
@@ -53,7 +76,8 @@ export async function GET() {
     const counts = (data || []).reduce<Record<string, number>>((acc, row) => {
       const offerName = normalizeOfferName(row.category);
       if (!offerName) return acc;
-      acc[offerName] = (acc[offerName] || 0) + 1;
+      const delta = row.site_name === UNLIKE_SITE_NAME ? -1 : 1;
+      acc[offerName] = Math.max(0, (acc[offerName] || 0) + delta);
       return acc;
     }, {});
 
@@ -68,6 +92,7 @@ export async function POST(req: Request) {
     const { likeDate, since, until } = getTodayWindow();
     const body = await req.json();
     const offerName = normalizeOfferName(body.offer_name);
+    const action = body.action === "unlike" ? "unlike" : "like";
 
     if (!offerName) {
       return Response.json({ error: "offer_name is required" }, { status: 400 });
@@ -76,7 +101,7 @@ export async function POST(req: Request) {
     const { error } = await supabase.from("category_clicks").insert([
       {
         category: offerName,
-        site_name: LIKE_SITE_NAME,
+        site_name: action === "unlike" ? UNLIKE_SITE_NAME : LIKE_SITE_NAME,
       },
     ]);
 
@@ -84,19 +109,9 @@ export async function POST(req: Request) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    const { count, error: countError } = await supabase
-      .from("category_clicks")
-      .select("*", { count: "exact", head: true })
-      .eq("site_name", LIKE_SITE_NAME)
-      .eq("category", offerName)
-      .gte("created_at", since)
-      .lt("created_at", until);
+    const count = await getOfferCount(offerName, since, until);
 
-    if (countError) {
-      return Response.json({ error: countError.message }, { status: 500 });
-    }
-
-    return Response.json({ status: "ok", count: count || 0, likeDate });
+    return Response.json({ status: "ok", action, count, likeDate });
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 });
   }
