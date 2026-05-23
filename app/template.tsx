@@ -142,6 +142,30 @@ const freePoikatsuLinkScript = `
     }) || null;
   };
 
+  const formatMoppyReward = (reward) => {
+    const value = Number(reward);
+    if (!Number.isFinite(value) || value <= 0) return null;
+    return value.toLocaleString("ja-JP") + "P";
+  };
+
+  const updateArticleReward = (article, matchedOffer) => {
+    const rewardText = formatMoppyReward(matchedOffer?.reward);
+    if (!rewardText) return;
+
+    const label = Array.from(article.querySelectorAll("div")).find((element) => {
+      return (element.textContent || "").trim() === "報酬ポイントの目安";
+    });
+    const rewardContainer = label?.parentElement;
+    const rewardValue = Array.from(rewardContainer?.children || []).find((child) => {
+      return child !== label && ((child.textContent || "").includes("P") || (child.textContent || "").includes("データ"));
+    });
+
+    if (rewardValue && rewardValue.textContent !== rewardText) {
+      rewardValue.textContent = rewardText;
+      rewardValue.setAttribute("data-moppy-reward", "true");
+    }
+  };
+
   const ensureRankingImageStyle = () => {
     if (document.getElementById("ranking-image-style")) return;
 
@@ -242,15 +266,17 @@ const freePoikatsuLinkScript = `
 
         if (!offerName || !grid || !contentBlock) return;
 
+        const matchedOffer = findImageForOffer(offerName, images);
+
         article.classList.add("ranking-image-enhanced");
         article.classList.add(index < 3 ? "ranking-image-top" : "ranking-image-list");
 
         removeLabelAreas(grid, contentBlock);
+        updateArticleReward(article, matchedOffer);
 
         let imageBox = article.querySelector('[data-ranking-image="true"]');
         if (!imageBox) {
-          const matchedImage = findImageForOffer(offerName, images);
-          imageBox = createRankingImageBox(offerName, matchedImage?.imageUrl);
+          imageBox = createRankingImageBox(offerName, matchedOffer?.imageUrl);
           grid.insertBefore(imageBox, contentBlock);
         }
       });
