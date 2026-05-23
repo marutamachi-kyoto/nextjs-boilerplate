@@ -298,10 +298,32 @@ const freePoikatsuLinkScript = `
     enhanceRankingCards();
   };
 
-  applyAdjustments();
-  [300, 900, 1800, 3200, 5200, 8000].forEach((delay) => {
-    window.setTimeout(applyAdjustments, delay);
-  });
+  const scheduleApplyAdjustments = () => {
+    applyAdjustments();
+    [120, 400, 1000, 2200, 4200, 7000].forEach((delay) => {
+      window.setTimeout(applyAdjustments, delay);
+    });
+  };
+
+  scheduleApplyAdjustments();
+
+  let lastPathname = window.location.pathname;
+  let routeAdjustmentTimer = null;
+  const queueRouteAdjustments = () => {
+    const currentPathname = window.location.pathname;
+    const delay = currentPathname !== lastPathname ? 40 : 120;
+    lastPathname = currentPathname;
+    if (routeAdjustmentTimer) window.clearTimeout(routeAdjustmentTimer);
+    routeAdjustmentTimer = window.setTimeout(scheduleApplyAdjustments, delay);
+  };
+
+  if (document.body) {
+    new MutationObserver(queueRouteAdjustments).observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  }
+  window.addEventListener("popstate", queueRouteAdjustments);
 })();
 `;
 
