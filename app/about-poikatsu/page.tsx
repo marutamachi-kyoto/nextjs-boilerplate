@@ -13,13 +13,12 @@ export default function AboutPoikatsuPage() {
   return (
     <main className="min-h-screen bg-[#fff8fb] px-4 py-6 text-slate-900 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        <nav className="mb-5 text-sm font-bold text-slate-500">
-          <Link href="/" className="hover:text-pink-500">
-            ホーム
-          </Link>
-          <span className="mx-2">›</span>
-          <span className="text-slate-800">ポイ活とは？</span>
-        </nav>
+        <Link
+          href="/"
+          className="mb-5 inline-flex min-h-[54px] items-center justify-center rounded-full border-2 border-slate-200 bg-white px-6 text-base font-black text-slate-700 shadow-lg transition hover:scale-105 hover:bg-slate-50"
+        >
+          ← TOPページに戻る
+        </Link>
 
         <section className="rounded-[2rem] bg-white p-8 text-center shadow-lg ring-1 ring-pink-100 lg:p-12">
           <div className="inline-flex items-center rounded-full bg-green-50 px-7 py-3 text-lg font-black text-green-600 ring-2 ring-green-100">
