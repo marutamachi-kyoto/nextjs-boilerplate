@@ -264,8 +264,9 @@ export default async function FreePoikatsuPage() {
               モッピーでポイ活を始める
             </h2>
             <p className="mx-auto mt-5 max-w-[840px] text-base font-bold leading-8 text-slate-700 lg:text-lg lg:leading-9">
-              モッピーは、広告利用・アプリ利用・ショッピングなどでポイントを貯められるポイントサイトです。
-              気になる無料案件を確認する前に、まずは無料登録しておくとスムーズです。
+              はじめての人は、モッピーの
+              <span className="text-pink-600">会員登録（無料）</span>
+              からスタート
             </p>
             <a
               href={MOPPY_INVITE_URL}
@@ -276,8 +277,7 @@ export default async function FreePoikatsuPage() {
               モッピーでポイ活を始める ›
             </a>
             <p className="mt-4 text-xs font-bold leading-6 text-slate-400 lg:text-sm">
-              ※このページには広告・紹介リンクを含みます。<br className="sm:hidden" />
-              ※会員登録は無料です。安心してご利用いただけます。
+              ※このページには広告・紹介リンクを含みます。
             </p>
           </div>
         </div>
