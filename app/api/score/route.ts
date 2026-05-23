@@ -101,36 +101,30 @@ const getFallbackReason = (offerName: string, trendKeyword?: string | null) => {
 const formatRankingItem = (
   item: RankingItem,
   index: number,
-  matchedOffer?: MoppyOffer | null,
-  fallbackOffer?: MoppyOffer | null
+  matchedOffer?: MoppyOffer | null
 ) => {
-  const offer = matchedOffer || fallbackOffer || null;
   const offerName =
-    offer?.title ||
     item.offer_name ||
     item.trend_keyword ||
     item.category ||
+    matchedOffer?.title ||
     `おすすめ案件 ${index + 1}`;
-  const reward = offer?.reward ?? item.reward ?? 0;
+  const reward = matchedOffer?.reward ?? item.reward ?? 0;
 
   return {
     rank: item.rank ?? index + 1,
 
     offer_name: offerName,
 
-    category: fallbackOffer
-      ? item.category ?? "モッピー掲載案件"
-      : item.category ?? "その他",
+    category: item.category ?? "その他",
     trend_keyword: item.trend_keyword ?? item.offer_name ?? item.category ?? offerName,
 
     reward,
 
     reason:
-      fallbackOffer && !matchedOffer
-        ? getFallbackReason(offerName, item.trend_keyword ?? item.category)
-        : item.description ||
-          item.reason ||
-          getFallbackReason(offerName, item.trend_keyword ?? item.category),
+      item.description ||
+      item.reason ||
+      getFallbackReason(offerName, item.trend_keyword ?? item.category),
 
     primary_site_name: item.primary_site_name ?? "モッピー",
     primary_site_url: item.primary_site_url ?? "https://pc.moppy.jp/",
@@ -160,24 +154,11 @@ export async function GET() {
       );
     }
 
-    const usedOfferTitles = new Set<string>();
     const sourceItems = (rankingResult.data || []) as RankingItem[];
 
     const formatted = sourceItems.map((item, index) => {
       const matchedOffer = findMoppyOffer(item, moppyOffers);
-      if (matchedOffer) usedOfferTitles.add(normalizeText(matchedOffer.title));
-
-      if (matchedOffer || isRewardAvailable(item.reward)) {
-        return formatRankingItem(item, index, matchedOffer);
-      }
-
-      const fallbackOffer = moppyOffers.find(
-        (offer) => !usedOfferTitles.has(normalizeText(offer.title))
-      );
-
-      if (fallbackOffer) usedOfferTitles.add(normalizeText(fallbackOffer.title));
-
-      return formatRankingItem(item, index, null, fallbackOffer);
+      return formatRankingItem(item, index, matchedOffer);
     });
 
     return Response.json({
