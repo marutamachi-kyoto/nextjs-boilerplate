@@ -224,11 +224,11 @@ const formatDate = () => {
 
 function FallbackImage() {
   return (
-    <div className="relative aspect-[1.35/1] overflow-hidden border-b border-slate-100 bg-[#fffaf3]">
-      <div className="absolute inset-4 rounded-[1rem] border border-[#f3ddd8] bg-[#fffdf8]" />
-      <div className="absolute left-[-18%] top-[52%] h-7 w-[136%] -rotate-12 rounded-full bg-gradient-to-r from-[#f8c36b] via-[#ff8f6b] to-[#f36b8f] opacity-85" />
-      <div className="absolute right-8 top-7 h-3.5 w-3.5 rotate-45 rounded-[3px] bg-[#f8c36b]" />
-      <div className="absolute right-14 top-12 h-2 w-2 rotate-45 rounded-[2px] bg-[#8dd7c7]" />
+    <div className="relative aspect-[1.35/1] overflow-hidden border-b border-slate-100 bg-gradient-to-br from-[#fffefe] to-[#fff8fb]">
+      <div className="absolute left-[15%] right-[15%] top-1/2 h-[54px] -translate-y-1/2 rounded-[14px] border-2 border-[#f4b5cf] bg-white/70" />
+      <div className="absolute left-[27%] right-[27%] top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-[#f3a7c6] to-transparent" />
+      <div className="absolute left-[30%] right-[30%] top-[calc(50%-12px)] h-px bg-[#fff2f8]" />
+      <div className="absolute left-[30%] right-[30%] top-[calc(50%+12px)] h-px bg-[#fff2f8]" />
     </div>
   );
 }
