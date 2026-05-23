@@ -127,7 +127,8 @@ const formatRankingItem = (
       getFallbackReason(offerName, item.trend_keyword ?? item.category),
 
     primary_site_name: item.primary_site_name ?? "モッピー",
-    primary_site_url: item.primary_site_url ?? "https://pc.moppy.jp/",
+    primary_site_url:
+      matchedOffer?.url || item.primary_site_url || "https://pc.moppy.jp/",
 
     secondary_site_name: item.secondary_site_name ?? "ポイントインカム",
     secondary_site_url: item.secondary_site_url ?? "https://pointi.jp/",
