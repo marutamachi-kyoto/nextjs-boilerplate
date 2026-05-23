@@ -131,11 +131,12 @@ const freePoikatsuLinkScript = `
     style.textContent =
       ".ranking-image-enhanced{align-items:center;}" +
       ".ranking-image-enhanced > div:first-child{align-items:center;}" +
-      ".ranking-image-box{width:150px;aspect-ratio:1.35/1;overflow:hidden;border:1px solid #f1d8d4;border-radius:18px;background:#fffaf3;box-shadow:0 10px 20px rgba(15,23,42,.06);}" +
+      ".ranking-image-box{width:150px;aspect-ratio:1.35/1;overflow:hidden;border:1px solid #f3d7e4;border-radius:18px;background:#fffafb;box-shadow:0 10px 20px rgba(15,23,42,.05);}" +
       ".ranking-image-box img{display:block;width:100%;height:100%;object-fit:cover;}" +
-      ".ranking-fallback-image{position:relative;width:100%;height:100%;background:linear-gradient(135deg,#fffdfa,#fff7ef);}" +
-      ".ranking-fallback-image::before{content:'';position:absolute;left:-18%;top:52%;width:136%;height:26px;border-radius:999px;background:linear-gradient(90deg,#f8c36b,#ff8f6b,#f36b8f);opacity:.86;transform:rotate(-14deg);}" +
-      ".ranking-fallback-image::after{content:'';position:absolute;right:24px;top:22px;width:14px;height:14px;border-radius:3px;background:#f8c36b;box-shadow:-22px 30px 0 -5px #8dd7c7;transform:rotate(45deg);}" +
+      ".ranking-fallback-image{position:relative;width:100%;height:100%;background:linear-gradient(135deg,#fffefe,#fff8fb);}" +
+      ".ranking-fallback-image::before{content:'';position:absolute;left:22px;right:22px;top:50%;height:54px;border:2px solid #f4b5cf;border-radius:14px;background:rgba(255,255,255,.72);transform:translateY(-50%);}" +
+      ".ranking-fallback-image::after{content:'';position:absolute;left:40px;right:40px;top:50%;height:1px;background:linear-gradient(90deg,transparent,#f3a7c6,transparent);transform:translateY(-50%);box-shadow:0 -12px 0 #fff2f8,0 12px 0 #fff2f8;}" +
+      ".ranking-fallback-image span{display:none;}" +
       "@media (min-width:1280px){article.ranking-image-top > div:first-child{grid-template-columns:120px 160px minmax(0,1.45fr) 260px 260px !important;}article.ranking-image-list{grid-template-columns:58px 150px minmax(0,1.3fr) 220px 210px !important;}}" +
       "@media (min-width:1024px) and (max-width:1279px){article.ranking-image-top > div:first-child{grid-template-columns:90px 150px minmax(0,1fr) !important;}article.ranking-image-list{grid-template-columns:70px 150px minmax(0,1fr) !important;}}" +
       "@media (max-width:1023px){.ranking-image-box{width:min(100%,260px);}}";
