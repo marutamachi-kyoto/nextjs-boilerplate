@@ -3,6 +3,7 @@ import Script from "next/script";
 const freePoikatsuLinkScript = `
 (() => {
   let moppyImagesPromise = null;
+  let rankingCardsEnhancementRunning = false;
 
   const normalizeText = (text) => {
     return (text || "")
@@ -24,7 +25,9 @@ const freePoikatsuLinkScript = `
     const existingLink = document.querySelector('a[href="/free-poikatsu"]');
     if (existingLink) {
       const label = existingLink.querySelector("span:last-child");
-      if (label) label.textContent = "無料でできるポイ活特集";
+      if (label && label.textContent !== "無料でできるポイ活特集") {
+        label.textContent = "無料でできるポイ活特集";
+      }
       return;
     }
 
@@ -47,13 +50,18 @@ const freePoikatsuLinkScript = `
       return text.includes("Google") && text.includes("ランキングに反映");
     });
 
-    if (heroParagraph) {
-      heroParagraph.innerHTML = '<span class="text-pink-600">「Google検索」</span>のデータをもとに、<span class="text-pink-600">いま世間で注目されているポイ活</span>をAIが判定し、<span class="text-pink-600">毎日（0:00～1:00頃）</span>ランキングに反映しています。';
+    const heroHtml = '<span class="text-pink-600">「Google検索」</span>のデータをもとに、<span class="text-pink-600">いま世間で注目されているポイ活</span>をAIが判定し、<span class="text-pink-600">毎日（0:00～1:00頃）</span>ランキングに反映しています。';
+
+    if (heroParagraph && heroParagraph.dataset.topCopyUpdated !== "true") {
+      heroParagraph.innerHTML = heroHtml;
+      heroParagraph.dataset.topCopyUpdated = "true";
     }
 
     const rankingHeading = document.querySelector('#ranking-section h2');
-    if (rankingHeading) {
-      rankingHeading.innerHTML = '【<span style="color:#f59e0b;">AI</span>判定】いま注目されているポイ活ランキング';
+    const rankingHeadingHtml = '【<span style="color:#f59e0b;">AI</span>判定】いま注目されているポイ活ランキング';
+    if (rankingHeading && rankingHeading.dataset.topCopyUpdated !== "true") {
+      rankingHeading.innerHTML = rankingHeadingHtml;
+      rankingHeading.dataset.topCopyUpdated = "true";
     }
   };
 
@@ -179,31 +187,37 @@ const freePoikatsuLinkScript = `
 
   const enhanceRankingCards = async () => {
     if (window.location.pathname !== "/") return;
+    if (rankingCardsEnhancementRunning) return;
 
-    ensureRankingImageStyle();
-    const images = await loadMoppyImages();
-    const rankingArticles = Array.from(document.querySelectorAll('article[id^="ranking-"]'));
+    rankingCardsEnhancementRunning = true;
+    try {
+      ensureRankingImageStyle();
+      const images = await loadMoppyImages();
+      const rankingArticles = Array.from(document.querySelectorAll('article[id^="ranking-"]'));
 
-    rankingArticles.forEach((article, index) => {
-      const heading = article.querySelector("h3");
-      const offerName = heading?.textContent?.trim();
-      const grid = getGridContainer(article, index);
-      const contentBlock = heading?.parentElement;
+      rankingArticles.forEach((article, index) => {
+        const heading = article.querySelector("h3");
+        const offerName = heading?.textContent?.trim();
+        const grid = getGridContainer(article, index);
+        const contentBlock = heading?.parentElement;
 
-      if (!offerName || !grid || !contentBlock) return;
+        if (!offerName || !grid || !contentBlock) return;
 
-      article.classList.add("ranking-image-enhanced");
-      article.classList.add(index < 3 ? "ranking-image-top" : "ranking-image-list");
+        article.classList.add("ranking-image-enhanced");
+        article.classList.add(index < 3 ? "ranking-image-top" : "ranking-image-list");
 
-      removeLabelAreas(grid, contentBlock);
+        removeLabelAreas(grid, contentBlock);
 
-      let imageBox = article.querySelector('[data-ranking-image="true"]');
-      if (!imageBox) {
-        const matchedImage = findImageForOffer(offerName, images);
-        imageBox = createRankingImageBox(offerName, matchedImage?.imageUrl);
-        grid.insertBefore(imageBox, contentBlock);
-      }
-    });
+        let imageBox = article.querySelector('[data-ranking-image="true"]');
+        if (!imageBox) {
+          const matchedImage = findImageForOffer(offerName, images);
+          imageBox = createRankingImageBox(offerName, matchedImage?.imageUrl);
+          grid.insertBefore(imageBox, contentBlock);
+        }
+      });
+    } finally {
+      rankingCardsEnhancementRunning = false;
+    }
   };
 
   const applyAdjustments = () => {
@@ -221,7 +235,6 @@ const freePoikatsuLinkScript = `
   new MutationObserver(applyAdjustments).observe(document.documentElement, {
     childList: true,
     subtree: true,
-    characterData: true,
   });
 })();
 `;
