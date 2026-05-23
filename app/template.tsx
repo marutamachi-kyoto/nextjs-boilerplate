@@ -95,8 +95,11 @@ const freePoikatsuLinkScript = `
     }
 
     const keywordHeading = document.querySelector("#trend-keywords h2");
-    if (keywordHeading && keywordHeading.textContent?.includes("ポイ活関連キーワード")) {
-      keywordHeading.innerHTML = keywordHeading.innerHTML.replace("ポイ活関連キーワード", "ポイ活関連ワード");
+    if (keywordHeading) {
+      keywordHeading.innerHTML = keywordHeading.innerHTML
+        .replace("いまGoogleで話題のポイ活関連キーワード", "いまGoogle検索されているポイ活関連ワード")
+        .replace("いまGoogleで話題のポイ活関連ワード", "いまGoogle検索されているポイ活関連ワード")
+        .replace("ポイ活関連キーワード", "ポイ活関連ワード");
     }
   };
 
