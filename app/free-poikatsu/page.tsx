@@ -253,7 +253,7 @@ export default async function FreePoikatsuPage() {
             ポイ活特集
           </h1>
 
-          <p className="mt-6 max-w-[920px] text-xl font-black leading-10 text-slate-900 lg:text-2xl lg:leading-[2]">
+          <p className="mt-6 max-w-[1040px] text-lg font-bold leading-9 text-slate-900 lg:text-xl lg:leading-10">
             商品購入や有料サービスの申し込みではなく、お金をかけずに始めたい人向けの、無料でできるポイ活をまとめます。
           </p>
         </div>
