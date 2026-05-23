@@ -6,7 +6,18 @@ const offerLikesScript = `
 (() => {
   const likedPrefix = "poikatu-liked:";
   let likeDataPromise = null;
+  let scoreDataPromise = null;
   const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
+  const normalizeKey = (value) => normalizeText(value)
+    .toLowerCase()
+    .replace(/\u3000/g, "")
+    .replace(/\s+/g, "")
+    .replace(/\uff08/g, "(")
+    .replace(/\uff09/g, ")")
+    .replace(/[\u30fb\uff65]/g, "")
+    .replace(/[\u30fc\uff70\u2212]/g, "-")
+    .replace(/[\[\]\u3010\u3011!\uff01?\uff1f\u3002\u3001\u300c\u300d\u300e\u300f()\uff08\uff09]/g, "")
+    .trim();
 
   const ensureOfferLikeStyle = () => {
     if (document.getElementById("offer-like-style")) return;
@@ -40,6 +51,48 @@ const offerLikesScript = `
         .catch(() => ({ counts: {}, likeDate: "" }));
     }
     return likeDataPromise;
+  };
+
+  const getScoreData = () => {
+    if (!scoreDataPromise) {
+      scoreDataPromise = fetch("/api/score", { cache: "no-store" })
+        .then((response) => (response.ok ? response.json() : { data: [] }))
+        .then((json) => (Array.isArray(json.data) ? json.data : []))
+        .catch(() => []);
+    }
+    return scoreDataPromise;
+  };
+
+  const getDirectMoppyUrl = (offerName, scoreData) => {
+    const offerKey = normalizeKey(offerName);
+    if (!offerKey) return "";
+    const item = scoreData.find((score) => {
+      const names = [score.offer_name, score.trend_keyword, score.category].map(normalizeKey).filter(Boolean);
+      return names.some((name) => name === offerKey || (name.length >= 3 && (name.includes(offerKey) || offerKey.includes(name))));
+    });
+    const url = item?.primary_site_url || "";
+    if (!url || url === "https://pc.moppy.jp/" || url.includes("/entry/invite.php")) return "";
+    return url;
+  };
+
+  const attachDirectMoppyAction = (article, offerName, scoreData) => {
+    if (location.pathname !== "/") return;
+    const directUrl = getDirectMoppyUrl(offerName, scoreData);
+    if (!directUrl) return;
+    const action = findMoppyAction(article);
+    if (!action || action.dataset.directMoppyUrl === directUrl) return;
+    action.dataset.directMoppyUrl = directUrl;
+    action.setAttribute("aria-label", "モッピーの案件ページで確認する");
+    action.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+        window.open(directUrl, "_blank", "noopener,noreferrer");
+      },
+      true
+    );
   };
 
   const getLikedKey = (offerName, likeDate) => likedPrefix + (likeDate || "today") + ":" + offerName;
@@ -175,12 +228,13 @@ const offerLikesScript = `
     ensureOfferLikeStyle();
     updateFreePoikatsuCopy();
     adjustRankingSpacing();
-    const likeData = await getLikeData();
+    const [likeData, scoreData] = await Promise.all([getLikeData(), getScoreData()]);
     document.querySelectorAll("main article").forEach((article) => {
-      if (article.querySelector(".offer-like-button")) return;
       const heading = article.querySelector("h3");
       const offerName = normalizeText(heading?.textContent);
       if (!offerName) return;
+      attachDirectMoppyAction(article, offerName, scoreData);
+      if (article.querySelector(".offer-like-button")) return;
       const actionArea = findActionArea(article);
       if (!actionArea) return;
       const button = createLikeButton(offerName, likeData.counts[offerName] || 0, likeData.likeDate);
