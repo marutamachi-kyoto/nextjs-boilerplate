@@ -256,23 +256,29 @@ export default async function FreePoikatsuPage() {
             商品購入や有料サービスの申し込みではなく、お金をかけずに始めたい人向けの、無料でできるポイ活をまとめます。
           </p>
 
-          <div className="mt-8 rounded-[1.4rem] border-2 border-pink-200 bg-white px-6 py-5 shadow-xl shadow-pink-100/70 lg:flex lg:items-center lg:justify-between lg:gap-8">
-            <div>
-              <div className="inline-flex items-center rounded-full border border-pink-200 bg-pink-50 px-5 py-2 text-sm font-black text-pink-600">
-                広告・紹介リンクを含みます
-              </div>
-              <p className="mt-3 text-lg font-black leading-8 text-slate-800 lg:text-xl">
-                モッピーに無料登録して、気になる無料案件を確認しよう
-              </p>
+          <div className="mt-10 rounded-[2rem] border border-pink-100 bg-white/95 px-6 py-8 text-center shadow-xl shadow-pink-100/70 lg:px-12 lg:py-10">
+            <div className="inline-flex items-center rounded-full bg-pink-500 px-6 py-2 text-sm font-black text-white shadow-md shadow-pink-200/70 lg:text-base">
+              ポイ活サイト最大手！
             </div>
+            <h2 className="mt-5 text-4xl font-black leading-tight tracking-tight text-slate-950 lg:text-5xl">
+              モッピーでポイ活を始める
+            </h2>
+            <p className="mx-auto mt-5 max-w-[840px] text-base font-bold leading-8 text-slate-700 lg:text-lg lg:leading-9">
+              モッピーは、広告利用・アプリ利用・ショッピングなどでポイントを貯められるポイントサイトです。
+              気になる無料案件を確認する前に、まずは無料登録しておくとスムーズです。
+            </p>
             <a
               href={MOPPY_INVITE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 flex min-h-[58px] w-full items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-8 text-lg font-black text-white shadow-lg transition hover:scale-105 lg:mt-0 lg:w-[260px] lg:shrink-0"
+              className="mx-auto mt-7 flex min-h-[64px] w-full max-w-[620px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-8 text-lg font-black text-white shadow-xl shadow-pink-200/70 transition hover:scale-105 lg:text-xl"
             >
-              無料登録する ›
+              モッピーでポイ活を始める ›
             </a>
+            <p className="mt-4 text-xs font-bold leading-6 text-slate-400 lg:text-sm">
+              ※このページには広告・紹介リンクを含みます。<br className="sm:hidden" />
+              ※会員登録は無料です。安心してご利用いただけます。
+            </p>
           </div>
         </div>
       </section>
