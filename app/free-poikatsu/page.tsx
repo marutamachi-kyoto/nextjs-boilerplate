@@ -239,8 +239,15 @@ export default async function FreePoikatsuPage() {
   return (
     <main className="min-h-screen bg-[#fff8fb]">
       <section className="border-b border-pink-100 bg-gradient-to-r from-pink-50 via-white to-orange-50">
-        <div className="mx-auto max-w-[1120px] px-5 py-12 lg:py-14">
-          <div className="inline-flex rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-lg">
+        <div className="mx-auto max-w-[1120px] px-5 py-10 lg:py-14">
+          <a
+            href="/"
+            className="inline-flex min-h-[54px] items-center justify-center rounded-full border-2 border-slate-200 bg-white px-6 text-base font-black text-slate-700 shadow-lg transition hover:scale-105 hover:bg-slate-50"
+          >
+            ← TOPページに戻る
+          </a>
+
+          <div className="mt-8 inline-flex rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-lg">
             ￥0ではじめる特集
           </div>
 
@@ -250,12 +257,12 @@ export default async function FreePoikatsuPage() {
             ポイ活特集
           </h1>
 
-          <p className="mt-6 max-w-[760px] text-xl font-black leading-10 text-slate-900 lg:text-2xl lg:leading-[2]">
-            商品購入や有料サービスの申し込みではなく、
+          <p className="mt-6 max-w-[820px] text-xl font-black leading-10 text-slate-900 lg:text-2xl lg:leading-[2]">
+            商品購入や有料サービスの申し込みではなく、お金をかけずに始めたい人向けの、
             <span className="rounded-full bg-pink-50 px-2 text-pink-600">
-              お金をかけずに始めたい人向け
+              無料でできるポイ活
             </span>
-            に、無料登録・資料請求・アプリ利用などのポイ活をまとめます。
+            をまとめます。
           </p>
         </div>
       </section>
