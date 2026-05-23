@@ -50,7 +50,7 @@ const freePoikatsuLinkScript = `
       return text.includes("Google") && text.includes("ランキングに反映");
     });
 
-    const heroHtml = '<span class="text-pink-600">「Google検索」</span>のデータをもとに、<span class="text-pink-600">いま世間で注目されているポイ活</span>をAIが判定し、<span class="text-pink-600">毎日（0:00～1:00頃）</span>ランキングに反映しています。';
+    const heroHtml = '<span class="text-slate-950">「Google検索」</span>のデータをもとに、<span class="text-pink-600">いま世間で注目されているポイ活</span>をAIが判定し、<span class="text-pink-600">毎日（0:00～1:00頃）</span>ランキングに反映しています。';
 
     if (heroParagraph && heroParagraph.dataset.topCopyUpdated !== "true") {
       heroParagraph.innerHTML = heroHtml;
@@ -71,9 +71,11 @@ const freePoikatsuLinkScript = `
     document.querySelectorAll("main p").forEach((paragraph) => {
       const html = paragraph.innerHTML || "";
       const marker = "も一緒に調べられています。";
-      if (!html.includes("Googleの検索動向で") || !html.includes(marker)) return;
+      if (!html.includes("Googleの検索動向で") && !html.includes("Googleの検索で")) return;
+      if (!html.includes(marker)) return;
 
-      const trimmedHtml = html.slice(0, html.indexOf(marker) + marker.length);
+      const updatedHtml = html.split("Googleの検索動向で").join("Googleの検索で");
+      const trimmedHtml = updatedHtml.slice(0, updatedHtml.indexOf(marker) + marker.length);
       if (html !== trimmedHtml) {
         paragraph.innerHTML = trimmedHtml;
       }
@@ -113,10 +115,11 @@ const freePoikatsuLinkScript = `
     style.textContent =
       ".ranking-image-enhanced{align-items:center;}" +
       ".ranking-image-enhanced > div:first-child{align-items:center;}" +
-      ".ranking-image-box{width:150px;aspect-ratio:1.35/1;overflow:hidden;border:1px solid #ffd7e8;border-radius:18px;background:#fff;box-shadow:0 10px 20px rgba(15,23,42,.08);}" +
+      ".ranking-image-box{width:150px;aspect-ratio:1.35/1;overflow:hidden;border:1px solid #f1d8d4;border-radius:18px;background:#fffaf3;box-shadow:0 10px 20px rgba(15,23,42,.06);}" +
       ".ranking-image-box img{display:block;width:100%;height:100%;object-fit:cover;}" +
-      ".ranking-fallback-image{position:relative;width:100%;height:100%;background:radial-gradient(circle at 30% 32%,#ffd84d 0 20%,transparent 21%),radial-gradient(circle at 72% 24%,#ff7db8 0 17%,transparent 18%),linear-gradient(135deg,#fff,#fff8ea);}" +
-      ".ranking-fallback-image::after{content:'P';position:absolute;right:12px;bottom:10px;display:grid;place-items:center;width:44px;height:44px;border-radius:999px;color:#fff;font-size:24px;font-weight:950;background:linear-gradient(135deg,#ffd84d,#ff9f00);}" +
+      ".ranking-fallback-image{position:relative;width:100%;height:100%;background:linear-gradient(135deg,#fffdfa,#fff7ef);}" +
+      ".ranking-fallback-image::before{content:'';position:absolute;left:-18%;top:52%;width:136%;height:26px;border-radius:999px;background:linear-gradient(90deg,#f8c36b,#ff8f6b,#f36b8f);opacity:.86;transform:rotate(-14deg);}" +
+      ".ranking-fallback-image::after{content:'';position:absolute;right:24px;top:22px;width:14px;height:14px;border-radius:3px;background:#f8c36b;box-shadow:-22px 30px 0 -5px #8dd7c7;transform:rotate(45deg);}" +
       "@media (min-width:1280px){article.ranking-image-top > div:first-child{grid-template-columns:120px 160px minmax(0,1.45fr) 260px 260px !important;}article.ranking-image-list{grid-template-columns:58px 150px minmax(0,1.3fr) 220px 210px !important;}}" +
       "@media (min-width:1024px) and (max-width:1279px){article.ranking-image-top > div:first-child{grid-template-columns:90px 150px minmax(0,1fr) !important;}article.ranking-image-list{grid-template-columns:70px 150px minmax(0,1fr) !important;}}" +
       "@media (max-width:1023px){.ranking-image-box{width:min(100%,260px);}}";
