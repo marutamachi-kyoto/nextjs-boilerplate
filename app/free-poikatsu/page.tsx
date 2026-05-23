@@ -224,7 +224,12 @@ const formatDate = () => {
 
 function FallbackImage() {
   return (
-    <div className="relative aspect-[1.35/1] overflow-hidden border-b border-pink-100 bg-gradient-to-br from-pink-50 to-orange-50 before:absolute before:inset-4 before:rounded-[1rem] before:bg-[radial-gradient(circle_at_30%_32%,#ffd84d_0_18%,transparent_19%),radial-gradient(circle_at_72%_24%,#ff7db8_0_15%,transparent_16%),linear-gradient(135deg,#ffffff_0%,#fff8ea_100%)] before:shadow-inner after:absolute after:bottom-4 after:right-5 after:grid after:h-14 after:w-14 after:place-items-center after:rounded-full after:bg-gradient-to-br after:from-yellow-300 after:to-orange-400 after:text-3xl after:font-black after:text-white after:content-['P']" />
+    <div className="relative aspect-[1.35/1] overflow-hidden border-b border-slate-100 bg-[#fffaf3]">
+      <div className="absolute inset-4 rounded-[1rem] border border-[#f3ddd8] bg-[#fffdf8]" />
+      <div className="absolute left-[-18%] top-[52%] h-7 w-[136%] -rotate-12 rounded-full bg-gradient-to-r from-[#f8c36b] via-[#ff8f6b] to-[#f36b8f] opacity-85" />
+      <div className="absolute right-8 top-7 h-3.5 w-3.5 rotate-45 rounded-[3px] bg-[#f8c36b]" />
+      <div className="absolute right-14 top-12 h-2 w-2 rotate-45 rounded-[2px] bg-[#8dd7c7]" />
+    </div>
   );
 }
 
