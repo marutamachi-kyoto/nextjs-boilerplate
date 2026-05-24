@@ -7,7 +7,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const GOOGLE_TRENDS_RSS_URL = "https://trends.google.com/trending/rss?geo=JP";
 const MOPPY_OFFER_URL = "https://poikatu-ai.vercel.app/api/moppy-offer-images";
 const RANKING_LIMIT = 50;
 
@@ -36,13 +35,6 @@ type RankingItem = {
 const normalizeText = (text?: string | null) => {
   return (text || "")
     .toLowerCase()
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/<!\[CDATA\[/g, "")
-    .replace(/\]\]>/g, "")
     .replace(/\u3000/g, "")
     .replace(/\s+/g, "")
     .replace(/\uff08/g, "(")
@@ -85,39 +77,6 @@ const isVerifiedMoppyOffer = (offer?: MoppyOffer | null): offer is MoppyOffer =>
       !offer.url.includes("/entry/invite.php") &&
       isRewardAvailable(offer.reward)
   );
-};
-
-const fetchGoogleTrendKeywordSet = async () => {
-  try {
-    const response = await fetch(GOOGLE_TRENDS_RSS_URL, {
-      cache: "no-store",
-      headers: {
-        "user-agent":
-          "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
-      },
-    });
-
-    if (!response.ok) return new Set<string>();
-
-    const xml = await response.text();
-    const titles = [...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)]
-      .map((match) => normalizeText(match[1]))
-      .filter(Boolean)
-      .filter((title) => !/dailysearchtrends|検索トレンド/i.test(title));
-
-    return new Set(titles);
-  } catch (error) {
-    console.error(error);
-    return new Set<string>();
-  }
-};
-
-const isGoogleTrendDerived = (
-  item: RankingItem,
-  trendKeywordSet: Set<string>
-) => {
-  const trendKeyword = normalizeText(item.trend_keyword);
-  return Boolean(trendKeyword && trendKeywordSet.has(trendKeyword));
 };
 
 const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
@@ -212,25 +171,18 @@ const formatRankingItem = (
 
   return {
     rank: index + 1,
-
     offer_name: offerName,
-
     category: item.category ?? "その他",
     trend_keyword: item.trend_keyword ?? item.offer_name ?? item.category ?? offerName,
-
     reward,
-
     reason:
       item.description ||
       item.reason ||
       getFallbackReason(offerName, item.trend_keyword ?? item.category),
-
     primary_site_name: "モッピー",
     primary_site_url: matchedOffer.url,
-
     secondary_site_name: item.secondary_site_name ?? "ポイントインカム",
     secondary_site_url: item.secondary_site_url ?? "https://pointi.jp/",
-
     updated_at: item.updated_at,
   };
 };
@@ -243,10 +195,7 @@ export async function GET() {
       .order("updated_at", { ascending: false })
       .order("rank", { ascending: true })
       .limit(RANKING_LIMIT);
-    const [moppyOffers, trendKeywordSet] = await Promise.all([
-      fetchMoppyOffers(),
-      fetchGoogleTrendKeywordSet(),
-    ]);
+    const moppyOffers = await fetchMoppyOffers();
 
     if (rankingResult.error) {
       console.error(rankingResult.error);
@@ -256,9 +205,7 @@ export async function GET() {
       );
     }
 
-    const sourceItems = ((rankingResult.data || []) as RankingItem[]).filter(
-      (item) => isGoogleTrendDerived(item, trendKeywordSet)
-    );
+    const sourceItems = (rankingResult.data || []) as RankingItem[];
     const verifiedPairs = await Promise.all(
       sourceItems.map(async (item) => {
         const matchedOffer = findMoppyOffer(item, moppyOffers);
