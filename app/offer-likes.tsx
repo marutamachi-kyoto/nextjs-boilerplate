@@ -7,8 +7,6 @@ const offerLikesScript = `
   const likedPrefix = "poikatu-liked:";
   let likeDataPromise = null;
   let scoreDataPromise = null;
-  let routeAdjustmentTimer = null;
-
   const normalizeText = (value) => String(value || "").replace(/\s+/g, " ").trim();
   const normalizeKey = (value) => normalizeText(value)
     .toLowerCase()
@@ -34,9 +32,9 @@ const offerLikesScript = `
       '.offer-like-button[data-liked="true"] .offer-like-count { background: rgba(255,255,255,0.95); color: #db2777; }',
       '.offer-like-button.offer-like-pop { animation: offerLikePop 0.34s ease both; }',
       '.offer-like-burst { position: absolute; left: 50%; top: 8px; pointer-events: none; color: #ec4899; font-size: 1.35rem; font-weight: 950; transform: translate(-50%, -50%); animation: offerLikeBurst 0.7s ease-out forwards; text-shadow: 0 8px 18px rgba(236, 72, 153, 0.25); }',
+      '.offer-like-button[data-liked="true"] .offer-like-burst { color: #fff; }',
       '.free-poikatsu-lead-emphasis { color: #e6007e; background: #fff1f7; padding: 0 0.22em; border-radius: 0.35em; }',
       '.free-poikatsu-ranking-heading { white-space: nowrap !important; }',
-      '.ranking-image-box img { display: block; width: 100%; height: 100%; object-fit: cover; }',
       '@media (min-width: 721px) { header a[href="/about-poikatsu"] > span:last-child, header a[href="/free-poikatsu"] > span:last-child { font-size: 1.12em !important; } }',
       '@keyframes offerLikePop { 0% { transform: scale(1); } 45% { transform: scale(1.08); } 100% { transform: scale(1); } }',
       '@keyframes offerLikeBurst { 0% { opacity: 0; transform: translate(-50%, 0) scale(0.75); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -34px) scale(1.22); } }',
@@ -65,18 +63,13 @@ const offerLikesScript = `
     return scoreDataPromise;
   };
 
-  const findScoreItem = (offerName, scoreData) => {
-    const offerKey = normalizeKey(offerName);
-    if (!offerKey) return null;
-
-    return scoreData.find((score) => {
-      const scoreKey = normalizeKey(score.offer_name);
-      return scoreKey === offerKey || (scoreKey.length >= 5 && (scoreKey.includes(offerKey) || offerKey.includes(scoreKey)));
-    }) || null;
-  };
-
   const getDirectMoppyUrl = (offerName, scoreData) => {
-    const item = findScoreItem(offerName, scoreData);
+    const offerKey = normalizeKey(offerName);
+    if (!offerKey) return "";
+    const item = scoreData.find((score) => {
+      const names = [score.offer_name, score.trend_keyword, score.category].map(normalizeKey).filter(Boolean);
+      return names.some((name) => name === offerKey || (name.length >= 3 && (name.includes(offerKey) || offerKey.includes(name))));
+    });
     const url = item?.primary_site_url || "";
     if (!url || url === "https://pc.moppy.jp/" || url.includes("/entry/invite.php")) return "";
     return url;
@@ -102,38 +95,10 @@ const offerLikesScript = `
     );
   };
 
-  const isUsableImageUrl = (url) => {
-    const value = String(url || "").toLowerCase();
-    if (!value) return false;
-    return !["1x1", "pixel", "spacer", "blank", "favicon", "logo", "ad-track.jp/ad/p/img"].some((word) => value.includes(word));
-  };
-
-  const updateRankingImageFromScore = (article, offerName, scoreData) => {
-    if (location.pathname !== "/") return;
-    const item = findScoreItem(offerName, scoreData);
-    const imageUrl = item?.image_url || "";
-    if (!isUsableImageUrl(imageUrl)) return;
-
-    const imageBox = article.querySelector('[data-ranking-image="true"]') || article.querySelector(".ranking-image-box");
-    if (!imageBox) return;
-
-    const currentImage = imageBox.querySelector("img");
-    if (currentImage?.getAttribute("src") === imageUrl) return;
-
-    imageBox.innerHTML = "";
-    const image = document.createElement("img");
-    image.src = imageUrl;
-    image.alt = offerName;
-    image.loading = "lazy";
-    image.decoding = "async";
-    image.onerror = () => {
-      imageBox.innerHTML = '<div class="ranking-fallback-image" aria-label="画像が取れませんでした"></div>';
-    };
-    imageBox.appendChild(image);
-  };
-
   const getLikedKey = (offerName, likeDate) => likedPrefix + (likeDate || "today") + ":" + offerName;
-  const hasLiked = (offerName, likeDate) => { try { return localStorage.getItem(getLikedKey(offerName, likeDate)) === "1"; } catch { return false; } };
+  const hasLiked = (offerName, likeDate) => {
+    try { return localStorage.getItem(getLikedKey(offerName, likeDate)) === "1"; } catch { return false; }
+  };
   const markLiked = (offerName, likeDate) => { try { localStorage.setItem(getLikedKey(offerName, likeDate), "1"); } catch {} };
   const unmarkLiked = (offerName, likeDate) => { try { localStorage.removeItem(getLikedKey(offerName, likeDate)); } catch {} };
 
@@ -268,7 +233,6 @@ const offerLikesScript = `
       const heading = article.querySelector("h3");
       const offerName = normalizeText(heading?.textContent);
       if (!offerName) return;
-      updateRankingImageFromScore(article, offerName, scoreData);
       attachDirectMoppyAction(article, offerName, scoreData);
       if (article.querySelector(".offer-like-button")) return;
       const actionArea = findActionArea(article);
@@ -281,20 +245,11 @@ const offerLikesScript = `
 
   const run = () => {
     enhanceOfferLikes();
-    [300, 800, 1600, 3000, 5200, 8000].forEach((delay) => window.setTimeout(enhanceOfferLikes, delay));
-  };
-
-  const queueRun = () => {
-    if (routeAdjustmentTimer) window.clearTimeout(routeAdjustmentTimer);
-    routeAdjustmentTimer = window.setTimeout(run, 120);
+    [400, 1000, 2200, 4200, 7000].forEach((delay) => window.setTimeout(enhanceOfferLikes, delay));
   };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run, { once: true });
   else run();
-  if (document.body) {
-    new MutationObserver(queueRun).observe(document.body, { childList: true, subtree: true });
-  }
-  window.addEventListener("popstate", queueRun);
 })();
 `;
 
