@@ -118,6 +118,19 @@ const offerLikesScript = `
     return "ranking-" + (index + 1) + "-" + normalizeRankingIdKey(offerName);
   };
 
+  const findTrendKeywordRankingTargetFromDom = (keyword) => {
+    const keywordKey = normalizeKey(keyword);
+    if (!keywordKey) return "";
+
+    const article = Array.from(document.querySelectorAll('main article[id^="ranking-"]')).find((candidate) => {
+      const headingKey = normalizeKey(candidate.querySelector("h3")?.textContent);
+      if (!headingKey) return false;
+      return headingKey === keywordKey || (headingKey.length >= 3 && keywordKey.length >= 3 && (headingKey.includes(keywordKey) || keywordKey.includes(headingKey)));
+    });
+
+    return article?.id || "";
+  };
+
   const scrollToRankingTarget = (targetId) => {
     const target = document.getElementById(targetId);
     if (!target) return;
@@ -162,7 +175,11 @@ const offerLikesScript = `
       if (!element.className || !String(element.className).includes("bg-pink-100") || !String(element.className).includes("text-pink-600")) return;
 
       const matchedItem = findTrendKeywordRankingItem(text, scoreData);
-      const targetId = matchedItem ? getRankingTargetId(scoreData, matchedItem) : "";
+      const apiTargetId = matchedItem ? getRankingTargetId(scoreData, matchedItem) : "";
+      const targetId = apiTargetId && document.getElementById(apiTargetId)
+        ? apiTargetId
+        : findTrendKeywordRankingTargetFromDom(text);
+
       if (targetId && document.getElementById(targetId)) makeTrendKeywordButton(element, targetId);
     });
   };
