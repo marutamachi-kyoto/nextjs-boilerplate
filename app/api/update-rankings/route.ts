@@ -10,9 +10,40 @@ const supabase = createClient(
 );
 
 const GOOGLE_TRENDS_RSS_URL = "https://trends.google.com/trending/rss?geo=JP";
+const GOOGLE_SUGGEST_URL = "https://suggestqueries.google.com/complete/search";
 const MOPPY_OFFER_URL = "https://poikatu-ai.vercel.app/api/moppy-offer-images";
 const RANKING_LIMIT = 50;
 const TREND_CANDIDATE_LIMIT = 200;
+const OFFER_SUGGEST_SEED_LIMIT = 80;
+const SUGGEST_BATCH_SIZE = 10;
+
+const STATIC_GOOGLE_SUGGEST_SEEDS = [
+  "ポイ活",
+  "ポイントサイト",
+  "モッピー",
+  "モッピー 高額案件",
+  "モッピー クレジットカード",
+  "モッピー 証券",
+  "モッピー 銀行",
+  "モッピー スマホ",
+  "モッピー 無料案件",
+  "ポイ活 クレジットカード",
+  "ポイ活 証券",
+  "ポイ活 銀行",
+  "ポイ活 スマホ",
+  "ポイ活 アプリ",
+  "ポイ活 無料",
+  "ポイントサイト クレジットカード",
+  "ポイントサイト 証券",
+  "ポイントサイト 高額案件",
+  "楽天カード ポイ活",
+  "PayPayカード ポイ活",
+  "SBI証券 ポイ活",
+  "楽天銀行 ポイ活",
+  "ahamo ポイ活",
+  "LINEMO ポイ活",
+  "U-NEXT ポイ活",
+];
 
 type TrendItem = {
   keyword: string;
@@ -188,6 +219,9 @@ const POIKATSU_LIKE_WORDS = [
   "資料請求",
   "買取",
   "査定",
+  "ポイ活",
+  "ポイント",
+  "モッピー",
 ];
 
 function hasNgNonPoikatsuWord(text: string) {
@@ -232,7 +266,7 @@ function isTrendRelatedOffer(trendKeyword: string, offerTitle: string) {
   return false;
 }
 
-async function getGoogleTrends(): Promise<TrendItem[]> {
+async function getGoogleRssTrends(): Promise<string[]> {
   const res = await fetch(GOOGLE_TRENDS_RSS_URL, {
     cache: "no-store",
     headers: {
@@ -241,20 +275,65 @@ async function getGoogleTrends(): Promise<TrendItem[]> {
     },
   });
 
-  if (!res.ok) {
-    throw new Error(`Google Trends RSS fetch failed: ${res.status}`);
-  }
+  if (!res.ok) return [];
 
   const xml = await res.text();
-  const titles = [...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)]
+  return [...xml.matchAll(/<title>([\s\S]*?)<\/title>/g)]
     .map((match) => normalizeText(match[1]))
     .filter(Boolean)
     .filter((title) => !/Daily Search Trends|検索トレンド/i.test(title))
     .filter(isSafeTrendKeyword);
+}
 
-  const unique = Array.from(new Set(titles));
+async function getGoogleSuggestKeywords(query: string): Promise<string[]> {
+  try {
+    const url = `${GOOGLE_SUGGEST_URL}?client=firefox&hl=ja&gl=jp&q=${encodeURIComponent(query)}`;
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
+      },
+    });
 
-  return unique.slice(0, TREND_CANDIDATE_LIMIT).map((keyword, index) => ({
+    if (!res.ok) return [];
+
+    const json = await res.json();
+    const suggestions = Array.isArray(json?.[1]) ? (json[1] as string[]) : [];
+
+    return suggestions.map(normalizeText).filter(Boolean).filter(isSafeTrendKeyword);
+  } catch (error) {
+    console.error(`google suggest fetch error: ${query}`, error);
+    return [];
+  }
+}
+
+async function getGoogleSuggestsInBatches(seeds: string[]) {
+  const results: string[] = [];
+
+  for (let i = 0; i < seeds.length; i += SUGGEST_BATCH_SIZE) {
+    const batch = seeds.slice(i, i + SUGGEST_BATCH_SIZE);
+    const batchResults = await Promise.all(batch.map(getGoogleSuggestKeywords));
+    results.push(...batchResults.flat());
+  }
+
+  return results;
+}
+
+async function getGoogleSearchCandidates(offers: MoppyOffer[]): Promise<TrendItem[]> {
+  const rssKeywords = await getGoogleRssTrends();
+  const offerSeeds = offers
+    .slice()
+    .sort((a, b) => Number(b.reward) - Number(a.reward))
+    .slice(0, OFFER_SUGGEST_SEED_LIMIT)
+    .flatMap((offer) => [offer.title, `${offer.title} ポイ活`, `${offer.title} モッピー`]);
+  const seeds = Array.from(new Set([...STATIC_GOOGLE_SUGGEST_SEEDS, ...offerSeeds]));
+  const suggestKeywords = await getGoogleSuggestsInBatches(seeds);
+  const unique = Array.from(new Set([...rssKeywords, ...suggestKeywords]))
+    .filter(isSafeTrendKeyword)
+    .slice(0, TREND_CANDIDATE_LIMIT);
+
+  return unique.map((keyword, index) => ({
     keyword,
     score: Math.max(100 - index, 50),
   }));
@@ -389,11 +468,8 @@ async function updateTrends(rows: CandidateItem[]) {
 
 export async function GET() {
   try {
-    const [trends, offers] = await Promise.all([
-      getGoogleTrends(),
-      getMoppyOffers(),
-    ]);
-
+    const offers = await getMoppyOffers();
+    const trends = await getGoogleSearchCandidates(offers);
     const candidates = buildCandidates(trends, offers);
 
     await updateRankings(candidates);
@@ -406,7 +482,9 @@ export async function GET() {
       trends_count: trends.length,
       moppy_offers_count: offers.length,
       trend_candidate_limit: TREND_CANDIDATE_LIMIT,
+      offer_suggest_seed_limit: OFFER_SUGGEST_SEED_LIMIT,
       ranking_limit: RANKING_LIMIT,
+      google_trend_rss_and_search_suggest_enabled: true,
       google_trend_only: true,
       moppy_url_and_reward_required: true,
       empty_result_keeps_previous_rankings: true,
