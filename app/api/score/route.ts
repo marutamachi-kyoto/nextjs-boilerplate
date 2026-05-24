@@ -65,6 +65,44 @@ const stripTags = (html: string) => {
     .trim();
 };
 
+const toAbsoluteUrl = (url: string, baseUrl: string) => {
+  try {
+    return new URL(url, baseUrl).toString();
+  } catch {
+    return url;
+  }
+};
+
+const isUsableImageUrl = (url?: string) => {
+  if (!url) return false;
+
+  const lowerUrl = url.toLowerCase();
+  const trackingImagePatterns = [
+    "ad-track.jp/ad/p/img",
+    "ad-track.jp/ad/p/",
+    "doubleclick",
+    "pixel",
+    "1x1",
+    "spacer",
+    "blank",
+    "favicon",
+    "logo",
+  ];
+
+  return !trackingImagePatterns.some((pattern) => lowerUrl.includes(pattern));
+};
+
+const getImageUrl = (html: string, baseUrl: string) => {
+  const ogImage = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i)?.[1];
+  const imageMatches = [...html.matchAll(/<img[^>]+(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/gi)];
+  const imageUrls = [ogImage, ...imageMatches.map((match) => match[1])]
+    .filter((url): url is string => Boolean(url))
+    .map((url) => toAbsoluteUrl(url, baseUrl))
+    .filter(isUsableImageUrl);
+
+  return imageUrls.find((url) => url.includes("img.moppy.jp")) || imageUrls[0];
+};
+
 const getReward = (text: string) => {
   const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
     .map((match) => Number(match[1].replace(/,/g, "")))
@@ -110,8 +148,8 @@ const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
   }
 };
 
-const fetchMoppyDetailReward = async (url?: string) => {
-  if (!url) return 0;
+const fetchMoppyDetailData = async (url?: string) => {
+  if (!url) return { reward: 0, imageUrl: undefined as string | undefined };
 
   try {
     const response = await fetch(url, {
@@ -122,16 +160,19 @@ const fetchMoppyDetailReward = async (url?: string) => {
       },
     });
 
-    if (!response.ok) return 0;
+    if (!response.ok) return { reward: 0, imageUrl: undefined };
 
     const html = await response.text();
     const mainHtml =
       html.split("ポイ活応援サービス")[0]?.split("ポイントの交換先")[0] || html;
 
-    return getReward(stripTags(mainHtml));
+    return {
+      reward: getReward(stripTags(mainHtml)),
+      imageUrl: getImageUrl(mainHtml, url),
+    };
   } catch (error) {
     console.error(error);
-    return 0;
+    return { reward: 0, imageUrl: undefined };
   }
 };
 
@@ -236,10 +277,14 @@ export async function GET() {
         const matchedOffer = findMoppyOffer(item, moppyOffers);
         if (!isVerifiedMoppyOffer(matchedOffer)) return null;
 
-        const detailReward = await fetchMoppyDetailReward(matchedOffer.url);
-        const verifiedOffer = isRewardAvailable(detailReward)
-          ? { ...matchedOffer, reward: detailReward }
-          : matchedOffer;
+        const detailData = await fetchMoppyDetailData(matchedOffer.url);
+        const verifiedOffer = {
+          ...matchedOffer,
+          reward: isRewardAvailable(detailData.reward)
+            ? detailData.reward
+            : matchedOffer.reward,
+          imageUrl: detailData.imageUrl || matchedOffer.imageUrl,
+        };
 
         return isVerifiedMoppyOffer(verifiedOffer)
           ? { item, matchedOffer: verifiedOffer }
