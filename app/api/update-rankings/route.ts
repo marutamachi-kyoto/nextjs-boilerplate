@@ -63,10 +63,7 @@ type CandidateItem = {
   category: string;
   reward: number;
   final_score: number;
-  is_registered: boolean;
-  confidence_score: number;
   reason: string;
-  primary_site_name: string;
   primary_site_url: string;
 };
 
@@ -405,10 +402,7 @@ function buildCandidates(trends: TrendItem[], offers: MoppyOffer[]) {
           reward: offer.reward,
           trendIndex,
         }),
-        is_registered: true,
-        confidence_score: 100,
         reason: generateReason(offer.title, trend.keyword),
-        primary_site_name: "モッピー",
         primary_site_url: offer.url,
       });
     });
@@ -434,10 +428,6 @@ async function updateRankings(rows: CandidateItem[]) {
     reward: item.reward,
     final_score: item.final_score,
     reason: item.reason,
-    is_registered: item.is_registered,
-    confidence_score: item.confidence_score,
-    primary_site_name: item.primary_site_name,
-    primary_site_url: item.primary_site_url,
     updated_at: now,
   }));
 
@@ -488,7 +478,7 @@ export async function GET() {
       google_trend_only: true,
       moppy_url_and_reward_required: true,
       empty_result_keeps_previous_rankings: true,
-      moppy_url_saved_in_rankings: true,
+      moppy_url_not_saved_due_schema: true,
       offers_backfill_enabled: false,
       sample: candidates.slice(0, 5),
     });
