@@ -18,6 +18,15 @@ const offerLikesScript = `
     .replace(/[\u30fc\uff70\u2212]/g, "-")
     .replace(/[\[\]\u3010\u3011!\uff01?\uff1f\u3002\u3001\u300c\u300d\u300e\u300f()\uff08\uff09]/g, "")
     .trim();
+  const normalizeRankingIdKey = (value) => String(value || "")
+    .toLowerCase()
+    .replace(/\u3000/g, "")
+    .replace(/\s+/g, "")
+    .replace(/\uff08/g, "(")
+    .replace(/\uff09/g, ")")
+    .replace(/[\u30fb\uff65]/g, "")
+    .replace(/[\u30fc\uff70\u2212]/g, "-")
+    .trim();
 
   const ensureOfferLikeStyle = () => {
     if (document.getElementById("offer-like-style")) return;
@@ -85,6 +94,79 @@ const offerLikesScript = `
     return url;
   };
 
+  const getRankingOfferName = (score) => score?.offer_name || score?.trend_keyword || score?.category || "";
+
+  const findTrendKeywordRankingItem = (keyword, scoreData) => {
+    const keywordKey = normalizeKey(keyword);
+    if (!keywordKey) return null;
+
+    return scoreData.find((score) => {
+      const names = [score.offer_name, score.trend_keyword, score.category].map(normalizeKey).filter(Boolean);
+      return names.some((name) => {
+        if (!name) return false;
+        if (name === keywordKey) return true;
+        return name.length >= 3 && keywordKey.length >= 3 && (name.includes(keywordKey) || keywordKey.includes(name));
+      });
+    }) || null;
+  };
+
+  const getRankingTargetId = (scoreData, scoreItem) => {
+    const index = scoreData.indexOf(scoreItem);
+    if (index < 0) return "";
+    const offerName = getRankingOfferName(scoreItem);
+    if (!offerName) return "";
+    return "ranking-" + (index + 1) + "-" + normalizeRankingIdKey(offerName);
+  };
+
+  const scrollToRankingTarget = (targetId) => {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  const makeTrendKeywordButton = (element, targetId) => {
+    if (!targetId || element.dataset.trendKeywordLinked === "true") return;
+
+    const click = (event) => {
+      event.preventDefault();
+      scrollToRankingTarget(targetId);
+    };
+
+    if (element.tagName === "BUTTON") {
+      element.dataset.trendKeywordLinked = "true";
+      element.classList.add("underline", "decoration-2", "underline-offset-4");
+      element.title = "ランキング内の該当案件へ移動";
+      element.addEventListener("click", click);
+      return;
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = element.className;
+    button.classList.add("underline", "decoration-2", "underline-offset-4", "active:scale-95");
+    button.dataset.trendKeywordLinked = "true";
+    button.title = "ランキング内の該当案件へ移動";
+    button.textContent = normalizeText(element.textContent);
+    button.addEventListener("click", click);
+    element.replaceWith(button);
+  };
+
+  const linkTrendKeywordPills = (scoreData) => {
+    if (location.pathname !== "/") return;
+    const section = document.getElementById("trend-keywords");
+    if (!section) return;
+
+    section.querySelectorAll("button, div").forEach((element) => {
+      const text = normalizeText(element.textContent);
+      if (!text || text.includes("最終更新") || text.includes("Google") || text.includes("関連")) return;
+      if (!element.className || !String(element.className).includes("bg-pink-100") || !String(element.className).includes("text-pink-600")) return;
+
+      const matchedItem = findTrendKeywordRankingItem(text, scoreData);
+      const targetId = matchedItem ? getRankingTargetId(scoreData, matchedItem) : "";
+      if (targetId && document.getElementById(targetId)) makeTrendKeywordButton(element, targetId);
+    });
+  };
+
   const attachDirectMoppyAction = (article, offerName, scoreData) => {
     if (location.pathname !== "/") return;
     const directUrl = getDirectMoppyUrl(offerName, scoreData);
@@ -114,7 +196,7 @@ const offerLikesScript = `
 
   const extractQuotedWords = (text) => {
     const words = [];
-    const pattern = /「([^」]+)」/g;
+    const pattern = /\u300c([^\u300d]+)\u300d/g;
     let match = pattern.exec(String(text || ""));
     while (match) {
       const word = normalizeText(match[1]);
@@ -289,6 +371,7 @@ const offerLikesScript = `
     updateFreePoikatsuCopy();
     adjustRankingSpacing();
     const [likeData, scoreData] = await Promise.all([getLikeData(), getScoreData()]);
+    linkTrendKeywordPills(scoreData);
     document.querySelectorAll("main article").forEach((article) => {
       const heading = article.querySelector("h3");
       const offerName = normalizeText(heading?.textContent);
