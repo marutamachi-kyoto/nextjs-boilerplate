@@ -77,7 +77,7 @@ const normalizeText = (text?: string | null) => {
 const normalizeToken = (text?: string | null) => {
   return normalizeText(text)
     .replace(/[®™©]/g, "")
-    .replace(/[・･_\-|｜/／:：,，.。+＋]/g, "")
+    .replace(/[・･_\-|｜\/／:：,，.。+＋]/g, "")
     .trim();
 };
 
@@ -293,7 +293,7 @@ const isStrongNameMatch = (offerName: string, title: string) => {
 
 const getImportantTokens = (value: string) => {
   return value
-    .replace(/[【】\[\]（）()「」『』・･_\-|｜/／:：,，.。+＋]/g, " ")
+    .replace(/[【】\[\]（）()「」『』・･_\-|｜\/／:：,，.。+＋]/g, " ")
     .split(/\s+/)
     .map((token) => token.trim())
     .filter(Boolean)
