@@ -8,6 +8,7 @@ const supabase = createClient(
 );
 
 const MOPPY_OFFER_URL = "https://poikatu-ai.vercel.app/api/moppy-offer-images";
+const RANKING_LIMIT = 50;
 
 type MoppyOffer = {
   title: string;
@@ -78,6 +79,10 @@ const isVerifiedMoppyOffer = (offer?: MoppyOffer | null): offer is MoppyOffer =>
   );
 };
 
+const getOfferKey = (offerName?: string | null, url?: string | null) => {
+  return `${normalizeText(offerName)}::${url || ""}`;
+};
+
 const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
   try {
     const response = await fetch(MOPPY_OFFER_URL, {
@@ -91,9 +96,11 @@ const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
     if (!response.ok) return [];
 
     const json = await response.json();
-    return (Array.isArray(json.data) ? json.data : [])
-      .filter((offer: MoppyOffer) => offer.title && isRewardAvailable(offer.reward))
-      .sort((a: MoppyOffer, b: MoppyOffer) => Number(b.reward) - Number(a.reward));
+    const offers = Array.isArray(json.data) ? (json.data as MoppyOffer[]) : [];
+
+    return offers
+      .filter(isVerifiedMoppyOffer)
+      .sort((a, b) => Number(b.reward) - Number(a.reward));
   } catch (error) {
     console.error(error);
     return [];
@@ -153,6 +160,28 @@ const getFallbackReason = (offerName: string, trendKeyword?: string | null) => {
   return `${offerName}は、Googleの検索で「${keyword}」も一緒に調べられています。`;
 };
 
+const getVerifiedReason = (offerName: string) => {
+  return `${offerName}は、モッピーで案件ページと報酬ポイントが確認できた注目案件です。`;
+};
+
+const createBackfillItem = (
+  offer: MoppyOffer,
+  latestUpdatedAt?: string | null
+): RankingItem => {
+  return {
+    offer_name: offer.title,
+    trend_keyword: offer.title,
+    category: "モッピー確認済み",
+    reward: offer.reward,
+    reason: getVerifiedReason(offer.title),
+    primary_site_name: "モッピー",
+    primary_site_url: offer.url,
+    secondary_site_name: "ポイントインカム",
+    secondary_site_url: "https://pointi.jp/",
+    updated_at: latestUpdatedAt ?? new Date().toISOString(),
+  };
+};
+
 const formatRankingItem = (
   item: RankingItem,
   index: number,
@@ -198,7 +227,7 @@ export async function GET() {
       .select("*")
       .order("updated_at", { ascending: false })
       .order("rank", { ascending: true })
-      .limit(50);
+      .limit(RANKING_LIMIT);
     const moppyOffers = await fetchMoppyOffers();
 
     if (rankingResult.error) {
@@ -226,11 +255,32 @@ export async function GET() {
       })
     );
 
-    const formatted = verifiedPairs
-      .filter(
-        (pair): pair is { item: RankingItem; matchedOffer: MoppyOffer } =>
-          Boolean(pair)
+    const validPairs = verifiedPairs.filter(
+      (pair): pair is { item: RankingItem; matchedOffer: MoppyOffer } =>
+        Boolean(pair)
+    );
+    const usedOfferKeys = new Set(
+      validPairs.map(({ item, matchedOffer }) =>
+        getOfferKey(item.offer_name || matchedOffer.title, matchedOffer.url)
       )
+    );
+    const latestUpdatedAt = sourceItems[0]?.updated_at;
+
+    for (const offer of moppyOffers) {
+      if (validPairs.length >= RANKING_LIMIT) break;
+
+      const key = getOfferKey(offer.title, offer.url);
+      if (usedOfferKeys.has(key)) continue;
+
+      validPairs.push({
+        item: createBackfillItem(offer, latestUpdatedAt),
+        matchedOffer: offer,
+      });
+      usedOfferKeys.add(key);
+    }
+
+    const formatted = validPairs
+      .slice(0, RANKING_LIMIT)
       .map(({ item, matchedOffer }, index) => {
         return formatRankingItem(item, index, matchedOffer);
       });
