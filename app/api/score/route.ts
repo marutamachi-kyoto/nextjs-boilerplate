@@ -57,18 +57,18 @@ const toSearchWord = (value?: string | null) => {
   if (!original) return "";
 
   let text = original
-    .replace(/【[^】]*】/g, " ")
+    .replace(/\u3010[^\u3011]*\u3011/g, " ")
     .replace(/\[[^\]]*\]/g, " ")
-    .replace(/（[^）]*）/g, " ")
+    .replace(/\uff08[^\uff09]*\uff09/g, " ")
     .replace(/\([^)]*\)/g, " ")
-    .replace(/[「」『』]/g, " ")
-    .replace(/[+＋].*$/g, " ")
+    .replace(/[\u300c\u300d\u300e\u300f]/g, " ")
+    .replace(/[+\uff0b].*$/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
   text = text
-    .replace(/^(ポイントサイト|ポイ活|モッピー|moppy|公式)\s*/i, "")
-    .replace(/\s*(ポイントサイト|ポイ活|モッピー|moppy|公式)$/i, "")
+    .replace(/^(\u30dd\u30a4\u30f3\u30c8\u30b5\u30a4\u30c8|\u30dd\u30a4\u6d3b|\u30e2\u30c3\u30d4\u30fc|moppy|\u516c\u5f0f)\s*/i, "")
+    .replace(/\s*(\u30dd\u30a4\u30f3\u30c8\u30b5\u30a4\u30c8|\u30dd\u30a4\u6d3b|\u30e2\u30c3\u30d4\u30fc|moppy|\u516c\u5f0f)$/i, "")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -263,7 +263,7 @@ const formatRankingItem = (
   return {
     rank: index + 1,
     offer_name: offerName,
-    category: `${category} ${offerName}`,
+    category: trendKeyword || category,
     trend_keyword: trendKeyword || offerName,
     reward,
     reason: getDisplayReason(item, offerName),
