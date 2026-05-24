@@ -174,9 +174,42 @@ const findMoppyOffer = (item: RankingItem, offers: MoppyOffer[]) => {
   );
 };
 
-const getFallbackReason = (offerName: string, trendKeyword?: string | null) => {
-  const keyword = trendKeyword || offerName;
-  return `${offerName}は、Googleの検索で「${keyword}」も一緒に調べられています。`;
+const getGoogleRelatedReason = (offerName: string, trendKeywords: string[]) => {
+  const words = trendKeywords
+    .map((keyword) => keyword.trim())
+    .filter(Boolean)
+    .filter((keyword, index, keywords) => keywords.indexOf(keyword) === index)
+    .slice(0, 2);
+
+  const relatedWords = words.length > 0 ? words : [offerName];
+  const relatedText = relatedWords.map((keyword) => `「${keyword}」`).join("や");
+
+  return `${offerName}は、Googleの検索で${relatedText}も一緒に調べられています。`;
+};
+
+const extractQuotedWords = (text?: string | null) => {
+  const words: string[] = [];
+  const matches = String(text || "").matchAll(/「([^」]+)」/g);
+
+  for (const match of matches) {
+    const word = match[1]?.trim();
+    if (word && !words.includes(word)) words.push(word);
+  }
+
+  return words;
+};
+
+const getDisplayReason = (item: RankingItem, offerName: string) => {
+  const quotedWords = [
+    ...extractQuotedWords(item.description),
+    ...extractQuotedWords(item.reason),
+  ].filter((word, index, words) => words.indexOf(word) === index);
+
+  const relatedWords = quotedWords.length > 0
+    ? quotedWords
+    : [item.trend_keyword ?? item.category ?? offerName];
+
+  return getGoogleRelatedReason(offerName, relatedWords);
 };
 
 const formatRankingItem = (
@@ -199,10 +232,7 @@ const formatRankingItem = (
     category: `${category} ${offerName}`,
     trend_keyword: item.trend_keyword ?? item.offer_name ?? item.category ?? offerName,
     reward,
-    reason:
-      item.description ||
-      item.reason ||
-      getFallbackReason(offerName, item.trend_keyword ?? item.category),
+    reason: getDisplayReason(item, offerName),
     image_url: matchedOffer.imageUrl,
     primary_site_name: "モッピー",
     primary_site_url: matchedOffer.url,
