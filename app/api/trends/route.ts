@@ -14,6 +14,37 @@ type TrendRow = {
   category?: string | null;
 };
 
+const toDisplayKeyword = (value?: string | null) => {
+  const original = (value || "").trim();
+  if (!original) return "";
+
+  let text = original
+    .replace(/【[^】]*】/g, " ")
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/（[^）]*）/g, " ")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[「」『』]/g, " ")
+    .replace(/[+＋].*$/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  text = text
+    .replace(/^(ポイントサイト|ポイ活|モッピー|moppy|公式)\s*/i, "")
+    .replace(/\s*(ポイントサイト|ポイ活|モッピー|moppy|公式)$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  text = text
+    .replace(/\bsbi\b/gi, "SBI")
+    .replace(/\bfx\b/gi, "FX")
+    .replace(/paypay/gi, "PayPay")
+    .replace(/linemo/gi, "LINEMO")
+    .replace(/u-next/gi, "U-NEXT")
+    .trim();
+
+  return text || original;
+};
+
 export async function GET() {
   try {
     const { data, error } = await supabase
@@ -26,11 +57,19 @@ export async function GET() {
       throw error;
     }
 
+    const seen = new Set<string>();
     const words = ((data || []) as TrendRow[])
-      .filter((item) => Boolean(item.word))
+      .map((item, index) => ({ item, index, word: toDisplayKeyword(item.word) }))
+      .filter(({ word }) => Boolean(word))
+      .filter(({ word }) => {
+        const key = word.toLowerCase().replace(/\s+/g, "");
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
       .slice(0, TREND_LIMIT)
-      .map((item, index) => ({
-        word: item.word,
+      .map(({ item, index, word }) => ({
+        word,
         score: item.score ?? Math.max(100 - index * 2, 10),
         category: item.category ?? "Google検索由来",
       }));
