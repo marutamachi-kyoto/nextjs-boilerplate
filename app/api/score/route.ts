@@ -52,6 +52,37 @@ const normalizeText = (text?: string | null) => {
     .trim();
 };
 
+const toSearchWord = (value?: string | null) => {
+  const original = (value || "").trim();
+  if (!original) return "";
+
+  let text = original
+    .replace(/【[^】]*】/g, " ")
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/（[^）]*）/g, " ")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[「」『』]/g, " ")
+    .replace(/[+＋].*$/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  text = text
+    .replace(/^(ポイントサイト|ポイ活|モッピー|moppy|公式)\s*/i, "")
+    .replace(/\s*(ポイントサイト|ポイ活|モッピー|moppy|公式)$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  text = text
+    .replace(/\bsbi\b/gi, "SBI")
+    .replace(/\bfx\b/gi, "FX")
+    .replace(/paypay/gi, "PayPay")
+    .replace(/linemo/gi, "LINEMO")
+    .replace(/u-next/gi, "U-NEXT")
+    .trim();
+
+  return text || original;
+};
+
 const stripTags = (html: string) => {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -176,12 +207,12 @@ const findMoppyOffer = (item: RankingItem, offers: MoppyOffer[]) => {
 
 const getGoogleRelatedReason = (offerName: string, trendKeywords: string[]) => {
   const words = trendKeywords
-    .map((keyword) => keyword.trim())
+    .map((keyword) => toSearchWord(keyword))
     .filter(Boolean)
     .filter((keyword, index, keywords) => keywords.indexOf(keyword) === index)
     .slice(0, 2);
 
-  const relatedWords = words.length > 0 ? words : [offerName];
+  const relatedWords = words.length > 0 ? words : [toSearchWord(offerName) || offerName];
   const relatedText = relatedWords.map((keyword) => `「${keyword}」`).join("や");
 
   return `${offerName}は、Googleの検索で${relatedText}も一緒に調べられています。`;
@@ -225,12 +256,15 @@ const formatRankingItem = (
     `おすすめ案件 ${index + 1}`;
   const reward = matchedOffer.reward;
   const category = item.category ?? "その他";
+  const trendKeyword = toSearchWord(
+    item.trend_keyword ?? item.offer_name ?? item.category ?? offerName
+  );
 
   return {
     rank: index + 1,
     offer_name: offerName,
     category: `${category} ${offerName}`,
-    trend_keyword: item.trend_keyword ?? item.offer_name ?? item.category ?? offerName,
+    trend_keyword: trendKeyword || offerName,
     reward,
     reason: getDisplayReason(item, offerName),
     image_url: matchedOffer.imageUrl,
