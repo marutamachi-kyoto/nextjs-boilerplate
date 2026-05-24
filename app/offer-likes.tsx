@@ -33,6 +33,7 @@ const offerLikesScript = `
       '.offer-like-button.offer-like-pop { animation: offerLikePop 0.34s ease both; }',
       '.offer-like-burst { position: absolute; left: 50%; top: 8px; pointer-events: none; color: #ec4899; font-size: 1.35rem; font-weight: 950; transform: translate(-50%, -50%); animation: offerLikeBurst 0.7s ease-out forwards; text-shadow: 0 8px 18px rgba(236, 72, 153, 0.25); }',
       '.offer-like-button[data-liked="true"] .offer-like-burst { color: #fff; }',
+      '.ranking-related-word { display: inline-flex; align-items: center; border-radius: 999px; background: #fff1f7; color: #ec2f91; padding: 0.04em 0.45em; font-weight: 950; }',
       '.free-poikatsu-lead-emphasis { color: #e6007e; background: #fff1f7; padding: 0 0.22em; border-radius: 0.35em; }',
       '.free-poikatsu-ranking-heading { white-space: nowrap !important; }',
       '@media (min-width: 721px) { header a[href="/about-poikatsu"] > span:last-child, header a[href="/free-poikatsu"] > span:last-child { font-size: 1.12em !important; } }',
@@ -61,6 +62,15 @@ const offerLikesScript = `
         .catch(() => []);
     }
     return scoreDataPromise;
+  };
+
+  const findScoreDataItem = (offerName, scoreData) => {
+    const offerKey = normalizeKey(offerName);
+    if (!offerKey) return null;
+    return scoreData.find((score) => {
+      const names = [score.offer_name, score.trend_keyword].map(normalizeKey).filter(Boolean);
+      return names.some((name) => name === offerKey || (name.length >= 5 && (name.includes(offerKey) || offerKey.includes(name))));
+    }) || null;
   };
 
   const getDirectMoppyUrl = (offerName, scoreData) => {
@@ -93,6 +103,56 @@ const offerLikesScript = `
       },
       true
     );
+  };
+
+  const escapeHtml = (value) => String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+  const extractQuotedWords = (text) => {
+    const words = [];
+    const pattern = /「([^」]+)」/g;
+    let match = pattern.exec(String(text || ""));
+    while (match) {
+      const word = normalizeText(match[1]);
+      if (word && !words.includes(word)) words.push(word);
+      match = pattern.exec(String(text || ""));
+    }
+    return words;
+  };
+
+  const getRelatedWords = (offerName, scoreItem) => {
+    const words = [];
+    const addWord = (value) => {
+      const word = normalizeText(value);
+      if (!word || normalizeKey(word) === normalizeKey(offerName)) return;
+      if (!words.includes(word)) words.push(word);
+    };
+
+    extractQuotedWords(scoreItem?.reason).forEach(addWord);
+    addWord(scoreItem?.trend_keyword);
+    return words.slice(0, 2);
+  };
+
+  const updateRankingDescription = (article, offerName, scoreData) => {
+    if (location.pathname !== "/") return;
+    const heading = article.querySelector("h3");
+    const contentArea = heading?.parentElement;
+    const paragraph = contentArea?.querySelector("p");
+    if (!paragraph) return;
+
+    const scoreItem = findScoreDataItem(offerName, scoreData);
+    const relatedWords = getRelatedWords(offerName, scoreItem);
+    const safeOfferName = escapeHtml(offerName);
+    const wordsHtml = relatedWords.length > 0
+      ? relatedWords.map((word) => '<span class="ranking-related-word">「' + escapeHtml(word) + '」</span>').join(' や ')
+      : '<span class="ranking-related-word">「ポイ活」</span>';
+
+    paragraph.innerHTML = safeOfferName + 'は、Googleの検索で ' + wordsHtml + ' も一緒に調べられています。';
+    paragraph.dataset.rankingDescriptionNormalized = "true";
   };
 
   const getLikedKey = (offerName, likeDate) => likedPrefix + (likeDate || "today") + ":" + offerName;
@@ -233,6 +293,7 @@ const offerLikesScript = `
       const heading = article.querySelector("h3");
       const offerName = normalizeText(heading?.textContent);
       if (!offerName) return;
+      updateRankingDescription(article, offerName, scoreData);
       attachDirectMoppyAction(article, offerName, scoreData);
       if (article.querySelector(".offer-like-button")) return;
       const actionArea = findActionArea(article);
