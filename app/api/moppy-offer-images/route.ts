@@ -34,6 +34,16 @@ const stripTags = (html: string) => {
     .trim();
 };
 
+const normalizeTitle = (title: string) => {
+  return title
+    .toLowerCase()
+    .replace(/\u3000/g, "")
+    .replace(/\s+/g, "")
+    .replace(/[\u30fb\uff65]/g, "")
+    .replace(/[\u30fc\uff70\u2212]/g, "-")
+    .trim();
+};
+
 const toAbsoluteUrl = (url: string, baseUrl: string) => {
   try {
     return new URL(url, baseUrl).toString();
@@ -54,6 +64,8 @@ const isUsableImageUrl = (url?: string) => {
     "1x1",
     "spacer",
     "blank",
+    "favicon",
+    "logo",
   ];
 
   return !trackingImagePatterns.some((pattern) => lowerUrl.includes(pattern));
@@ -61,25 +73,26 @@ const isUsableImageUrl = (url?: string) => {
 
 const getImageUrl = (html: string, baseUrl: string) => {
   const imageMatches = [...html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi)];
+  const imageUrls = imageMatches
+    .map((match) => toAbsoluteUrl(match[1], baseUrl))
+    .filter(isUsableImageUrl);
 
-  for (const match of imageMatches) {
-    const imageUrl = toAbsoluteUrl(match[1], baseUrl);
-    if (isUsableImageUrl(imageUrl)) return imageUrl;
-  }
-
-  return undefined;
+  return imageUrls.find((url) => url.includes("img.moppy.jp")) || imageUrls[0];
 };
 
 const getTitle = (html: string) => {
   const alt = html.match(/<img[^>]+alt=["']([^"']+)["'][^>]*>/i)?.[1]?.trim();
-  if (alt && alt.length >= 3) return alt.slice(0, 80);
+  if (alt && alt.length >= 3) return alt.slice(0, 100);
+
+  const titleAttr = html.match(/title=["']([^"']+)["']/i)?.[1]?.trim();
+  if (titleAttr && titleAttr.length >= 3) return titleAttr.slice(0, 100);
 
   return stripTags(html)
     .replace(/\d{1,3}(,\d{3})*P/g, " ")
     .replace(/★\d(\.\d)?/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 80);
+    .slice(0, 100);
 };
 
 const getDetailTitle = (html: string) => {
@@ -90,7 +103,7 @@ const getDetailTitle = (html: string) => {
     .replace(/\s+/g, " ")
     .trim();
 
-  return title.length >= 3 ? title.slice(0, 80) : "";
+  return title.length >= 3 ? title.slice(0, 100) : "";
 };
 
 const getReward = (text: string) => {
@@ -108,14 +121,16 @@ const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
   for (const match of html.matchAll(linkPattern)) {
     const href = match[1];
     const chunk = match[2];
-    const title = getTitle(chunk);
-    const text = stripTags(chunk);
+    const start = Math.max(0, match.index ?? 0);
+    const around = html.slice(Math.max(0, start - 700), Math.min(html.length, start + match[0].length + 1200));
+    const title = getTitle(chunk) || getTitle(around);
+    const text = stripTags(`${chunk} ${around}`);
 
     if (!href || !title) continue;
 
     offers.push({
       title,
-      imageUrl: getImageUrl(chunk, sourceUrl),
+      imageUrl: getImageUrl(chunk, sourceUrl) || getImageUrl(around, sourceUrl),
       url: toAbsoluteUrl(href, sourceUrl),
       reward: getReward(text),
     });
@@ -139,6 +154,13 @@ const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
       reward,
     },
   ];
+};
+
+const pickBetterOffer = (current: MoppyOfferImage, next: MoppyOfferImage) => {
+  const currentScore = (current.imageUrl ? 1000000 : 0) + Number(current.reward || 0);
+  const nextScore = (next.imageUrl ? 1000000 : 0) + Number(next.reward || 0);
+
+  return nextScore > currentScore ? next : current;
 };
 
 export async function GET() {
@@ -176,9 +198,15 @@ export async function GET() {
     result.status === "fulfilled" ? result.value : []
   );
 
-  const uniqueOffers = Array.from(
-    new Map(offers.map((offer) => [offer.title, offer])).values()
-  ).slice(0, 500);
+  const offerMap = new Map<string, MoppyOfferImage>();
+  offers.forEach((offer) => {
+    if (!offer.title || !offer.url || offer.reward <= 0) return;
+    const key = normalizeTitle(offer.title);
+    const current = offerMap.get(key);
+    offerMap.set(key, current ? pickBetterOffer(current, offer) : offer);
+  });
+
+  const uniqueOffers = Array.from(offerMap.values()).slice(0, 700);
 
   return NextResponse.json({ data: uniqueOffers });
 }
