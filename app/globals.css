@@ -129,3 +129,26 @@ main article > div[class*="from-[#fffefe]"]::before {
   line-height: 1.35;
   text-align: center;
 }
+
+main article[id^="ranking-"] a[href*="/reviews/"] {
+  font-size: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+main article[id^="ranking-"] a[href*="/reviews/"] > * {
+  display: none !important;
+}
+
+main article[id^="ranking-"] a[href*="/reviews/"]::before {
+  content: "もっと検索ワードを見る";
+  font-size: 0.95rem !important;
+  line-height: 1.25 !important;
+}
+
+main article[id^="ranking-"] a[href*="/reviews/"]::after {
+  content: "›";
+  margin-left: 0.5rem;
+  font-size: 1.2rem !important;
+  line-height: 1 !important;
+}
