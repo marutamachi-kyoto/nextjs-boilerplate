@@ -164,12 +164,24 @@ const offerLikesScript = `
     element.replaceWith(button);
   };
 
+  const makeTrendKeywordReviewLink = (element, keyword) => {
+    if (!keyword || element.dataset.trendKeywordLinked === "true") return;
+    const link = document.createElement("a");
+    link.href = "/reviews/" + encodeURIComponent(keyword);
+    link.className = element.className;
+    link.classList.add("underline", "decoration-2", "underline-offset-4");
+    link.dataset.trendKeywordLinked = "true";
+    link.title = "関連ワード詳細ページを見る";
+    link.textContent = keyword;
+    element.replaceWith(link);
+  };
+
   const linkTrendKeywordPills = (scoreData) => {
     if (location.pathname !== "/") return;
     const section = document.getElementById("trend-keywords");
     if (!section) return;
 
-    section.querySelectorAll("button, div").forEach((element) => {
+    section.querySelectorAll("button, div, a").forEach((element) => {
       const text = normalizeText(element.textContent);
       if (!text || text.includes("最終更新") || text.includes("Google") || text.includes("関連")) return;
       if (!element.className || !String(element.className).includes("bg-pink-100") || !String(element.className).includes("text-pink-600")) return;
@@ -181,6 +193,7 @@ const offerLikesScript = `
         : findTrendKeywordRankingTargetFromDom(text);
 
       if (targetId && document.getElementById(targetId)) makeTrendKeywordButton(element, targetId);
+      else makeTrendKeywordReviewLink(element, text);
     });
   };
 
