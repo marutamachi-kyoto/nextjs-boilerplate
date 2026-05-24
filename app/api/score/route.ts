@@ -10,21 +10,6 @@ const supabase = createClient(
 const MOPPY_OFFER_URL = "https://poikatu-ai.vercel.app/api/moppy-offer-images";
 const RANKING_LIMIT = 50;
 
-const DETAIL_STOP_WORDS = new Set([
-  "カード",
-  "クレジット",
-  "ポイント",
-  "ポイ活",
-  "モッピー",
-  "キャンペーン",
-  "無料",
-  "新規",
-  "公式",
-  "the",
-  "and",
-  "with",
-]);
-
 type MoppyOffer = {
   title: string;
   imageUrl?: string;
@@ -74,13 +59,6 @@ const normalizeText = (text?: string | null) => {
     .trim();
 };
 
-const normalizeToken = (text?: string | null) => {
-  return normalizeText(text)
-    .replace(/[®™©]/g, "")
-    .replace(/[・･_\-|｜\/／:：,，.。+＋]/g, "")
-    .trim();
-};
-
 const stripTags = (html: string) => {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -121,41 +99,18 @@ const isUsableImageUrl = (url?: string) => {
   return !trackingImagePatterns.some((pattern) => lowerUrl.includes(pattern));
 };
 
-const getMetaContent = (html: string, name: string) => {
-  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const propertyPattern = new RegExp(
-    `<meta[^>]+property=["']${escapedName}["'][^>]+content=["']([^"']+)["'][^>]*>`,
-    "i"
-  );
-  const namePattern = new RegExp(
-    `<meta[^>]+name=["']${escapedName}["'][^>]+content=["']([^"']+)["'][^>]*>`,
-    "i"
-  );
-
-  return html.match(propertyPattern)?.[1] || html.match(namePattern)?.[1] || "";
-};
-
 const getImageUrl = (html: string, baseUrl: string) => {
-  const candidates: string[] = [];
-  const ogImage = getMetaContent(html, "og:image");
-  if (ogImage) candidates.push(ogImage);
-
   const imageMatches = [...html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi)];
-  candidates.push(...imageMatches.map((match) => match[1]));
-
-  const absoluteCandidates = candidates
-    .map((candidate) => toAbsoluteUrl(candidate, baseUrl))
+  const imageUrls = imageMatches
+    .map((match) => toAbsoluteUrl(match[1], baseUrl))
     .filter(isUsableImageUrl);
 
-  return (
-    absoluteCandidates.find((url) => url.includes("img.moppy.jp")) ||
-    absoluteCandidates[0]
-  );
+  return imageUrls.find((url) => url.includes("img.moppy.jp")) || imageUrls[0];
 };
 
 const getDetailTitle = (html: string) => {
   const heading = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1];
-  const ogTitle = getMetaContent(html, "og:title");
+  const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["'][^>]*>/i)?.[1];
   const pageTitle = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1];
   const title = stripTags(heading || ogTitle || pageTitle || "")
     .replace(/の詳細.*$/g, "")
@@ -205,7 +160,7 @@ const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
     const uniqueOffers = new Map<string, MoppyOffer>();
 
     offers.filter(isVerifiedMoppyOffer).forEach((offer) => {
-      const key = normalizeToken(offer.title) || offer.url;
+      const key = normalizeText(offer.title) || offer.url;
       const current = uniqueOffers.get(key);
       if (!current) {
         uniqueOffers.set(key, offer);
@@ -274,8 +229,8 @@ const getUrlKey = (url?: string | null) => {
 };
 
 const isStrongNameMatch = (offerName: string, title: string) => {
-  const name = normalizeToken(offerName);
-  const normalizedTitle = normalizeToken(title);
+  const name = normalizeText(offerName);
+  const normalizedTitle = normalizeText(title);
 
   if (!name || !normalizedTitle) return false;
   if (name === normalizedTitle) return true;
@@ -292,20 +247,33 @@ const isStrongNameMatch = (offerName: string, title: string) => {
 };
 
 const getImportantTokens = (value: string) => {
+  const stopWords = new Set([
+    "カード",
+    "クレジット",
+    "ポイント",
+    "ポイ活",
+    "モッピー",
+    "キャンペーン",
+    "無料",
+    "新規",
+    "公式",
+    "the",
+    "and",
+    "with",
+  ]);
+
   return value
-    .replace(/[【】\[\]（）()「」『』・･_\-|｜\/／:：,，.。+＋]/g, " ")
+    .replace(/[【】\[\]（）()「」『』・･_\-|｜]/g, " ")
     .split(/\s+/)
-    .map((token) => token.trim())
-    .filter(Boolean)
-    .map((token) => normalizeToken(token))
+    .map((token) => normalizeText(token))
     .filter((token) => token.length >= 2)
-    .filter((token) => !DETAIL_STOP_WORDS.has(token));
+    .filter((token) => !stopWords.has(token));
 };
 
 const isDetailMatchedToOffer = (offerName: string, detail: MoppyDetail) => {
-  const offer = normalizeToken(offerName);
-  const detailTitle = normalizeToken(detail.title);
-  const detailBody = normalizeToken(`${detail.title} ${detail.text.slice(0, 2500)}`);
+  const offer = normalizeText(offerName);
+  const detailTitle = normalizeText(detail.title);
+  const detailBody = normalizeText(`${detail.title} ${detail.text.slice(0, 2500)}`);
 
   if (!offer || !detailBody) return false;
   if (detailTitle && (detailTitle.includes(offer) || offer.includes(detailTitle))) {
@@ -333,7 +301,7 @@ const findMoppyOffer = (item: RankingItem, offers: MoppyOffer[]) => {
   if (!offerName) return null;
 
   return (
-    offers.find((offer) => normalizeToken(offer.title) === normalizeToken(offerName)) ||
+    offers.find((offer) => normalizeText(offer.title) === normalizeText(offerName)) ||
     offers.find((offer) => isStrongNameMatch(offerName, offer.title)) ||
     null
   );
