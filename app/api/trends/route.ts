@@ -42,11 +42,11 @@ export async function GET() {
     return NextResponse.json({
       data: words,
     });
-  } catch (e: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         success: false,
-        error: e.message,
+        error: error instanceof Error ? error.message : "unknown error",
       },
       { status: 500 }
     );
