@@ -17,11 +17,6 @@ type MoppyOffer = {
   reward: number;
 };
 
-type MoppyDetailData = {
-  reward: number;
-  imageUrl?: string;
-};
-
 type RankingItem = {
   rank?: number | null;
   offer_name?: string | null;
@@ -82,56 +77,6 @@ const isRewardAvailable = (reward?: number | null) => {
   return Number.isFinite(Number(reward)) && Number(reward) > 0;
 };
 
-const toAbsoluteUrl = (url: string, baseUrl: string) => {
-  try {
-    return new URL(url, baseUrl).toString();
-  } catch {
-    return url;
-  }
-};
-
-const isUsableImageUrl = (url?: string) => {
-  if (!url) return false;
-
-  const lowerUrl = url.toLowerCase();
-  const blockedWords = [
-    "ad-track.jp/ad/p/img",
-    "ad-track.jp/ad/p/",
-    "doubleclick",
-    "pixel",
-    "1x1",
-    "spacer",
-    "blank",
-    "favicon",
-    "logo",
-  ];
-
-  return !blockedWords.some((word) => lowerUrl.includes(word));
-};
-
-const getDetailImageUrl = (html: string, baseUrl: string) => {
-  const candidates: string[] = [];
-  const ogImage = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i);
-  const ogImageReversed = html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["'][^>]*>/i);
-
-  if (ogImage?.[1]) candidates.push(ogImage[1]);
-  if (ogImageReversed?.[1]) candidates.push(ogImageReversed[1]);
-
-  const imagePattern = /<img\b[^>]*(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/gi;
-  let imageMatch = imagePattern.exec(html);
-
-  while (imageMatch) {
-    if (imageMatch[1]) candidates.push(imageMatch[1]);
-    imageMatch = imagePattern.exec(html);
-  }
-
-  const usableImages = candidates
-    .map((candidate) => toAbsoluteUrl(candidate, baseUrl))
-    .filter(isUsableImageUrl);
-
-  return usableImages.find((url) => url.includes("img.moppy.jp")) || usableImages[0];
-};
-
 const isVerifiedMoppyOffer = (offer?: MoppyOffer | null): offer is MoppyOffer => {
   return Boolean(
     offer?.url &&
@@ -165,8 +110,8 @@ const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
   }
 };
 
-const fetchMoppyDetailData = async (url?: string): Promise<MoppyDetailData> => {
-  if (!url) return { reward: 0 };
+const fetchMoppyDetailReward = async (url?: string) => {
+  if (!url) return 0;
 
   try {
     const response = await fetch(url, {
@@ -177,19 +122,16 @@ const fetchMoppyDetailData = async (url?: string): Promise<MoppyDetailData> => {
       },
     });
 
-    if (!response.ok) return { reward: 0 };
+    if (!response.ok) return 0;
 
     const html = await response.text();
     const mainHtml =
       html.split("ポイ活応援サービス")[0]?.split("ポイントの交換先")[0] || html;
 
-    return {
-      reward: getReward(stripTags(mainHtml)),
-      imageUrl: getDetailImageUrl(mainHtml, url),
-    };
+    return getReward(stripTags(mainHtml));
   } catch (error) {
     console.error(error);
-    return { reward: 0 };
+    return 0;
   }
 };
 
@@ -294,14 +236,10 @@ export async function GET() {
         const matchedOffer = findMoppyOffer(item, moppyOffers);
         if (!isVerifiedMoppyOffer(matchedOffer)) return null;
 
-        const detailData = await fetchMoppyDetailData(matchedOffer.url);
-        const verifiedOffer = {
-          ...matchedOffer,
-          reward: isRewardAvailable(detailData.reward)
-            ? detailData.reward
-            : matchedOffer.reward,
-          imageUrl: detailData.imageUrl || matchedOffer.imageUrl,
-        };
+        const detailReward = await fetchMoppyDetailReward(matchedOffer.url);
+        const verifiedOffer = isRewardAvailable(detailReward)
+          ? { ...matchedOffer, reward: detailReward }
+          : matchedOffer;
 
         return isVerifiedMoppyOffer(verifiedOffer)
           ? { item, matchedOffer: verifiedOffer }

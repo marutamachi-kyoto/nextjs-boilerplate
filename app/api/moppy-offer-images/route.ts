@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 export const revalidate = 86400;
 
 const CATEGORY_IDS = Array.from({ length: 20 }, (_, index) => 1001 + index);
+const DETAIL_ENRICH_LIMIT = 80;
 
 const SOURCE_URLS = [
   "https://pc.moppy.jp/service/?order=1",
@@ -72,9 +73,23 @@ const isUsableImageUrl = (url?: string) => {
 };
 
 const getImageUrl = (html: string, baseUrl: string) => {
-  const imageMatches = [...html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi)];
-  const imageUrls = imageMatches
-    .map((match) => toAbsoluteUrl(match[1], baseUrl))
+  const candidates: string[] = [];
+  const ogImage = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+  const ogImageReversed = html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["'][^>]*>/i);
+
+  if (ogImage?.[1]) candidates.push(ogImage[1]);
+  if (ogImageReversed?.[1]) candidates.push(ogImageReversed[1]);
+
+  const imagePattern = /<img\b[^>]*(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/gi;
+  let imageMatch = imagePattern.exec(html);
+
+  while (imageMatch) {
+    if (imageMatch[1]) candidates.push(imageMatch[1]);
+    imageMatch = imagePattern.exec(html);
+  }
+
+  const imageUrls = candidates
+    .map((candidate) => toAbsoluteUrl(candidate, baseUrl))
     .filter(isUsableImageUrl);
 
   return imageUrls.find((url) => url.includes("img.moppy.jp")) || imageUrls[0];
@@ -156,6 +171,24 @@ const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
   ];
 };
 
+const fetchMoppyDetailOffer = async (url: string) => {
+  try {
+    const response = await fetch(url, {
+      next: { revalidate: 86400 },
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
+      },
+    });
+
+    if (!response.ok) return [];
+    return parseMoppyDetailOffer(await response.text(), url);
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
+
 const pickBetterOffer = (current: MoppyOfferImage, next: MoppyOfferImage) => {
   const currentScore = (current.imageUrl ? 1000000 : 0) + Number(current.reward || 0);
   const nextScore = (next.imageUrl ? 1000000 : 0) + Number(next.reward || 0);
@@ -197,9 +230,18 @@ export async function GET() {
   const offers = [...listResults, ...detailResults].flatMap((result) =>
     result.status === "fulfilled" ? result.value : []
   );
+  const detailEnrichmentTargets = offers
+    .filter((offer) => offer.title && offer.url && offer.reward > 0 && !offer.imageUrl)
+    .slice(0, DETAIL_ENRICH_LIMIT);
+  const enrichmentResults = await Promise.allSettled(
+    detailEnrichmentTargets.map((offer) => fetchMoppyDetailOffer(offer.url))
+  );
+  const enrichedOffers = enrichmentResults.flatMap((result) =>
+    result.status === "fulfilled" ? result.value : []
+  );
 
   const offerMap = new Map<string, MoppyOfferImage>();
-  offers.forEach((offer) => {
+  [...offers, ...enrichedOffers].forEach((offer) => {
     if (!offer.title || !offer.url || offer.reward <= 0) return;
     const key = normalizeTitle(offer.title);
     const current = offerMap.get(key);
