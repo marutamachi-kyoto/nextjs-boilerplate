@@ -32,6 +32,11 @@ type RankingItem = {
   updated_at?: string | null;
 };
 
+type VerifiedPair = {
+  item: RankingItem;
+  matchedOffer: MoppyOffer;
+};
+
 const normalizeText = (text?: string | null) => {
   return (text || "")
     .toLowerCase()
@@ -237,8 +242,8 @@ export async function GET() {
     }
 
     const sourceItems = (rankingResult.data || []) as RankingItem[];
-    const verifiedPairs = await Promise.all(
-      sourceItems.map(async (item) => {
+    const verifiedPairs: Array<VerifiedPair | null> = await Promise.all(
+      sourceItems.map(async (item): Promise<VerifiedPair | null> => {
         const matchedOffer = findMoppyOffer(item, moppyOffers);
         if (!isVerifiedMoppyOffer(matchedOffer)) return null;
 
@@ -253,9 +258,8 @@ export async function GET() {
       })
     );
 
-    const validPairs = verifiedPairs.filter(
-      (pair): pair is { item: RankingItem; matchedOffer: MoppyOffer } =>
-        Boolean(pair)
+    const validPairs: VerifiedPair[] = verifiedPairs.filter(
+      (pair): pair is VerifiedPair => Boolean(pair)
     );
 
     const usedOfferKeys = new Set(
