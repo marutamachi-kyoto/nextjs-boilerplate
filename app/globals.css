@@ -33,6 +33,40 @@ body {
   border: 1px solid #ffd4e8;
 }
 
+main article[id^="ranking-"] {
+  overflow: visible !important;
+}
+
+main article[id^="ranking-"] > div,
+main article[id^="ranking-"] div:has(> h3) {
+  min-width: 0 !important;
+}
+
+main article[id^="ranking-"] h3 {
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+main article[id^="ranking-"] div:has(> .offer-like-button),
+main article[id^="ranking-"] div:has(> button) {
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+@media (min-width: 1280px) {
+  main article.ranking-image-list {
+    grid-template-columns: 58px 150px minmax(0, 1fr) 220px 210px !important;
+  }
+}
+
+@media (max-width: 1279px) {
+  main article[id^="ranking-"] div:has(> .offer-like-button),
+  main article[id^="ranking-"] div:has(> button) {
+    align-items: center !important;
+  }
+}
+
 .ranking-image-box {
   border-color: #dbe3ed !important;
   background: #f8fafc !important;
