@@ -33,12 +33,12 @@ type PageProps = {
 const normalizeText = (text?: string) => {
   return (text || "")
     .toLowerCase()
-    .replace(/　/g, "")
+    .replace(/\u3000/g, "")
     .replace(/\s+/g, "")
-    .replace(/（/g, "(")
-    .replace(/）/g, ")")
-    .replace(/[・･]/g, "")
-    .replace(/[ーｰ−]/g, "-")
+    .replace(/\uff08/g, "(")
+    .replace(/\uff09/g, ")")
+    .replace(/[\u30fb\uff65]/g, "")
+    .replace(/[\u30fc\uff70\u2212]/g, "-")
     .trim();
 };
 
@@ -82,10 +82,8 @@ const getIsoDate = (dateText?: string) => {
   return date.toISOString();
 };
 
-const getReviewSearchUrl = (offerName: string) => {
-  return `https://www.google.com/search?q=${encodeURIComponent(
-    `${offerName} 口コミ 評判 ポイ活`
-  )}`;
+const getGoogleSearchUrl = (keyword: string) => {
+  return `https://www.google.com/search?q=${encodeURIComponent(keyword)}`;
 };
 
 const getReviewPageUrl = (offerName: string) => {
@@ -93,7 +91,7 @@ const getReviewPageUrl = (offerName: string) => {
 };
 
 const getSeoTitle = (offerName: string) => {
-  return `${offerName}のポイ活はお得？口コミをAIが整理`;
+  return `${offerName}のポイ活はお得？関連ワードをAIが整理`;
 };
 
 const getSeoDescription = (offerName: string, rewardText?: string) => {
@@ -102,7 +100,7 @@ const getSeoDescription = (offerName: string, rewardText?: string) => {
       ? `報酬目安は${rewardText}。`
       : "";
 
-  return `${offerName}のポイ活について、口コミ・評判で確認したいポイント、報酬条件、申し込み前の注意点をAIが整理。${rewardPart}ポイ活を比較する前の確認に役立ちます。`;
+  return `${offerName}のポイ活について、Google検索で一緒に調べられている関連ワード、報酬条件、申し込み前の注意点をAIが整理。${rewardPart}ポイ活を比較する前の確認に役立ちます。`;
 };
 
 async function getRankingItem(slug: string) {
@@ -131,6 +129,50 @@ async function getRankingItem(slug: string) {
   });
 
   return target || null;
+}
+
+async function getRelatedSearchWords(offerName: string) {
+  const fallbackWords = [
+    `${offerName} メリット`,
+    `${offerName} デメリット`,
+    `${offerName} 口コミ`,
+    `${offerName} 評判`,
+    `${offerName} ポイント`,
+    `${offerName} ポイ活`,
+    `${offerName} キャンペーン`,
+    `${offerName} 条件`,
+    `${offerName} 注意点`,
+    `${offerName} お得`,
+  ];
+
+  try {
+    const response = await fetch(
+      `https://suggestqueries.google.com/complete/search?client=firefox&hl=ja&q=${encodeURIComponent(
+        offerName
+      )}`,
+      {
+        cache: "no-store",
+        headers: {
+          "user-agent":
+            "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
+        },
+      }
+    );
+
+    if (!response.ok) return fallbackWords;
+
+    const json = await response.json();
+    const suggestions = Array.isArray(json?.[1]) ? (json[1] as string[]) : [];
+    const words = suggestions
+      .map((word) => word.trim())
+      .filter((word) => word && normalizeText(word) !== normalizeText(offerName));
+    const uniqueWords = Array.from(new Set([...words, ...fallbackWords]));
+
+    return uniqueWords.slice(0, 10);
+  } catch (error) {
+    console.error(error);
+    return fallbackWords;
+  }
 }
 
 export async function generateMetadata({
@@ -191,29 +233,13 @@ export default async function ReviewPage({ params }: PageProps) {
   const displayItem = item || fallbackItem;
 
   const offerName = getOfferName(displayItem);
-  const categoryLabel =
-    displayItem.category === "ポイ活"
-      ? "ポイ活"
-      : `${displayItem.category}のポイ活`;
   const rewardText = formatReward(displayItem.reward);
   const updatedDateText = formatDate(displayItem.updated_at);
   const isoDate = getIsoDate(displayItem.updated_at);
-  const googleReviewUrl = getReviewSearchUrl(offerName);
   const pageUrl = getReviewPageUrl(offerName);
   const seoTitle = getSeoTitle(offerName);
   const seoDescription = getSeoDescription(offerName, rewardText);
-
-  const goodReviews = [
-    `${offerName}は、サービスとしての知名度が高く、初めて検討する人でも情報を調べやすい点がメリットです。`,
-    `手続きのしやすさ、使いやすさ、サービス内容の分かりやすさが評価されやすい案件です。`,
-    `利用者が多いサービスの場合、口コミや体験談を確認しやすく、比較検討しやすい点も強みです。`,
-  ];
-
-  const badReviews = [
-    `条件や注意事項が多い案件の場合、初めて申し込む人には少し分かりにくいと感じられることがあります。`,
-    `申し込み、本人確認、審査、利用条件などがある場合、ポイント獲得までに時間がかかることがあります。`,
-    `キャンペーン内容や報酬ポイントは時期によって変わるため、申し込み前に最新条件を確認する必要があります。`,
-  ];
+  const relatedWords = await getRelatedSearchWords(offerName);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -244,7 +270,7 @@ export default async function ReviewPage({ params }: PageProps) {
           {
             "@type": "ListItem",
             position: 2,
-            name: `${offerName}の口コミ・評判`,
+            name: `${offerName}の関連ワード`,
             item: pageUrl,
           },
         ],
@@ -268,12 +294,12 @@ export default async function ReviewPage({ params }: PageProps) {
         },
         datePublished: isoDate,
         dateModified: isoDate,
-        articleSection: "ポイ活口コミ・評判",
+        articleSection: "ポイ活関連ワード",
         about: [
           offerName,
           "ポイ活",
-          "口コミ",
-          "評判",
+          "関連ワード",
+          "Google検索",
           "ポイント還元",
           displayItem.category,
         ],
@@ -292,22 +318,18 @@ export default async function ReviewPage({ params }: PageProps) {
 
       <div className="mx-auto max-w-[1100px]">
         <a
-          href="/#ranking-section"
-          className="mb-6 inline-flex rounded-full bg-white px-5 py-3 text-sm font-black text-pink-600 shadow-lg ring-1 ring-pink-100 transition hover:scale-105 hover:bg-pink-50"
+          href="/"
+          className="mb-6 inline-flex min-h-[54px] items-center justify-center rounded-full border-2 border-slate-200 bg-white px-6 text-base font-black text-slate-700 shadow-lg transition hover:scale-105 hover:bg-slate-50"
         >
-          ← ランキングに戻る
+          ← TOPページに戻る
         </a>
 
         <section className="overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-pink-100">
           <div className="bg-gradient-to-r from-pink-50 via-white to-orange-50 p-7 lg:p-10">
-            <p className="mb-4 inline-flex rounded-full bg-white px-5 py-2 text-sm font-black text-pink-600 shadow-sm ring-1 ring-pink-100">
-              {categoryLabel}
-            </p>
-
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 lg:text-6xl">
               {offerName}のポイ活はお得？
               <br />
-              口コミを
+              関連ワードを
               <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
                 AI
               </span>
@@ -316,7 +338,7 @@ export default async function ReviewPage({ params }: PageProps) {
 
             <p className="mt-5 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
               {offerName}
-              のポイ活について、確認したい口コミのポイントをまとめています。
+              のポイ活について、Google検索で一緒に調べられているワードと報酬目安をまとめています。
             </p>
 
             {updatedDateText && (
@@ -325,7 +347,7 @@ export default async function ReviewPage({ params }: PageProps) {
               </p>
             )}
 
-            <div className="mt-7 grid gap-4 lg:grid-cols-3">
+            <div className="mt-7 grid gap-4 lg:grid-cols-2">
               <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-pink-100">
                 <div className="text-sm font-black text-slate-500">案件名</div>
                 <div className="mt-2 text-2xl font-black text-slate-900">
@@ -341,87 +363,74 @@ export default async function ReviewPage({ params }: PageProps) {
                   {rewardText}
                 </div>
               </div>
-
-              <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-pink-100">
-                <div className="text-sm font-black text-slate-500">
-                  カテゴリ
-                </div>
-                <div className="mt-2 text-2xl font-black text-slate-900">
-                  {displayItem.category}
-                </div>
-              </div>
             </div>
           </div>
         </section>
 
-        <div className="mt-6 grid gap-5 lg:grid-cols-2">
-          <section className="rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
-            <h2 className="flex items-center gap-3 text-2xl font-black text-slate-900 lg:text-3xl">
-              <span className="text-3xl">👍</span>
-              良い口コミ
-            </h2>
-
-            <ul className="mt-5 space-y-4">
-              {goodReviews.map((point) => (
-                <li
-                  key={point}
-                  className="rounded-2xl bg-pink-50 px-5 py-5 text-lg font-black leading-9 text-slate-800 lg:text-xl lg:leading-10"
-                >
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
-            <h2 className="flex items-center gap-3 text-2xl font-black text-slate-900 lg:text-3xl">
-              <span className="text-3xl">⚠️</span>
-              悪い口コミ
-            </h2>
-
-            <ul className="mt-5 space-y-4">
-              {badReviews.map((point) => (
-                <li
-                  key={point}
-                  className="rounded-2xl bg-orange-50 px-5 py-5 text-lg font-black leading-9 text-slate-800 lg:text-xl lg:leading-10"
-                >
-                  {point}
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
-
-        <section className="mt-6 rounded-[2rem] bg-gradient-to-r from-pink-50 via-white to-orange-50 p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
-          <h2 className="text-2xl font-black text-slate-900 lg:text-3xl">
-            最新の口コミも確認する
+        <section className="mt-6 rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
+          <h2 className="text-2xl font-black leading-tight text-slate-900 lg:text-4xl">
+            🔍 いまGoogle検索されている{offerName}の関連ワード
           </h2>
 
-          <p className="mt-3 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
-            最新の口コミは日々変わるため、申し込み前には外部検索でも確認するのがおすすめです。
+          <p className="mt-3 text-base font-bold leading-8 text-slate-600 lg:text-lg">
+            気になるワードを選んで、そのままGoogle検索できます。
           </p>
 
-          <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row">
-            <a
-              href={googleReviewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex min-h-[72px] w-full flex-1 items-center justify-center rounded-[1.4rem] border-2 border-pink-200 bg-white px-6 py-5 text-center text-lg font-black leading-6 text-pink-600 shadow-lg transition hover:scale-105 hover:bg-pink-50 lg:text-xl"
-            >
-              Googleで口コミを見る
-              <span className="ml-2 text-2xl leading-none">↗</span>
-            </a>
+          <div className="mt-6 grid gap-4">
+            {relatedWords.map((word, index) => (
+              <div
+                key={word}
+                className="grid gap-3 rounded-2xl bg-pink-50/70 p-4 ring-1 ring-pink-100 sm:grid-cols-[auto_1fr_auto] sm:items-center lg:p-5"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-500 text-lg font-black text-white shadow-md">
+                  {index + 1}
+                </div>
 
-            <a
-              href={MOPPY_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex min-h-[72px] w-full flex-1 items-center justify-center rounded-[1.4rem] bg-gradient-to-r from-pink-500 to-orange-500 px-6 py-5 text-center text-lg font-black leading-6 text-white shadow-xl transition hover:scale-105 lg:text-xl"
-            >
-              モッピーで探す
-              <span className="ml-3 text-3xl leading-none">›</span>
-            </a>
+                <div className="text-lg font-black leading-7 text-slate-900 lg:text-xl">
+                  {word}
+                </div>
+
+                <a
+                  href={getGoogleSearchUrl(word)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex min-h-[48px] items-center justify-center rounded-full border-2 border-pink-300 bg-white px-5 text-base font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50"
+                >
+                  Googleで検索 ↗
+                </a>
+              </div>
+            ))}
           </div>
+        </section>
+
+        <section className="mt-6 rounded-[2rem] bg-white p-8 text-center shadow-lg ring-1 ring-pink-100 lg:p-12">
+          <div className="inline-flex rounded-full bg-pink-500 px-6 py-2 text-sm font-black text-white shadow-md shadow-pink-200/70 lg:text-base">
+            ポイ活サイト最大手！
+          </div>
+
+          <h2 className="mt-5 text-4xl font-black leading-tight tracking-tight lg:text-5xl">
+            モッピーでポイ活を始める
+          </h2>
+
+          <p className="mx-auto mt-6 max-w-3xl text-lg font-black leading-9 text-slate-700 lg:text-xl">
+            はじめての人は、モッピーの
+            <span className="text-pink-600">会員登録（無料）</span>
+            からスタート
+          </p>
+
+          <a
+            href={MOPPY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mx-auto mt-8 flex h-16 max-w-xl items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-6 text-xl font-black text-white shadow-xl transition hover:scale-105"
+          >
+            モッピーでポイ活を始める
+            <span className="ml-3 text-4xl leading-none">›</span>
+          </a>
+
+          <p className="mt-4 text-xs font-bold text-slate-400 lg:text-sm">
+            ※このページには広告・紹介リンクを含みます。
+          </p>
         </section>
       </div>
     </main>
