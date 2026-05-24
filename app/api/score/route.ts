@@ -35,6 +35,13 @@ type RankingItem = {
 const normalizeText = (text?: string | null) => {
   return (text || "")
     .toLowerCase()
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/<!\[CDATA\[/g, "")
+    .replace(/\]\]>/g, "")
     .replace(/\u3000/g, "")
     .replace(/\s+/g, "")
     .replace(/\uff08/g, "(")
@@ -128,25 +135,41 @@ const fetchMoppyDetailReward = async (url?: string) => {
   }
 };
 
-const findMoppyOffer = (item: RankingItem, offers: MoppyOffer[]) => {
-  const names = [item.offer_name, item.trend_keyword, item.category]
-    .map((name) => normalizeText(name))
-    .filter((name): name is string => Boolean(name));
+const getUrlKey = (url?: string | null) => {
+  if (!url) return "";
 
-  if (names.length === 0) return null;
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id") || url;
+  } catch {
+    return url;
+  }
+};
+
+const isStrongNameMatch = (offerName: string, title: string) => {
+  const name = normalizeText(offerName);
+  const normalizedTitle = normalizeText(title);
+
+  if (!name || !normalizedTitle) return false;
+  if (name === normalizedTitle) return true;
+
+  return name.length >= 5 && (normalizedTitle.includes(name) || name.includes(normalizedTitle));
+};
+
+const findMoppyOffer = (item: RankingItem, offers: MoppyOffer[]) => {
+  const savedUrlKey = getUrlKey(item.primary_site_url);
+
+  if (savedUrlKey) {
+    const urlMatched = offers.find((offer) => getUrlKey(offer.url) === savedUrlKey);
+    if (urlMatched) return urlMatched;
+  }
+
+  const offerName = item.offer_name || "";
+  if (!offerName) return null;
 
   return (
-    offers.find((offer) => {
-      const title = normalizeText(offer.title);
-      return names.some((name) => title === name);
-    }) ||
-    offers.find((offer) => {
-      const title = normalizeText(offer.title);
-      return names.some(
-        (name) =>
-          name.length >= 3 && (title.includes(name) || name.includes(title))
-      );
-    }) ||
+    offers.find((offer) => normalizeText(offer.title) === normalizeText(offerName)) ||
+    offers.find((offer) => isStrongNameMatch(offerName, offer.title)) ||
     null
   );
 };
