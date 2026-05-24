@@ -91,16 +91,11 @@ const getReviewPageUrl = (offerName: string) => {
 };
 
 const getSeoTitle = (offerName: string) => {
-  return `${offerName}のポイ活はお得？関連ワードをAIが整理`;
+  return `${offerName}の関連ワードをAIが整理`;
 };
 
-const getSeoDescription = (offerName: string, rewardText?: string) => {
-  const rewardPart =
-    rewardText && rewardText !== "データ取得不可"
-      ? `報酬目安は${rewardText}。`
-      : "";
-
-  return `${offerName}のポイ活について、Google検索で一緒に調べられている関連ワード、報酬条件、申し込み前の注意点をAIが整理。${rewardPart}ポイ活を比較する前の確認に役立ちます。`;
+const getSeoDescription = (offerName: string) => {
+  return `${offerName}について、Google検索で一緒に調べられている関連ワードをAIが整理。気になるワードをそのままGoogle検索できます。`;
 };
 
 async function getRankingItem(slug: string) {
@@ -183,11 +178,10 @@ export async function generateMetadata({
   const item = await getRankingItem(slug);
 
   const offerName = item ? getOfferName(item) : decodedSlug;
-  const rewardText = item ? formatReward(item.reward) : undefined;
   const pageUrl = getReviewPageUrl(offerName);
 
   const title = getSeoTitle(offerName);
-  const description = getSeoDescription(offerName, rewardText);
+  const description = getSeoDescription(offerName);
 
   return {
     title,
@@ -238,7 +232,7 @@ export default async function ReviewPage({ params }: PageProps) {
   const isoDate = getIsoDate(displayItem.updated_at);
   const pageUrl = getReviewPageUrl(offerName);
   const seoTitle = getSeoTitle(offerName);
-  const seoDescription = getSeoDescription(offerName, rewardText);
+  const seoDescription = getSeoDescription(offerName);
   const relatedWords = await getRelatedSearchWords(offerName);
 
   const jsonLd = {
@@ -327,9 +321,7 @@ export default async function ReviewPage({ params }: PageProps) {
         <section className="overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-pink-100">
           <div className="bg-gradient-to-r from-pink-50 via-white to-orange-50 p-7 lg:p-10">
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 lg:text-6xl">
-              {offerName}のポイ活はお得？
-              <br />
-              関連ワードを
+              {offerName}の関連ワードを
               <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
                 AI
               </span>
@@ -338,7 +330,7 @@ export default async function ReviewPage({ params }: PageProps) {
 
             <p className="mt-5 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
               {offerName}
-              のポイ活について、Google検索で一緒に調べられているワードと報酬目安をまとめています。
+              について、Google検索で一緒に調べられているワードをまとめています。
             </p>
 
             {updatedDateText && (
