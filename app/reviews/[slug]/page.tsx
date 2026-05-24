@@ -91,11 +91,11 @@ const getReviewPageUrl = (offerName: string) => {
 };
 
 const getSeoTitle = (offerName: string) => {
-  return `${offerName}の関連ワードをAIが整理`;
+  return `${offerName}の関連ワード`;
 };
 
 const getSeoDescription = (offerName: string) => {
-  return `${offerName}について、Google検索で一緒に調べられている関連ワードをAIが整理。気になるワードをそのままGoogle検索できます。`;
+  return `${offerName}について、Google検索で一緒に調べられている関連ワードをまとめています。気になるワードをそのままGoogle検索できます。`;
 };
 
 async function getRankingItem(slug: string) {
@@ -321,11 +321,7 @@ export default async function ReviewPage({ params }: PageProps) {
         <section className="overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-pink-100">
           <div className="bg-gradient-to-r from-pink-50 via-white to-orange-50 p-7 lg:p-10">
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 lg:text-6xl">
-              {offerName}の関連ワードを
-              <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
-                AI
-              </span>
-              が整理
+              {offerName}の関連ワード
             </h1>
 
             <p className="mt-5 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
