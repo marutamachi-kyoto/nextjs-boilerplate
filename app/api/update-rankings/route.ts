@@ -337,11 +337,11 @@ function buildCandidates(trends: TrendItem[], offers: MoppyOffer[]) {
 }
 
 async function updateRankings(rows: CandidateItem[]) {
+  if (rows.length === 0) return;
+
   const now = new Date().toISOString();
 
   await supabase.from("rankings").delete().gte("rank", 0);
-
-  if (rows.length === 0) return;
 
   const insertRows = rows.map((item, index) => ({
     rank: index + 1,
@@ -364,9 +364,9 @@ async function updateRankings(rows: CandidateItem[]) {
 }
 
 async function updateTrends(rows: CandidateItem[]) {
-  await supabase.from("trends").delete().gte("score", 0);
-
   if (rows.length === 0) return;
+
+  await supabase.from("trends").delete().gte("score", 0);
 
   const trendRows = rows.slice(0, RANKING_LIMIT).map((item, index) => ({
     word: item.offer_name,
@@ -403,6 +403,7 @@ export async function GET() {
       ranking_limit: RANKING_LIMIT,
       google_trend_only: true,
       moppy_url_and_reward_required: true,
+      empty_result_keeps_previous_rankings: true,
       offers_backfill_enabled: false,
       sample: candidates.slice(0, 5),
     });
