@@ -17,13 +17,6 @@ type MoppyOffer = {
   reward: number;
 };
 
-type MoppyDetail = {
-  title: string;
-  text: string;
-  imageUrl?: string;
-  reward: number;
-};
-
 type RankingItem = {
   rank?: number | null;
   offer_name?: string | null;
@@ -72,56 +65,6 @@ const stripTags = (html: string) => {
     .trim();
 };
 
-const toAbsoluteUrl = (url: string, baseUrl: string) => {
-  try {
-    return new URL(url, baseUrl).toString();
-  } catch {
-    return url;
-  }
-};
-
-const isUsableImageUrl = (url?: string) => {
-  if (!url) return false;
-
-  const lowerUrl = url.toLowerCase();
-  const trackingImagePatterns = [
-    "ad-track.jp/ad/p/img",
-    "ad-track.jp/ad/p/",
-    "doubleclick",
-    "pixel",
-    "1x1",
-    "spacer",
-    "blank",
-    "favicon",
-    "logo",
-  ];
-
-  return !trackingImagePatterns.some((pattern) => lowerUrl.includes(pattern));
-};
-
-const getImageUrl = (html: string, baseUrl: string) => {
-  const imageMatches = [...html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi)];
-  const imageUrls = imageMatches
-    .map((match) => toAbsoluteUrl(match[1], baseUrl))
-    .filter(isUsableImageUrl);
-
-  return imageUrls.find((url) => url.includes("img.moppy.jp")) || imageUrls[0];
-};
-
-const getDetailTitle = (html: string) => {
-  const heading = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1];
-  const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["'][^>]*>/i)?.[1];
-  const pageTitle = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1];
-  const title = stripTags(heading || ogTitle || pageTitle || "")
-    .replace(/の詳細.*$/g, "")
-    .replace(/\|.*$/g, "")
-    .replace(/｜.*$/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return title.length >= 3 ? title.slice(0, 120) : "";
-};
-
 const getReward = (text: string) => {
   const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
     .map((match) => Number(match[1].replace(/,/g, "")))
@@ -146,7 +89,7 @@ const isVerifiedMoppyOffer = (offer?: MoppyOffer | null): offer is MoppyOffer =>
 const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
   try {
     const response = await fetch(MOPPY_OFFER_URL, {
-      next: { revalidate: 1800 },
+      next: { revalidate: 3600 },
       headers: {
         "user-agent":
           "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
@@ -157,32 +100,18 @@ const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
 
     const json = await response.json();
     const offers = Array.isArray(json.data) ? (json.data as MoppyOffer[]) : [];
-    const uniqueOffers = new Map<string, MoppyOffer>();
 
-    offers.filter(isVerifiedMoppyOffer).forEach((offer) => {
-      const key = normalizeText(offer.title) || offer.url;
-      const current = uniqueOffers.get(key);
-      if (!current) {
-        uniqueOffers.set(key, offer);
-        return;
-      }
-
-      const currentScore = (current.imageUrl ? 2 : 0) + Number(current.reward || 0);
-      const nextScore = (offer.imageUrl ? 2 : 0) + Number(offer.reward || 0);
-      if (nextScore > currentScore) uniqueOffers.set(key, offer);
-    });
-
-    return Array.from(uniqueOffers.values()).sort(
-      (a, b) => Number(b.reward) - Number(a.reward)
-    );
+    return offers
+      .filter(isVerifiedMoppyOffer)
+      .sort((a, b) => Number(b.reward) - Number(a.reward));
   } catch (error) {
     console.error(error);
     return [];
   }
 };
 
-const fetchMoppyDetail = async (url?: string): Promise<MoppyDetail | null> => {
-  if (!url) return null;
+const fetchMoppyDetailReward = async (url?: string) => {
+  if (!url) return 0;
 
   try {
     const response = await fetch(url, {
@@ -193,22 +122,16 @@ const fetchMoppyDetail = async (url?: string): Promise<MoppyDetail | null> => {
       },
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) return 0;
 
     const html = await response.text();
     const mainHtml =
       html.split("ポイ活応援サービス")[0]?.split("ポイントの交換先")[0] || html;
-    const text = stripTags(mainHtml);
 
-    return {
-      title: getDetailTitle(mainHtml),
-      text,
-      imageUrl: getImageUrl(mainHtml, url),
-      reward: getReward(text),
-    };
+    return getReward(stripTags(mainHtml));
   } catch (error) {
     console.error(error);
-    return null;
+    return 0;
   }
 };
 
@@ -217,12 +140,7 @@ const getUrlKey = (url?: string | null) => {
 
   try {
     const parsed = new URL(url);
-    return (
-      parsed.searchParams.get("site_id") ||
-      parsed.searchParams.get("s_id") ||
-      parsed.searchParams.get("id") ||
-      url
-    );
+    return parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id") || url;
   } catch {
     return url;
   }
@@ -235,58 +153,7 @@ const isStrongNameMatch = (offerName: string, title: string) => {
   if (!name || !normalizedTitle) return false;
   if (name === normalizedTitle) return true;
 
-  const shorterLength = Math.min(name.length, normalizedTitle.length);
-  const longerLength = Math.max(name.length, normalizedTitle.length);
-  const overlapRatio = shorterLength / Math.max(longerLength, 1);
-
-  return (
-    shorterLength >= 8 &&
-    overlapRatio >= 0.55 &&
-    (normalizedTitle.includes(name) || name.includes(normalizedTitle))
-  );
-};
-
-const getImportantTokens = (value: string) => {
-  const stopWords = new Set([
-    "カード",
-    "クレジット",
-    "ポイント",
-    "ポイ活",
-    "モッピー",
-    "キャンペーン",
-    "無料",
-    "新規",
-    "公式",
-    "the",
-    "and",
-    "with",
-  ]);
-
-  return value
-    .replace(/[【】\[\]（）()「」『』・･_\-|｜]/g, " ")
-    .split(/\s+/)
-    .map((token) => normalizeText(token))
-    .filter((token) => token.length >= 2)
-    .filter((token) => !stopWords.has(token));
-};
-
-const isDetailMatchedToOffer = (offerName: string, detail: MoppyDetail) => {
-  const offer = normalizeText(offerName);
-  const detailTitle = normalizeText(detail.title);
-  const detailBody = normalizeText(`${detail.title} ${detail.text.slice(0, 2500)}`);
-
-  if (!offer || !detailBody) return false;
-  if (detailTitle && (detailTitle.includes(offer) || offer.includes(detailTitle))) {
-    return true;
-  }
-
-  const tokens = getImportantTokens(offerName);
-  if (tokens.length === 0) return false;
-
-  const matchedTokenCount = tokens.filter((token) => detailBody.includes(token)).length;
-  if (tokens.length === 1) return matchedTokenCount === 1;
-
-  return matchedTokenCount >= Math.min(2, tokens.length);
+  return name.length >= 5 && (normalizedTitle.includes(name) || name.includes(normalizedTitle));
 };
 
 const findMoppyOffer = (item: RankingItem, offers: MoppyOffer[]) => {
@@ -369,17 +236,10 @@ export async function GET() {
         const matchedOffer = findMoppyOffer(item, moppyOffers);
         if (!isVerifiedMoppyOffer(matchedOffer)) return null;
 
-        const detail = await fetchMoppyDetail(matchedOffer.url);
-        if (!detail || !isRewardAvailable(detail.reward)) return null;
-
-        const offerName = item.offer_name || matchedOffer.title;
-        if (!isDetailMatchedToOffer(offerName, detail)) return null;
-
-        const verifiedOffer = {
-          ...matchedOffer,
-          reward: detail.reward,
-          imageUrl: detail.imageUrl || matchedOffer.imageUrl,
-        };
+        const detailReward = await fetchMoppyDetailReward(matchedOffer.url);
+        const verifiedOffer = isRewardAvailable(detailReward)
+          ? { ...matchedOffer, reward: detailReward }
+          : matchedOffer;
 
         return isVerifiedMoppyOffer(verifiedOffer)
           ? { item, matchedOffer: verifiedOffer }
