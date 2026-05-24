@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const BASE_URL = "https://poikatu-ai.vercel.app";
 
 const getTrendWord = (item: {
   offer_name?: string | null;
@@ -16,18 +12,23 @@ const getTrendWord = (item: {
 
 export async function GET() {
   try {
-    const { data, error } = await supabase
-      .from("rankings")
-      .select("offer_name, trend_keyword, category, rank")
-      .order("updated_at", { ascending: false })
-      .order("rank", { ascending: true })
-      .limit(50);
+    const response = await fetch(`${BASE_URL}/api/score`, {
+      cache: "no-store",
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
+      },
+    });
 
-    if (error) {
-      throw error;
+    if (!response.ok) {
+      throw new Error(`score fetch failed: ${response.status}`);
     }
 
-    const words = (data || [])
+    const json = await response.json();
+    const data = Array.isArray(json.data) ? json.data : [];
+
+    const words = data
+      .slice(0, 50)
       .map((item, index) => ({
         word: getTrendWord(item),
         score: Math.max(100 - index * 2, 10),
