@@ -5,8 +5,6 @@ export const dynamic = "force-dynamic";
 
 const BASE_URL = "https://poikatu-ai.vercel.app";
 
-type SitemapEntry = MetadataRoute.Sitemap[number];
-
 type RankingItem = {
   offer_name?: string | null;
   trend_keyword?: string | null;
@@ -34,30 +32,30 @@ function getValidDate(dateText?: string | null) {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
-function getStaticPages(now: Date): SitemapEntry[] {
+function getStaticPages(now: Date): MetadataRoute.Sitemap {
   return [
     {
       url: BASE_URL,
       lastModified: now,
-      changeFrequency: "daily",
+      changeFrequency: "daily" as const,
       priority: 1,
     },
     {
       url: `${BASE_URL}/free-poikatsu`,
       lastModified: now,
-      changeFrequency: "daily",
+      changeFrequency: "daily" as const,
       priority: 0.9,
     },
     {
       url: `${BASE_URL}/about-poikatsu`,
       lastModified: now,
-      changeFrequency: "monthly",
+      changeFrequency: "monthly" as const,
       priority: 0.8,
     },
   ];
 }
 
-async function getRankingPages(): Promise<SitemapEntry[]> {
+async function getRankingPages(): Promise<MetadataRoute.Sitemap> {
   try {
     const supabase = getSupabase();
     if (!supabase) return [];
@@ -70,26 +68,26 @@ async function getRankingPages(): Promise<SitemapEntry[]> {
 
     if (error || !Array.isArray(data)) return [];
 
-    return (data as RankingItem[])
-      .map((item) => {
-        const offerName = getOfferName(item).trim();
-        if (!offerName) return null;
+    return (data as RankingItem[]).reduce<MetadataRoute.Sitemap>((pages, item) => {
+      const offerName = getOfferName(item).trim();
+      if (!offerName) return pages;
 
-        return {
-          url: `${BASE_URL}/reviews/${encodeURIComponent(offerName)}`,
-          lastModified: getValidDate(item.updated_at),
-          changeFrequency: "daily" as const,
-          priority: 0.7,
-        };
-      })
-      .filter((item): item is SitemapEntry => Boolean(item));
+      pages.push({
+        url: `${BASE_URL}/reviews/${encodeURIComponent(offerName)}`,
+        lastModified: getValidDate(item.updated_at),
+        changeFrequency: "daily" as const,
+        priority: 0.7,
+      });
+
+      return pages;
+    }, []);
   } catch (error) {
     console.error("sitemap ranking fetch failed", error);
     return [];
   }
 }
 
-function uniquePages(pages: SitemapEntry[]) {
+function uniquePages(pages: MetadataRoute.Sitemap): MetadataRoute.Sitemap {
   const seen = new Set<string>();
 
   return pages.filter((page) => {
