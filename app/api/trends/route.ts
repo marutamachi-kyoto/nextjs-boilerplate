@@ -11,22 +11,27 @@ const BACKFILL_KEYWORD = "モッピー確認済み案件";
 
 type RankingTrendRow = {
   trend_keyword?: string | null;
+  offer_name?: string | null;
   final_score?: number | null;
   category?: string | null;
 };
 
-const toDisplayKeyword = (value?: string | null) => {
-  const original = (value || "").trim();
-  if (!original || original === BACKFILL_KEYWORD) return "";
+const toDisplayKeyword = (item: RankingTrendRow) => {
+  const trendKeyword = (item.trend_keyword || "").trim();
+  const offerName = (item.offer_name || "").trim();
 
-  return original.replace(/\s+/g, " ").trim();
+  if (trendKeyword && trendKeyword !== BACKFILL_KEYWORD) {
+    return trendKeyword.replace(/\s+/g, " ").trim();
+  }
+
+  return offerName.replace(/\s+/g, " ").trim();
 };
 
 export async function GET() {
   try {
     const { data, error } = await supabase
       .from("rankings")
-      .select("trend_keyword, final_score, category")
+      .select("trend_keyword, offer_name, final_score, category")
       .order("rank", { ascending: true })
       .limit(100);
 
@@ -39,7 +44,7 @@ export async function GET() {
       .map((item, index) => ({
         item,
         index,
-        word: toDisplayKeyword(item.trend_keyword),
+        word: toDisplayKeyword(item),
       }))
       .filter(({ word }) => Boolean(word))
       .filter(({ word }) => {
