@@ -7,59 +7,40 @@ const supabase = createClient(
 );
 
 const TREND_LIMIT = 50;
+const BACKFILL_KEYWORD = "モッピー確認済み案件";
 
-type TrendRow = {
-  word?: string | null;
-  score?: number | null;
+type RankingTrendRow = {
+  trend_keyword?: string | null;
+  final_score?: number | null;
   category?: string | null;
 };
 
 const toDisplayKeyword = (value?: string | null) => {
   const original = (value || "").trim();
-  if (!original) return "";
+  if (!original || original === BACKFILL_KEYWORD) return "";
 
-  let text = original
-    .replace(/【[^】]*】/g, " ")
-    .replace(/\[[^\]]*\]/g, " ")
-    .replace(/（[^）]*）/g, " ")
-    .replace(/\([^)]*\)/g, " ")
-    .replace(/[「」『』]/g, " ")
-    .replace(/[+＋].*$/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  text = text
-    .replace(/^(ポイントサイト|ポイ活|モッピー|moppy|公式)\s*/i, "")
-    .replace(/\s*(ポイントサイト|ポイ活|モッピー|moppy|公式)$/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  text = text
-    .replace(/\bsbi\b/gi, "SBI")
-    .replace(/\bfx\b/gi, "FX")
-    .replace(/paypay/gi, "PayPay")
-    .replace(/linemo/gi, "LINEMO")
-    .replace(/u-next/gi, "U-NEXT")
-    .trim();
-
-  return text || original;
+  return original.replace(/\s+/g, " ").trim();
 };
 
 export async function GET() {
   try {
     const { data, error } = await supabase
-      .from("trends")
-      .select("word, score, category")
-      .order("score", { ascending: false })
-      .limit(TREND_LIMIT);
+      .from("rankings")
+      .select("trend_keyword, final_score, category")
+      .order("rank", { ascending: true })
+      .limit(100);
 
     if (error) {
       throw error;
     }
 
     const seen = new Set<string>();
-    const words = ((data || []) as TrendRow[])
-      .map((item, index) => ({ item, index, word: toDisplayKeyword(item.word) }))
+    const words = ((data || []) as RankingTrendRow[])
+      .map((item, index) => ({
+        item,
+        index,
+        word: toDisplayKeyword(item.trend_keyword),
+      }))
       .filter(({ word }) => Boolean(word))
       .filter(({ word }) => {
         const key = word.toLowerCase().replace(/\s+/g, "");
@@ -70,7 +51,7 @@ export async function GET() {
       .slice(0, TREND_LIMIT)
       .map(({ item, index, word }) => ({
         word,
-        score: item.score ?? Math.max(100 - index * 2, 10),
+        score: item.final_score ?? Math.max(100 - index * 2, 10),
         category: item.category ?? "Google検索由来",
       }));
 
