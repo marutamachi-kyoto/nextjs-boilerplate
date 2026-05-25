@@ -45,6 +45,59 @@ const normalizeText = (text?: string) => {
     .trim();
 };
 
+const normalizeSpaces = (value: string) => value.replace(/\s+/g, " ").trim();
+
+const OFFER_KEYWORD_RULES: Array<[RegExp, string]> = [
+  [/出光カード/i, "出光カード"],
+  [/apollostation|アポロステーション/i, "出光カード"],
+  [/SBI\s*FX|SBI.*FX/i, "SBI FXトレード"],
+  [/SBI.*証券/i, "SBI証券"],
+  [/楽天証券/, "楽天証券"],
+  [/楽天銀行/, "楽天銀行"],
+  [/楽天モバイル/, "楽天モバイル"],
+  [/au\s*ひかり|auひかり/i, "auひかり"],
+  [/ahamo/i, "ahamo"],
+  [/povo/i, "povo"],
+  [/U-?NEXT/i, "U-NEXT"],
+  [/coin\s*together/i, "coin together"],
+  [/JP\s*リターンズ|JPリターンズ/i, "JPリターンズ"],
+  [/プロパティエージェント/, "プロパティエージェント"],
+  [/CREAL/i, "CREAL"],
+  [/チクフル/, "チクフル不動産投資"],
+  [/CAMEL/i, "CAMEL"],
+  [/セカンドオピニオン|不動産会社で相談中/i, "不動産投資 セカンドオピニオン"],
+  [/モバレコ\s*Air|モバレコAir/i, "モバレコAir"],
+  [/ソフトバンク\s*Air|SoftBank\s*Air/i, "ソフトバンクAir"],
+  [/ドコモ\s*mini|ドコモミニ/i, "ドコモmini"],
+  [/グローバル\s*WiFi|グローバルWiFi/i, "グローバルWiFi"],
+  [/コミュファ光/i, "コミュファ光"],
+  [/ビッグローブ光|BIGLOBE光/i, "ビッグローブ光"],
+  [/GMOとくとくBB.*ドコモ光|ドコモ光.*GMOとくとくBB/i, "GMOとくとくBB ドコモ光"],
+  [/おてがる光クロス/i, "おてがる光クロス"],
+  [/ドコモ光/i, "ドコモ光"],
+  [/WiFi革命セット/i, "WiFi革命セット"],
+  [/WiMAX.*5G/i, "WiMAX +5G"],
+  [/FXブロードネット/i, "FXブロードネット"],
+  [/三菱UFJ.*スマート証券.*FX/i, "三菱UFJ eスマート証券 FX"],
+  [/みんなのFX/i, "みんなのFX"],
+  [/LIGHT\s*FX/i, "LIGHT FX"],
+  [/外為どっとコム/i, "外為どっとコム"],
+  [/イオンカードセレクト/i, "イオンカードセレクト"],
+  [/サクページ/i, "サクページ"],
+  [/愛車.*高価買取|車.*買取/i, "車買取"],
+  [/アメリカン.*エキスプレス.*ゴールド.*プリファード/i, "アメリカン・エキスプレス・ゴールド・プリファード・カード"],
+];
+
+const toSearchLikeOfferKeyword = (value?: string) => {
+  const original = normalizeSpaces(value || "");
+  if (!original) return "";
+
+  const matchedRule = OFFER_KEYWORD_RULES.find(([pattern]) => pattern.test(original));
+  if (matchedRule) return matchedRule[1];
+
+  return "";
+};
+
 const isLooseMatch = (left?: string, right?: string) => {
   const leftKey = normalizeText(left);
   const rightKey = normalizeText(right);
@@ -165,9 +218,21 @@ export default function Page() {
     return `ranking-${index + 1}-${normalizeText(getOfferName(item))}`;
   };
 
+  const getMatchCandidates = (item: CategoryScore) => {
+    const offerName = getOfferName(item);
+    return [
+      offerName,
+      item.trend_keyword,
+      item.category,
+      toSearchLikeOfferKeyword(offerName),
+      toSearchLikeOfferKeyword(item.trend_keyword),
+      toSearchLikeOfferKeyword(item.category),
+    ].filter(Boolean);
+  };
+
   const findMatchedRanking = (tagWord: string) => {
     return items.find((item) => {
-      return [getOfferName(item), item.trend_keyword, item.category].some((value) =>
+      return getMatchCandidates(item).some((value) =>
         isLooseMatch(value, tagWord)
       );
     });
