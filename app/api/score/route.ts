@@ -8,7 +8,9 @@ const supabase = createClient(
 );
 
 const MOPPY_OFFER_URL = "https://poikatu-ai.vercel.app/api/moppy-offer-images";
+const GOOGLE_SUGGEST_URL = "https://suggestqueries.google.com/complete/search";
 const RANKING_LIMIT = 50;
+const BACKFILL_KEYWORD = "モッピー確認済み案件";
 
 type MoppyOffer = {
   title: string;
@@ -157,7 +159,7 @@ const fetchMoppyDetailReward = async (url?: string) => {
 
     const html = await response.text();
     const mainHtml =
-      html.split("ポイ活応援サービス")[0]?.split("ポイントの交換先")[0] || html;
+      html.split("\u30dd\u30a4\u6d3b\u5fdc\u63f4\u30b5\u30fc\u30d3\u30b9")[0]?.split("\u30dd\u30a4\u30f3\u30c8\u306e\u4ea4\u63db\u5148")[0] || html;
 
     return getReward(stripTags(mainHtml));
   } catch (error) {
@@ -243,7 +245,76 @@ const getDisplayReason = (item: RankingItem, offerName: string) => {
   return getGoogleRelatedReason(offerName, relatedWords);
 };
 
-const formatRankingItem = (
+const getSearchKeywordForReason = (item: RankingItem, offerName: string) => {
+  const rawTrendKeyword = (item.trend_keyword || "").trim();
+
+  if (rawTrendKeyword && rawTrendKeyword !== BACKFILL_KEYWORD) {
+    return toSearchWord(rawTrendKeyword);
+  }
+
+  return toSearchWord(offerName) || offerName;
+};
+
+const cleanSuggestionHint = (suggestion: string, searchKeyword: string) => {
+  let hint = suggestion;
+  const keyword = searchKeyword.trim();
+
+  [keyword, keyword.toLowerCase(), keyword.toUpperCase()].forEach((word) => {
+    if (word) hint = hint.split(word).join("");
+  });
+
+  ["ポイ活", "口コミ", "評判", "おすすめ", "比較", "ランキング"].forEach((word) => {
+    hint = hint.split(word).join("");
+  });
+
+  return hint.replace(/\s+/g, " ").replace(/　/g, " ").trim();
+};
+
+const fetchRelatedSearchWords = async (searchKeyword: string) => {
+  const fallbackWords = [
+    `${searchKeyword} メリット`,
+    `${searchKeyword} デメリット`,
+    `${searchKeyword} 口コミ`,
+    `${searchKeyword} 評判`,
+    `${searchKeyword} ポイント`,
+    `${searchKeyword} ポイ活`,
+    `${searchKeyword} キャンペーン`,
+    `${searchKeyword} 条件`,
+    `${searchKeyword} 注意点`,
+    `${searchKeyword} お得`,
+  ];
+
+  try {
+    const url = new URL(GOOGLE_SUGGEST_URL);
+    url.searchParams.set("client", "firefox");
+    url.searchParams.set("hl", "ja");
+    url.searchParams.set("q", searchKeyword);
+
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
+      },
+    });
+
+    if (!response.ok) return fallbackWords;
+
+    const json = await response.json();
+    const suggestions = Array.isArray(json?.[1]) ? (json[1] as string[]) : [];
+    const words = suggestions
+      .map((word) => cleanSuggestionHint(word, searchKeyword))
+      .filter((word) => word && normalizeText(word) !== normalizeText(searchKeyword));
+    const uniqueWords = Array.from(new Set([...words, ...fallbackWords]));
+
+    return uniqueWords.slice(0, 10);
+  } catch (error) {
+    console.error(error);
+    return fallbackWords;
+  }
+};
+
+const formatRankingItem = async (
   item: RankingItem,
   index: number,
   matchedOffer: MoppyOffer
@@ -259,6 +330,10 @@ const formatRankingItem = (
   const trendKeyword = toSearchWord(
     item.trend_keyword ?? item.offer_name ?? item.category ?? offerName
   );
+  const searchKeywordForReason = getSearchKeywordForReason(item, offerName);
+  const relatedWords = searchKeywordForReason
+    ? await fetchRelatedSearchWords(searchKeywordForReason)
+    : [];
 
   return {
     rank: index + 1,
@@ -266,7 +341,9 @@ const formatRankingItem = (
     category: trendKeyword || category,
     trend_keyword: trendKeyword || offerName,
     reward,
-    reason: getDisplayReason(item, offerName),
+    reason: relatedWords.length > 0
+      ? getGoogleRelatedReason(offerName, relatedWords)
+      : getDisplayReason(item, offerName),
     image_url: matchedOffer.imageUrl,
     primary_site_name: "モッピー",
     primary_site_url: matchedOffer.url,
@@ -311,15 +388,17 @@ export async function GET() {
       })
     );
 
-    const formatted = verifiedPairs
-      .filter(
-        (pair): pair is { item: RankingItem; matchedOffer: MoppyOffer } =>
-          Boolean(pair)
-      )
-      .slice(0, RANKING_LIMIT)
-      .map(({ item, matchedOffer }, index) => {
-        return formatRankingItem(item, index, matchedOffer);
-      });
+    const formatted = await Promise.all(
+      verifiedPairs
+        .filter(
+          (pair): pair is { item: RankingItem; matchedOffer: MoppyOffer } =>
+            Boolean(pair)
+        )
+        .slice(0, RANKING_LIMIT)
+        .map(({ item, matchedOffer }, index) => {
+          return formatRankingItem(item, index, matchedOffer);
+        })
+    );
 
     return Response.json({
       data: formatted,
