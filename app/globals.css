@@ -35,16 +35,23 @@ body {
   border: 1px solid #ffd4e8;
 }
 
-header a[href="/free-poikatsu"] > span:first-child,
-:where(header) a[href="/free-poikatsu"] span:first-child {
+a[href="/free-poikatsu"] span:first-child {
+  color: transparent !important;
   font-size: 0 !important;
+  line-height: 1 !important;
+  overflow: hidden !important;
+  position: relative !important;
 }
 
-header a[href="/free-poikatsu"] > span:first-child::before,
-:where(header) a[href="/free-poikatsu"] span:first-child::before {
-  content: "0";
+a[href="/free-poikatsu"] span:first-child::before {
+  color: #ffffff !important;
+  content: "0" !important;
+  display: grid !important;
   font-size: 1.16rem !important;
+  inset: 0 !important;
   line-height: 1 !important;
+  place-items: center !important;
+  position: absolute !important;
 }
 
 main.min-h-screen > section:first-child div.rounded-\[2rem\] > div:first-child {
@@ -53,18 +60,22 @@ main.min-h-screen > section:first-child div.rounded-\[2rem\] > div:first-child {
   line-height: 1.2 !important;
 }
 
+main.min-h-screen > section:nth-of-type(2) > div:first-child {
+  align-items: flex-start !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+  justify-content: flex-start !important;
+}
+
+main.min-h-screen > section:nth-of-type(2) > div:first-child > div {
+  flex-shrink: 0 !important;
+  margin-left: 0 !important;
+}
+
 @media (min-width: 1024px) {
   main.min-h-screen > section:first-child div.rounded-\[2rem\] > div:first-child {
     font-size: 1.22rem !important;
-  }
-
-  main.min-h-screen > section:nth-of-type(2) > div:first-child {
-    align-items: center !important;
-  }
-
-  main.min-h-screen > section:nth-of-type(2) > div:first-child > div {
-    flex-shrink: 0 !important;
-    margin-left: auto !important;
   }
 }
 
