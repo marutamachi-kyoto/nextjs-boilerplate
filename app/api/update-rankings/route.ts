@@ -13,7 +13,7 @@ const GOOGLE_TRENDS_RSS_URL = "https://trends.google.com/trending/rss?geo=JP";
 const GOOGLE_SUGGEST_URL = "https://suggestqueries.google.com/complete/search";
 const MOPPY_OFFER_URL = "https://poikatu-ai.vercel.app/api/moppy-offer-images";
 const RANKING_LIMIT = 50;
-const TREND_CANDIDATE_LIMIT = 300;
+const TREND_CANDIDATE_LIMIT = 500;
 const SUGGEST_BATCH_SIZE = 10;
 
 const STATIC_GOOGLE_SUGGEST_SEEDS = [
@@ -37,6 +37,16 @@ const STATIC_GOOGLE_SUGGEST_SEEDS = [
   "モッピー 高還元",
   "モッピー キャンペーン",
   "モッピー 無料",
+  "モッピー 案件",
+  "モッピー ポイント",
+  "モッピー 稼ぎ方",
+  "モッピー 貯め方",
+  "モッピー 初心者",
+  "モッピー 還元",
+  "モッピー 高ポイント",
+  "モッピー 新着",
+  "モッピー 特集",
+  "モッピー 無料登録",
 ];
 
 type TrendItem = {
