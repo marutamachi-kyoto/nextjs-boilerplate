@@ -5,45 +5,36 @@ export const dynamic = "force-dynamic";
 
 const BASE_URL = "https://poikatu-ai.vercel.app";
 
+type SitemapEntry = MetadataRoute.Sitemap[number];
+
 type RankingItem = {
-  offer_name?: string;
-  trend_keyword: string;
-  category: string;
-  updated_at?: string;
+  offer_name?: string | null;
+  trend_keyword?: string | null;
+  category?: string | null;
+  updated_at?: string | null;
 };
 
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) return null;
+
+  return createClient(url, key);
 }
 
 function getOfferName(item: RankingItem) {
-  return item.offer_name || item.trend_keyword || item.category;
+  return item.offer_name || item.trend_keyword || item.category || "";
 }
 
-async function getRankingPages() {
-  const { data } = await getSupabase()
-    .from("rankings")
-    .select("offer_name, trend_keyword, category, updated_at")
-    .order("rank", { ascending: true })
-    .limit(50);
+function getValidDate(dateText?: string | null) {
+  if (!dateText) return new Date();
 
-  if (!Array.isArray(data)) return [];
-
-  return (data as RankingItem[]).map((item) => ({
-    url: `${BASE_URL}/reviews/${encodeURIComponent(getOfferName(item))}`,
-    lastModified: item.updated_at ? new Date(item.updated_at) : new Date(),
-    changeFrequency: "daily" as const,
-    priority: 0.7,
-  }));
+  const date = new Date(dateText);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const rankingPages = await getRankingPages();
-  const now = new Date();
-
+function getStaticPages(now: Date): SitemapEntry[] {
   return [
     {
       url: BASE_URL,
@@ -63,6 +54,55 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.8,
     },
-    ...rankingPages,
   ];
+}
+
+async function getRankingPages(): Promise<SitemapEntry[]> {
+  try {
+    const supabase = getSupabase();
+    if (!supabase) return [];
+
+    const { data, error } = await supabase
+      .from("rankings")
+      .select("offer_name, trend_keyword, category, updated_at")
+      .order("rank", { ascending: true })
+      .limit(50);
+
+    if (error || !Array.isArray(data)) return [];
+
+    return (data as RankingItem[])
+      .map((item) => {
+        const offerName = getOfferName(item).trim();
+        if (!offerName) return null;
+
+        return {
+          url: `${BASE_URL}/reviews/${encodeURIComponent(offerName)}`,
+          lastModified: getValidDate(item.updated_at),
+          changeFrequency: "daily" as const,
+          priority: 0.7,
+        };
+      })
+      .filter((item): item is SitemapEntry => Boolean(item));
+  } catch (error) {
+    console.error("sitemap ranking fetch failed", error);
+    return [];
+  }
+}
+
+function uniquePages(pages: SitemapEntry[]) {
+  const seen = new Set<string>();
+
+  return pages.filter((page) => {
+    if (seen.has(page.url)) return false;
+    seen.add(page.url);
+    return true;
+  });
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = new Date();
+  const staticPages = getStaticPages(now);
+  const rankingPages = await getRankingPages();
+
+  return uniquePages([...staticPages, ...rankingPages]);
 }
