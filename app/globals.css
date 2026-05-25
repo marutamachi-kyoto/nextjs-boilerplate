@@ -43,6 +43,27 @@ header a[href="/free-poikatsu"] > span:first-child::before {
   line-height: 1 !important;
 }
 
+main.min-h-screen > section:first-child div.rounded-\[2rem\] > div:first-child {
+  padding: 0.7rem 1.7rem !important;
+  font-size: 1.1rem !important;
+  line-height: 1.2 !important;
+}
+
+@media (min-width: 1024px) {
+  main.min-h-screen > section:first-child div.rounded-\[2rem\] > div:first-child {
+    font-size: 1.22rem !important;
+  }
+
+  main.min-h-screen > section:nth-of-type(2) > div:first-child {
+    align-items: center !important;
+  }
+
+  main.min-h-screen > section:nth-of-type(2) > div:first-child > div {
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+  }
+}
+
 main article[id^="ranking-"] {
   overflow: visible !important;
 }
