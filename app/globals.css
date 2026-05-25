@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+/* Production redeploy marker: latest free page UI fixes. */
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -33,11 +35,13 @@ body {
   border: 1px solid #ffd4e8;
 }
 
-header a[href="/free-poikatsu"] > span:first-child {
+header a[href="/free-poikatsu"] > span:first-child,
+:where(header) a[href="/free-poikatsu"] span:first-child {
   font-size: 0 !important;
 }
 
-header a[href="/free-poikatsu"] > span:first-child::before {
+header a[href="/free-poikatsu"] > span:first-child::before,
+:where(header) a[href="/free-poikatsu"] span:first-child::before {
   content: "0";
   font-size: 1.16rem !important;
   line-height: 1 !important;
