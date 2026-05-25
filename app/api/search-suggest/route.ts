@@ -6,6 +6,9 @@ export const revalidate = 0;
 const SUGGEST_URL = "https://suggestqueries.google.com/complete/search";
 
 const BLOCK_WORDS = [
+  "とは",
+  "ドリームキャンペーン",
+  "キャンペーンコード",
   "問い合わせ",
   "電話",
   "住所",
