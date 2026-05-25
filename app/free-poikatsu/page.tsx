@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
+import { createClient } from "@supabase/supabase-js";
 
-export const revalidate = 86400;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const BASE_URL = "https://poikatu-ai.vercel.app";
 const MOPPY_INVITE_URL =
   "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const SOURCE_URLS = [
   "https://pc.moppy.jp/service/?order=1",
@@ -210,7 +217,33 @@ async function fetchFreeOffers() {
     .slice(0, MAX_OFFERS);
 }
 
-const formatDate = () => {
+async function fetchLatestRankingUpdatedAt() {
+  try {
+    const { data, error } = await supabase
+      .from("rankings")
+      .select("updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error(error);
+      return null;
+    }
+
+    return data?.updated_at ?? null;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
+
+const formatDate = (date: string | Date | null) => {
+  if (!date) return "-";
+
+  const value = new Date(date);
+  if (Number.isNaN(value.getTime())) return "-";
+
   return new Intl.DateTimeFormat("ja-JP", {
     timeZone: "Asia/Tokyo",
     year: "numeric",
@@ -218,7 +251,7 @@ const formatDate = () => {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date());
+  }).format(value);
 };
 
 function FallbackImage() {
@@ -233,7 +266,11 @@ function FallbackImage() {
 }
 
 export default async function FreePoikatsuPage() {
-  const offers = await fetchFreeOffers();
+  const [offers, latestRankingUpdatedAt] = await Promise.all([
+    fetchFreeOffers(),
+    fetchLatestRankingUpdatedAt(),
+  ]);
+  const updatedAt = formatDate(latestRankingUpdatedAt);
 
   return (
     <main className="min-h-screen bg-[#fff8fb]">
@@ -289,7 +326,7 @@ export default async function FreePoikatsuPage() {
             <span className="text-orange-400">🔥</span> 無料でできるポイ活一覧
           </h2>
           <div className="w-fit rounded-full bg-white px-5 py-3 text-sm font-black text-slate-600 shadow-lg ring-1 ring-slate-100">
-            最終更新：{formatDate()}
+            最終更新：{updatedAt}
           </div>
         </div>
 
