@@ -13,36 +13,30 @@ const GOOGLE_TRENDS_RSS_URL = "https://trends.google.com/trending/rss?geo=JP";
 const GOOGLE_SUGGEST_URL = "https://suggestqueries.google.com/complete/search";
 const MOPPY_OFFER_URL = "https://poikatu-ai.vercel.app/api/moppy-offer-images";
 const RANKING_LIMIT = 50;
-const TREND_CANDIDATE_LIMIT = 200;
-const OFFER_SUGGEST_SEED_LIMIT = 80;
+const TREND_CANDIDATE_LIMIT = 300;
 const SUGGEST_BATCH_SIZE = 10;
 
 const STATIC_GOOGLE_SUGGEST_SEEDS = [
   "ポイ活",
   "ポイントサイト",
   "モッピー",
-  "モッピー 高額案件",
-  "モッピー クレジットカード",
-  "モッピー 証券",
-  "モッピー 銀行",
-  "モッピー スマホ",
-  "モッピー 無料案件",
-  "ポイ活 クレジットカード",
-  "ポイ活 証券",
-  "ポイ活 銀行",
-  "ポイ活 スマホ",
-  "ポイ活 アプリ",
+  "ポイ活 おすすめ",
   "ポイ活 無料",
-  "ポイントサイト クレジットカード",
-  "ポイントサイト 証券",
-  "ポイントサイト 高額案件",
-  "楽天カード ポイ活",
-  "PayPayカード ポイ活",
-  "SBI証券 ポイ活",
-  "楽天銀行 ポイ活",
-  "ahamo ポイ活",
-  "LINEMO ポイ活",
-  "U-NEXT ポイ活",
+  "ポイ活 人気",
+  "ポイ活 注目",
+  "ポイ活 比較",
+  "ポイ活 ランキング",
+  "ポイ活 高還元",
+  "ポイ活 キャンペーン",
+  "ポイ活 初心者",
+  "ポイントサイト おすすめ",
+  "ポイントサイト 比較",
+  "ポイントサイト ランキング",
+  "モッピー おすすめ",
+  "モッピー 人気",
+  "モッピー 高還元",
+  "モッピー キャンペーン",
+  "モッピー 無料",
 ];
 
 type TrendItem = {
@@ -65,6 +59,7 @@ type CandidateItem = {
   final_score: number;
   reason: string;
   primary_site_url: string;
+  source?: "trend" | "verified_moppy_backfill";
 };
 
 function normalizeText(value?: string | null) {
@@ -317,15 +312,9 @@ async function getGoogleSuggestsInBatches(seeds: string[]) {
   return results;
 }
 
-async function getGoogleSearchCandidates(offers: MoppyOffer[]): Promise<TrendItem[]> {
+async function getGoogleSearchCandidates(): Promise<TrendItem[]> {
   const rssKeywords = await getGoogleRssTrends();
-  const offerSeeds = offers
-    .slice()
-    .sort((a, b) => Number(b.reward) - Number(a.reward))
-    .slice(0, OFFER_SUGGEST_SEED_LIMIT)
-    .flatMap((offer) => [offer.title, `${offer.title} ポイ活`, `${offer.title} モッピー`]);
-  const seeds = Array.from(new Set([...STATIC_GOOGLE_SUGGEST_SEEDS, ...offerSeeds]));
-  const suggestKeywords = await getGoogleSuggestsInBatches(seeds);
+  const suggestKeywords = await getGoogleSuggestsInBatches(STATIC_GOOGLE_SUGGEST_SEEDS);
   const unique = Array.from(new Set([...rssKeywords, ...suggestKeywords]))
     .filter(isSafeTrendKeyword)
     .slice(0, TREND_CANDIDATE_LIMIT);
@@ -370,12 +359,21 @@ function calculateScore(params: {
   return Math.round(trendScore + rewardScore + 30 - freshnessPenalty);
 }
 
+function calculateBackfillScore(reward: number, backfillIndex: number) {
+  const rewardScore = Math.min(reward / 100, 30);
+  return Math.round(70 + rewardScore - backfillIndex * 0.2);
+}
+
 function generateReason(offerName: string, trendKeyword: string) {
   if (normalizeName(offerName) === normalizeName(trendKeyword)) {
-    return `${offerName}は、Google検索で注目されており、モッピーで案件ページと報酬ポイントが確認できた案件です。`;
+    return `${offerName}は、Google検索で注目されています。`;
   }
 
-  return `${offerName}は、Google検索で「${trendKeyword}」と一緒に調べられており、モッピーで案件ページと報酬ポイントが確認できた案件です。`;
+  return `${offerName}は、Google検索で「${trendKeyword}」も一緒に調べられています。`;
+}
+
+function generateBackfillReason(offerName: string) {
+  return `${offerName}は、モッピーで案件ページと報酬ポイントが確認できた案件です。`;
 }
 
 function buildCandidates(trends: TrendItem[], offers: MoppyOffer[]) {
@@ -404,13 +402,44 @@ function buildCandidates(trends: TrendItem[], offers: MoppyOffer[]) {
         }),
         reason: generateReason(offer.title, trend.keyword),
         primary_site_url: offer.url,
+        source: "trend",
       });
     });
   });
 
-  return candidates
-    .sort((a, b) => b.final_score - a.final_score)
-    .slice(0, RANKING_LIMIT);
+  const rankedCandidates = candidates.sort((a, b) => b.final_score - a.final_score);
+
+  if (rankedCandidates.length >= RANKING_LIMIT) {
+    return rankedCandidates.slice(0, RANKING_LIMIT);
+  }
+
+  const backfillOffers = offers
+    .slice()
+    .sort((a, b) => Number(b.reward) - Number(a.reward))
+    .filter((offer) => {
+      const key = normalizeName(offer.title);
+      return key && !seen.has(key);
+    })
+    .slice(0, RANKING_LIMIT - rankedCandidates.length);
+
+  backfillOffers.forEach((offer, backfillIndex) => {
+    const key = normalizeName(offer.title);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+
+    rankedCandidates.push({
+      offer_name: offer.title,
+      trend_keyword: "モッピー確認済み案件",
+      category: getCategoryByName(offer.title, "モッピー"),
+      reward: offer.reward,
+      final_score: calculateBackfillScore(offer.reward, backfillIndex),
+      reason: generateBackfillReason(offer.title),
+      primary_site_url: offer.url,
+      source: "verified_moppy_backfill",
+    });
+  });
+
+  return rankedCandidates.slice(0, RANKING_LIMIT);
 }
 
 async function updateRankings(rows: CandidateItem[]) {
@@ -459,8 +488,11 @@ async function updateTrends(rows: CandidateItem[]) {
 export async function GET() {
   try {
     const offers = await getMoppyOffers();
-    const trends = await getGoogleSearchCandidates(offers);
+    const trends = await getGoogleSearchCandidates();
     const candidates = buildCandidates(trends, offers);
+    const backfillCount = candidates.filter(
+      (candidate) => candidate.source === "verified_moppy_backfill"
+    ).length;
 
     await updateRankings(candidates);
     await updateTrends(candidates);
@@ -472,14 +504,17 @@ export async function GET() {
       trends_count: trends.length,
       moppy_offers_count: offers.length,
       trend_candidate_limit: TREND_CANDIDATE_LIMIT,
-      offer_suggest_seed_limit: OFFER_SUGGEST_SEED_LIMIT,
+      google_suggest_seed_count: STATIC_GOOGLE_SUGGEST_SEEDS.length,
+      offer_generated_suggest_seeds_enabled: false,
+      verified_moppy_backfill_enabled: true,
+      verified_moppy_backfill_count: backfillCount,
       ranking_limit: RANKING_LIMIT,
       google_trend_rss_and_search_suggest_enabled: true,
       google_trend_only: true,
       moppy_url_and_reward_required: true,
       empty_result_keeps_previous_rankings: true,
       moppy_url_not_saved_due_schema: true,
-      offers_backfill_enabled: false,
+      offers_backfill_enabled: true,
       sample: candidates.slice(0, 5),
     });
   } catch (error: any) {
