@@ -30,6 +30,8 @@ type PageProps = {
   }>;
 };
 
+const BACKFILL_KEYWORD = "モッピー確認済み案件";
+
 const normalizeText = (text?: string) => {
   return (text || "")
     .toLowerCase()
@@ -44,6 +46,12 @@ const normalizeText = (text?: string) => {
 
 const getOfferName = (item: RankingItem) => {
   return item.offer_name || item.trend_keyword || item.category;
+};
+
+const getSearchKeyword = (item: RankingItem) => {
+  const keyword = (item.trend_keyword || "").trim();
+  if (!keyword || keyword === BACKFILL_KEYWORD) return getOfferName(item);
+  return keyword;
 };
 
 const formatReward = (reward?: number) => {
@@ -90,12 +98,12 @@ const getReviewPageUrl = (offerName: string) => {
   return `${BASE_URL}/reviews/${encodeURIComponent(offerName)}`;
 };
 
-const getSeoTitle = (offerName: string) => {
-  return `${offerName}の関連ワード`;
+const getSeoTitle = (searchKeyword: string) => {
+  return `${searchKeyword}の関連ワード`;
 };
 
-const getSeoDescription = (offerName: string) => {
-  return `${offerName}について、Google検索で一緒に調べられている関連ワードをまとめています。気になるワードをそのままGoogle検索できます。`;
+const getSeoDescription = (searchKeyword: string) => {
+  return `${searchKeyword}について、Google検索で一緒に調べられているワードをまとめています。`;
 };
 
 async function getRankingItem(slug: string) {
@@ -126,24 +134,24 @@ async function getRankingItem(slug: string) {
   return target || null;
 }
 
-async function getRelatedSearchWords(offerName: string) {
+async function getRelatedSearchWords(searchKeyword: string) {
   const fallbackWords = [
-    `${offerName} メリット`,
-    `${offerName} デメリット`,
-    `${offerName} 口コミ`,
-    `${offerName} 評判`,
-    `${offerName} ポイント`,
-    `${offerName} ポイ活`,
-    `${offerName} キャンペーン`,
-    `${offerName} 条件`,
-    `${offerName} 注意点`,
-    `${offerName} お得`,
+    `${searchKeyword} メリット`,
+    `${searchKeyword} デメリット`,
+    `${searchKeyword} 口コミ`,
+    `${searchKeyword} 評判`,
+    `${searchKeyword} ポイント`,
+    `${searchKeyword} ポイ活`,
+    `${searchKeyword} キャンペーン`,
+    `${searchKeyword} 条件`,
+    `${searchKeyword} 注意点`,
+    `${searchKeyword} お得`,
   ];
 
   try {
     const response = await fetch(
       `https://suggestqueries.google.com/complete/search?client=firefox&hl=ja&q=${encodeURIComponent(
-        offerName
+        searchKeyword
       )}`,
       {
         cache: "no-store",
@@ -160,7 +168,7 @@ async function getRelatedSearchWords(offerName: string) {
     const suggestions = Array.isArray(json?.[1]) ? (json[1] as string[]) : [];
     const words = suggestions
       .map((word) => word.trim())
-      .filter((word) => word && normalizeText(word) !== normalizeText(offerName));
+      .filter((word) => word && normalizeText(word) !== normalizeText(searchKeyword));
     const uniqueWords = Array.from(new Set([...words, ...fallbackWords]));
 
     return uniqueWords.slice(0, 10);
@@ -178,10 +186,11 @@ export async function generateMetadata({
   const item = await getRankingItem(slug);
 
   const offerName = item ? getOfferName(item) : decodedSlug;
+  const searchKeyword = item ? getSearchKeyword(item) : decodedSlug;
   const pageUrl = getReviewPageUrl(offerName);
 
-  const title = getSeoTitle(offerName);
-  const description = getSeoDescription(offerName);
+  const title = getSeoTitle(searchKeyword);
+  const description = getSeoDescription(searchKeyword);
 
   return {
     title,
@@ -227,13 +236,14 @@ export default async function ReviewPage({ params }: PageProps) {
   const displayItem = item || fallbackItem;
 
   const offerName = getOfferName(displayItem);
+  const searchKeyword = getSearchKeyword(displayItem);
   const rewardText = formatReward(displayItem.reward);
   const updatedDateText = formatDate(displayItem.updated_at);
   const isoDate = getIsoDate(displayItem.updated_at);
   const pageUrl = getReviewPageUrl(offerName);
-  const seoTitle = getSeoTitle(offerName);
-  const seoDescription = getSeoDescription(offerName);
-  const relatedWords = await getRelatedSearchWords(offerName);
+  const seoTitle = getSeoTitle(searchKeyword);
+  const seoDescription = getSeoDescription(searchKeyword);
+  const relatedWords = await getRelatedSearchWords(searchKeyword);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -264,7 +274,7 @@ export default async function ReviewPage({ params }: PageProps) {
           {
             "@type": "ListItem",
             position: 2,
-            name: `${offerName}の関連ワード`,
+            name: `${searchKeyword}の関連ワード`,
             item: pageUrl,
           },
         ],
@@ -290,6 +300,7 @@ export default async function ReviewPage({ params }: PageProps) {
         dateModified: isoDate,
         articleSection: "ポイ活関連ワード",
         about: [
+          searchKeyword,
           offerName,
           "ポイ活",
           "関連ワード",
@@ -321,11 +332,11 @@ export default async function ReviewPage({ params }: PageProps) {
         <section className="overflow-hidden rounded-[2rem] bg-white shadow-xl ring-1 ring-pink-100">
           <div className="bg-gradient-to-r from-pink-50 via-white to-orange-50 p-7 lg:p-10">
             <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-900 lg:text-6xl">
-              {offerName}の関連ワード
+              {searchKeyword}の関連ワード
             </h1>
 
             <p className="mt-5 text-lg font-bold leading-9 text-slate-700 lg:text-xl lg:leading-10">
-              {offerName}
+              {searchKeyword}
               について、Google検索で一緒に調べられているワードをまとめています。
             </p>
 
@@ -337,7 +348,9 @@ export default async function ReviewPage({ params }: PageProps) {
 
             <div className="mt-7 grid gap-4 lg:grid-cols-2">
               <div className="rounded-2xl bg-white p-5 text-center shadow-sm ring-1 ring-pink-100">
-                <div className="text-sm font-black text-slate-500">案件名</div>
+                <div className="text-sm font-black text-slate-500">
+                  関連するモッピー案件
+                </div>
                 <div className="mt-2 text-2xl font-black text-slate-900">
                   {offerName}
                 </div>
@@ -357,7 +370,7 @@ export default async function ReviewPage({ params }: PageProps) {
 
         <section className="mt-6 rounded-[2rem] bg-white p-6 shadow-lg ring-1 ring-pink-100 lg:p-8">
           <h2 className="text-2xl font-black leading-tight text-slate-900 lg:text-4xl">
-            🔍 いまGoogle検索されている{offerName}の関連ワード
+            🔍 いまGoogle検索されている{searchKeyword}の関連ワード
           </h2>
 
           <p className="mt-3 text-base font-bold leading-8 text-slate-600 lg:text-lg">
