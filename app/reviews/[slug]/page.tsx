@@ -44,14 +44,104 @@ const normalizeText = (text?: string) => {
     .trim();
 };
 
+const normalizeSpaces = (value: string) => value.replace(/\s+/g, " ").trim();
+
+const OFFER_KEYWORD_RULES: Array<[RegExp, string]> = [
+  [/出光カード/i, "出光カード"],
+  [/apollostation|アポロステーション/i, "出光カード"],
+  [/SBI\s*FX|SBI.*FX/i, "SBI FXトレード"],
+  [/SBI.*証券/i, "SBI証券"],
+  [/楽天証券/, "楽天証券"],
+  [/楽天銀行/, "楽天銀行"],
+  [/楽天モバイル/, "楽天モバイル"],
+  [/au\s*ひかり|auひかり/i, "auひかり"],
+  [/ahamo/i, "ahamo"],
+  [/povo/i, "povo"],
+  [/U-?NEXT/i, "U-NEXT"],
+  [/coin\s*together/i, "coin together"],
+  [/JP\s*リターンズ|JPリターンズ/i, "JPリターンズ"],
+  [/プロパティエージェント/, "プロパティエージェント"],
+  [/CREAL/i, "CREAL"],
+  [/チクフル/, "チクフル不動産投資"],
+  [/CAMEL/i, "CAMEL"],
+  [/モバレコ\s*Air|モバレコAir/i, "モバレコAir"],
+  [/ソフトバンク\s*Air|SoftBank\s*Air/i, "ソフトバンクAir"],
+  [/ドコモ\s*mini|ドコモミニ/i, "ドコモmini"],
+  [/グローバル\s*WiFi|グローバルWiFi/i, "グローバルWiFi"],
+  [/アメリカン.*エキスプレス.*ゴールド.*プリファード/i, "アメリカン・エキスプレス・ゴールド・プリファード・カード"],
+];
+
+const BROAD_SEARCH_PREFIXES = [
+  "ポイ活",
+  "ポイントサイト",
+  "モッピー",
+  "無料 ポイ活",
+  "無料でできる ポイ活",
+  "お金をかけない ポイ活",
+];
+
+const toSearchLikeOfferKeyword = (value?: string) => {
+  const original = normalizeSpaces(value || "");
+  if (!original) return "";
+
+  const matchedRule = OFFER_KEYWORD_RULES.find(([pattern]) => pattern.test(original));
+  if (matchedRule) return matchedRule[1];
+
+  const cleaned = normalizeSpaces(
+    original
+      .replace(/【[^】]*】/g, " ")
+      .replace(/\[[^\]]*\]/g, " ")
+      .replace(/（[^）]*）/g, " ")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/[「」『』★☆]/g, " ")
+      .replace(/[+＋].*$/g, " ")
+      .replace(/^[\s_・:：-]*(PR|超還元|高還元|無料|公式)\s*/i, " ")
+      .replace(/年収\s*[0-9０-９,，]+\s*万円以上/gi, " ")
+      .replace(/[0-9０-９,，]+\s*P/gi, " ")
+      .replace(/無料(個別)?(WEB)?面談/gi, " ")
+      .replace(/個別面談|WEB面談|ご相談なら|ご相談|投資完了|新規|のみ対象/gi, " ")
+      .replace(/^(ポイントサイト|ポイ活|モッピー|moppy|公式)\s*/i, "")
+      .replace(/\s*(ポイントサイト|ポイ活|モッピー|moppy|公式)$/i, "")
+      .replace(/[＿_]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+
+  if (!cleaned) return original;
+
+  const firstPhrase = cleaned
+    .split(/[｜|／/、。!！?？]/)
+    .map((part) => part.trim())
+    .find(Boolean);
+
+  return firstPhrase || cleaned;
+};
+
+const isBroadSearchSeed = (keyword: string) => {
+  const normalized = normalizeText(keyword);
+  return BROAD_SEARCH_PREFIXES.some((prefix) => normalized.startsWith(normalizeText(prefix)));
+};
+
 const getOfferName = (item: RankingItem) => {
   return item.offer_name || item.trend_keyword || item.category;
 };
 
 const getSearchKeyword = (item: RankingItem) => {
   const keyword = (item.trend_keyword || "").trim();
-  if (!keyword || keyword === BACKFILL_KEYWORD) return getOfferName(item);
-  return keyword;
+  const offerKeyword = toSearchLikeOfferKeyword(getOfferName(item));
+
+  if (!keyword || keyword === BACKFILL_KEYWORD) return offerKeyword || getOfferName(item);
+
+  const trendKeyword = toSearchLikeOfferKeyword(keyword);
+  if (
+    isBroadSearchSeed(keyword) &&
+    offerKeyword &&
+    !normalizeText(keyword).includes(normalizeText(offerKeyword))
+  ) {
+    return offerKeyword;
+  }
+
+  return trendKeyword || offerKeyword || keyword;
 };
 
 const formatReward = (reward?: number) => {
