@@ -290,7 +290,8 @@ export default async function FreePoikatsuPage() {
           </h1>
 
           <p className="mt-6 max-w-[1040px] text-lg font-bold leading-9 text-slate-900 lg:text-xl lg:leading-10">
-            商品購入や有料サービスの申し込みではなく、お金をかけずに始めたい人向けの、無料でできるポイ活をまとめます。
+            <span className="text-pink-600">商品購入や有料サービスの申し込みではない、</span>
+            無料でできるポイ活をまとめます。
           </p>
 
           <div className="mt-10 rounded-[2rem] border border-pink-100 bg-white/95 px-6 py-8 text-center shadow-xl shadow-pink-100/70 lg:px-12 lg:py-10">
