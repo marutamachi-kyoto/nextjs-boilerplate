@@ -18,11 +18,30 @@ type RankingTrendRow = {
 
 const normalizeSpaces = (value: string) => value.replace(/\s+/g, " ").trim();
 
+const normalizeKey = (value: string) =>
+  normalizeSpaces(value)
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[・･]/g, "")
+    .replace(/[ーｰ−]/g, "-")
+    .trim();
+
+const BROAD_SEARCH_PREFIXES = [
+  "ポイ活",
+  "ポイントサイト",
+  "モッピー",
+  "無料 ポイ活",
+  "無料でできる ポイ活",
+  "お金をかけない ポイ活",
+];
+
 const OFFER_KEYWORD_RULES: Array<[RegExp, string]> = [
+  [/出光カード/i, "出光カード"],
+  [/apollostation|アポロステーション/i, "出光カード"],
   [/SBI\s*FX|SBI.*FX/i, "SBI FXトレード"],
   [/SBI.*証券/i, "SBI証券"],
   [/楽天証券/, "楽天証券"],
-  [/楽天銀行/, "楽天銀行 口座開設"],
+  [/楽天銀行/, "楽天銀行"],
   [/楽天モバイル/, "楽天モバイル"],
   [/au\s*ひかり|auひかり/i, "auひかり"],
   [/ahamo/i, "ahamo"],
@@ -34,13 +53,39 @@ const OFFER_KEYWORD_RULES: Array<[RegExp, string]> = [
   [/CREAL/i, "CREAL"],
   [/チクフル/, "チクフル不動産投資"],
   [/CAMEL/i, "CAMEL"],
+  [/セカンドオピニオン|不動産会社で相談中/i, "不動産投資 セカンドオピニオン"],
   [/モバレコ\s*Air|モバレコAir/i, "モバレコAir"],
   [/ソフトバンク\s*Air|SoftBank\s*Air/i, "ソフトバンクAir"],
   [/ドコモ\s*mini|ドコモミニ/i, "ドコモmini"],
   [/グローバル\s*WiFi|グローバルWiFi/i, "グローバルWiFi"],
-  [/apollostation|アポロステーション/i, "apollostation THE PLATINUM"],
+  [/コミュファ光/i, "コミュファ光"],
+  [/ビッグローブ光|BIGLOBE光/i, "ビッグローブ光"],
+  [/GMOとくとくBB.*ドコモ光|ドコモ光.*GMOとくとくBB/i, "GMOとくとくBB ドコモ光"],
+  [/おてがる光クロス/i, "おてがる光クロス"],
+  [/ドコモ光/i, "ドコモ光"],
+  [/WiFi革命セット/i, "WiFi革命セット"],
+  [/WiMAX.*5G/i, "WiMAX +5G"],
+  [/FXブロードネット/i, "FXブロードネット"],
+  [/三菱UFJ.*スマート証券.*FX/i, "三菱UFJ eスマート証券 FX"],
+  [/みんなのFX/i, "みんなのFX"],
+  [/LIGHT\s*FX/i, "LIGHT FX"],
+  [/外為どっとコム/i, "外為どっとコム"],
+  [/イオンカードセレクト/i, "イオンカードセレクト"],
+  [/サクページ/i, "サクページ"],
+  [/愛車.*高価買取|車.*買取/i, "車買取"],
   [/アメリカン.*エキスプレス.*ゴールド.*プリファード/i, "アメリカン・エキスプレス・ゴールド・プリファード・カード"],
 ];
+
+const isBroadSearchSeed = (keyword: string) => {
+  const normalized = normalizeKey(keyword);
+  return BROAD_SEARCH_PREFIXES.some((prefix) => normalized.startsWith(normalizeKey(prefix)));
+};
+
+const looksLikeOfferCopy = (keyword: string) => {
+  return /年収|万円以上|無料個別|WEB面談|ご相談|相談中|オススメ|対象|投資完了|高還元|超還元|合計|PR/i.test(
+    keyword
+  );
+};
 
 const toSearchLikeOfferKeyword = (offerName: string) => {
   const normalizedOfferName = normalizeSpaces(offerName);
@@ -58,6 +103,7 @@ const toSearchLikeOfferKeyword = (offerName: string) => {
       .replace(/（[^）]*）/g, " ")
       .replace(/\([^)]*\)/g, " ")
       .replace(/[「」『』★☆]/g, " ")
+      .replace(/[+＋].*$/g, " ")
       .replace(/^[\s_・:：-]*(PR|超還元|高還元|無料|公式)\s*/i, " ")
       .replace(/年収\s*[0-9０-９,，]+\s*万円以上/gi, " ")
       .replace(/[0-9０-９,，]+\s*P/gi, " ")
@@ -68,25 +114,38 @@ const toSearchLikeOfferKeyword = (offerName: string) => {
       .trim()
   );
 
-  if (!cleaned) return normalizedOfferName;
+  if (!cleaned || looksLikeOfferCopy(cleaned)) return "";
 
   const firstPhrase = cleaned
     .split(/[｜|／/、。!！?？]/)
     .map((part) => part.trim())
     .find(Boolean);
 
-  return firstPhrase || cleaned;
+  const keyword = firstPhrase || cleaned;
+  if (looksLikeOfferCopy(keyword)) return "";
+  if (keyword.length > 28) return "";
+
+  return keyword;
 };
 
 const toDisplayKeyword = (item: RankingTrendRow) => {
   const trendKeyword = (item.trend_keyword || "").trim();
   const offerName = (item.offer_name || "").trim();
+  const offerKeyword = toSearchLikeOfferKeyword(offerName);
 
-  if (trendKeyword && trendKeyword !== BACKFILL_KEYWORD) {
-    return normalizeSpaces(trendKeyword);
+  if (!trendKeyword || trendKeyword === BACKFILL_KEYWORD) {
+    return offerKeyword;
   }
 
-  return toSearchLikeOfferKeyword(offerName);
+  if (
+    isBroadSearchSeed(trendKeyword) &&
+    offerKeyword &&
+    !normalizeKey(trendKeyword).includes(normalizeKey(offerKeyword))
+  ) {
+    return offerKeyword;
+  }
+
+  return normalizeSpaces(trendKeyword);
 };
 
 export async function GET() {
@@ -110,8 +169,8 @@ export async function GET() {
       }))
       .filter(({ word }) => Boolean(word))
       .filter(({ word }) => {
-        const key = word.toLowerCase().replace(/\s+/g, "");
-        if (seen.has(key)) return false;
+        const key = normalizeKey(word);
+        if (!key || seen.has(key)) return false;
         seen.add(key);
         return true;
       })
