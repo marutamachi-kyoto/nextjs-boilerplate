@@ -16,15 +16,77 @@ type RankingTrendRow = {
   category?: string | null;
 };
 
+const normalizeSpaces = (value: string) => value.replace(/\s+/g, " ").trim();
+
+const OFFER_KEYWORD_RULES: Array<[RegExp, string]> = [
+  [/SBI\s*FX|SBI.*FX/i, "SBI FXトレード"],
+  [/SBI.*証券/i, "SBI証券"],
+  [/楽天証券/, "楽天証券"],
+  [/楽天銀行/, "楽天銀行 口座開設"],
+  [/楽天モバイル/, "楽天モバイル"],
+  [/au\s*ひかり|auひかり/i, "auひかり"],
+  [/ahamo/i, "ahamo"],
+  [/povo/i, "povo"],
+  [/U-?NEXT/i, "U-NEXT"],
+  [/coin\s*together/i, "coin together"],
+  [/JP\s*リターンズ|JPリターンズ/i, "JPリターンズ"],
+  [/プロパティエージェント/, "プロパティエージェント"],
+  [/CREAL/i, "CREAL"],
+  [/チクフル/, "チクフル不動産投資"],
+  [/CAMEL/i, "CAMEL"],
+  [/モバレコ\s*Air|モバレコAir/i, "モバレコAir"],
+  [/ソフトバンク\s*Air|SoftBank\s*Air/i, "ソフトバンクAir"],
+  [/ドコモ\s*mini|ドコモミニ/i, "ドコモmini"],
+  [/グローバル\s*WiFi|グローバルWiFi/i, "グローバルWiFi"],
+  [/apollostation|アポロステーション/i, "apollostation THE PLATINUM"],
+  [/アメリカン.*エキスプレス.*ゴールド.*プリファード/i, "アメリカン・エキスプレス・ゴールド・プリファード・カード"],
+];
+
+const toSearchLikeOfferKeyword = (offerName: string) => {
+  const normalizedOfferName = normalizeSpaces(offerName);
+  if (!normalizedOfferName) return "";
+
+  const matchedRule = OFFER_KEYWORD_RULES.find(([pattern]) =>
+    pattern.test(normalizedOfferName)
+  );
+  if (matchedRule) return matchedRule[1];
+
+  const cleaned = normalizeSpaces(
+    normalizedOfferName
+      .replace(/【[^】]*】/g, " ")
+      .replace(/\[[^\]]*\]/g, " ")
+      .replace(/（[^）]*）/g, " ")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/[「」『』★☆]/g, " ")
+      .replace(/^[\s_・:：-]*(PR|超還元|高還元|無料|公式)\s*/i, " ")
+      .replace(/年収\s*[0-9０-９,，]+\s*万円以上/gi, " ")
+      .replace(/[0-9０-９,，]+\s*P/gi, " ")
+      .replace(/無料(個別)?(WEB)?面談/gi, " ")
+      .replace(/個別面談|WEB面談|ご相談なら|ご相談|投資完了|新規|のみ対象/gi, " ")
+      .replace(/[＿_]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+
+  if (!cleaned) return normalizedOfferName;
+
+  const firstPhrase = cleaned
+    .split(/[｜|／/、。!！?？]/)
+    .map((part) => part.trim())
+    .find(Boolean);
+
+  return firstPhrase || cleaned;
+};
+
 const toDisplayKeyword = (item: RankingTrendRow) => {
   const trendKeyword = (item.trend_keyword || "").trim();
   const offerName = (item.offer_name || "").trim();
 
   if (trendKeyword && trendKeyword !== BACKFILL_KEYWORD) {
-    return trendKeyword.replace(/\s+/g, " ").trim();
+    return normalizeSpaces(trendKeyword);
   }
 
-  return offerName.replace(/\s+/g, " ").trim();
+  return toSearchLikeOfferKeyword(offerName);
 };
 
 export async function GET() {
