@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
+import FreeOfferLikeButton from "../free-poikatsu-likes";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -367,11 +368,13 @@ export default async function FreePoikatsuPage() {
                     </div>
                   </div>
 
+                  <FreeOfferLikeButton offerName={offer.title} />
+
                   <a
                     href={offer.url || MOPPY_INVITE_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-4 flex min-h-[52px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-center text-base font-black text-white shadow-lg transition hover:scale-105"
+                    className="mt-3 flex min-h-[52px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-center text-base font-black text-white shadow-lg transition hover:scale-105"
                   >
                     モッピーで確認
                   </a>
