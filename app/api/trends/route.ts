@@ -87,6 +87,11 @@ const looksLikeOfferCopy = (keyword: string) => {
   );
 };
 
+const looksLikeNoteFragment = (keyword: string) => {
+  const text = normalizeSpaces(keyword);
+  return /^[※*＊]?\s*[0-9０-９]+$/.test(text) || /^[※*＊]+$/.test(text);
+};
+
 const toSearchLikeOfferKeyword = (offerName: string) => {
   const normalizedOfferName = normalizeSpaces(offerName);
   if (!normalizedOfferName) return "";
@@ -114,7 +119,7 @@ const toSearchLikeOfferKeyword = (offerName: string) => {
       .trim()
   );
 
-  if (!cleaned || looksLikeOfferCopy(cleaned)) return "";
+  if (!cleaned || looksLikeOfferCopy(cleaned) || looksLikeNoteFragment(cleaned)) return "";
 
   const firstPhrase = cleaned
     .split(/[｜|／/、。!！?？]/)
@@ -122,10 +127,18 @@ const toSearchLikeOfferKeyword = (offerName: string) => {
     .find(Boolean);
 
   const keyword = firstPhrase || cleaned;
-  if (looksLikeOfferCopy(keyword)) return "";
+  if (looksLikeOfferCopy(keyword) || looksLikeNoteFragment(keyword)) return "";
   if (keyword.length > 28) return "";
 
   return keyword;
+};
+
+const isDisplayableKeyword = (keyword: string) => {
+  if (!keyword) return false;
+  if (looksLikeNoteFragment(keyword)) return false;
+  const key = normalizeKey(keyword);
+  if (key.length < 2) return false;
+  return /[a-z\u3040-\u30ff\u3400-\u9fff]/i.test(keyword);
 };
 
 const toDisplayKeyword = (item: RankingTrendRow) => {
@@ -167,7 +180,7 @@ export async function GET() {
         index,
         word: toDisplayKeyword(item),
       }))
-      .filter(({ word }) => Boolean(word))
+      .filter(({ word }) => isDisplayableKeyword(word))
       .filter(({ word }) => {
         const key = normalizeKey(word);
         if (!key || seen.has(key)) return false;
