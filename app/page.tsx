@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const MOPPY_URL =
   "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
@@ -14,6 +14,7 @@ type CategoryScore = {
   offer_name?: string;
   reward?: number | null;
   reason: string;
+  image_url?: string;
   primary_site_name?: string;
   primary_site_url?: string;
   updated_at?: string;
@@ -34,19 +35,49 @@ type TrendBadge = {
 const normalizeText = (text?: string) => {
   return (text || "")
     .toLowerCase()
-    .replace(/　/g, "")
+    .replace(/\u3000/g, "")
     .replace(/\s+/g, "")
-    .replace(/（/g, "(")
-    .replace(/）/g, ")")
-    .replace(/[・･]/g, "")
-    .replace(/[ーｰ−]/g, "-")
+    .replace(/\uff08/g, "(")
+    .replace(/\uff09/g, ")")
+    .replace(/[\u30fb\uff65]/g, "")
+    .replace(/[\u30fc\uff70\u2212]/g, "-")
+    .replace(/[\[\]\u3010\u3011!\uff01?\uff1f\u3002\u3001\u300c\u300d\u300e\u300f()\uff08\uff09]/g, "")
     .trim();
+};
+
+const isLooseMatch = (left?: string, right?: string) => {
+  const leftKey = normalizeText(left);
+  const rightKey = normalizeText(right);
+
+  if (!leftKey || !rightKey) return false;
+  if (leftKey === rightKey) return true;
+
+  return (
+    leftKey.length >= 3 &&
+    rightKey.length >= 3 &&
+    (leftKey.includes(rightKey) || rightKey.includes(leftKey))
+  );
+};
+
+const isDirectMoppyUrl = (url?: string) => {
+  return Boolean(
+    url &&
+      url.includes("pc.moppy.jp/") &&
+      !url.includes("/entry/invite.php")
+  );
+};
+
+const getStorageKey = (offerName: string, likeDate?: string) => {
+  return `poikatu-liked:${likeDate || "today"}:${offerName}`;
 };
 
 export default function Page() {
   const [items, setItems] = useState<CategoryScore[]>([]);
   const [updatedAt, setUpdatedAt] = useState("-");
   const [trendTags, setTrendTags] = useState<TrendTag[]>([]);
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [likeDate, setLikeDate] = useState("");
+  const [likedOffers, setLikedOffers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetch("/api/trends", { cache: "no-store" })
@@ -77,7 +108,28 @@ export default function Page() {
           );
         }
       });
+
+    fetch("/api/likes", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : { counts: {}, likeDate: "" }))
+      .then((json) => {
+        setLikeCounts(json.counts || {});
+        setLikeDate(json.likeDate || "");
+      })
+      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (items.length === 0) return;
+
+    const nextLiked: Record<string, boolean> = {};
+    items.forEach((item) => {
+      const offerName = getOfferName(item);
+      nextLiked[offerName] =
+        window.localStorage.getItem(getStorageKey(offerName, likeDate)) === "1";
+    });
+    setLikedOffers(nextLiked);
+  }, [items, likeDate]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -101,21 +153,6 @@ export default function Page() {
     };
   }, [items.length]);
 
-  const trackMoppyClick = async (category: string) => {
-    try {
-      await fetch("/api/click", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category,
-          site_name: "モッピー",
-        }),
-      });
-    } catch (e) {}
-
-    window.open(MOPPY_URL, "_blank");
-  };
-
   const getOfferName = (item: CategoryScore) => {
     return item.offer_name || item.trend_keyword || item.category;
   };
@@ -129,17 +166,9 @@ export default function Page() {
   };
 
   const findMatchedRanking = (tagWord: string) => {
-    const normalizedTagWord = normalizeText(tagWord);
-
     return items.find((item) => {
-      const normalizedOfferName = normalizeText(getOfferName(item));
-      const normalizedTrendKeyword = normalizeText(item.trend_keyword);
-      const normalizedCategory = normalizeText(item.category);
-
-      return (
-        normalizedOfferName === normalizedTagWord ||
-        normalizedTrendKeyword === normalizedTagWord ||
-        normalizedCategory === normalizedTagWord
+      return [getOfferName(item), item.trend_keyword, item.category].some((value) =>
+        isLooseMatch(value, tagWord)
       );
     });
   };
@@ -162,6 +191,63 @@ export default function Page() {
       behavior: "auto",
       block: "start",
     });
+  };
+
+  const trackMoppyClick = async (item: CategoryScore) => {
+    const url = isDirectMoppyUrl(item.primary_site_url)
+      ? item.primary_site_url!
+      : MOPPY_URL;
+
+    try {
+      await fetch("/api/click", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: item.category,
+          site_name: "モッピー",
+        }),
+      });
+    } catch (e) {}
+
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const toggleLike = async (offerName: string) => {
+    const isLiked = Boolean(likedOffers[offerName]);
+    const nextLiked = !isLiked;
+    const currentCount = Number(likeCounts[offerName] || 0);
+    const nextCount = nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
+
+    setLikedOffers((current) => ({ ...current, [offerName]: nextLiked }));
+    setLikeCounts((current) => ({ ...current, [offerName]: nextCount }));
+
+    try {
+      if (nextLiked) {
+        window.localStorage.setItem(getStorageKey(offerName, likeDate), "1");
+      } else {
+        window.localStorage.removeItem(getStorageKey(offerName, likeDate));
+      }
+    } catch (e) {}
+
+    try {
+      const response = await fetch("/api/likes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          offer_name: offerName,
+          action: nextLiked ? "like" : "unlike",
+        }),
+      });
+      const json = await response.json();
+
+      if (json.likeDate) setLikeDate(json.likeDate);
+      if (Number.isFinite(Number(json.count))) {
+        setLikeCounts((current) => ({
+          ...current,
+          [offerName]: Number(json.count),
+        }));
+      }
+    } catch (e) {}
   };
 
   const isRewardMissing = (reward?: number | null) => {
@@ -232,54 +318,6 @@ export default function Page() {
 
   const getDynamicReason = (item: CategoryScore) => {
     if (item.reason) return item.reason;
-
-    const category = item.category;
-    const offerName = (item.offer_name || "").toLowerCase();
-
-    if (offerName.includes("tiktok")) {
-      return "友達招待系キャンペーンとしてSNSで注目されている案件です。";
-    }
-
-    if (offerName.includes("楽天市場")) {
-      return "買い回りやポイントアップ需要と相性がよく、比較しやすい案件です。";
-    }
-
-    if (offerName.includes("amazon")) {
-      return "日常利用と組み合わせやすく、継続的に注目されやすい案件です。";
-    }
-
-    if (offerName.includes("u-next")) {
-      return "動画サブスク系として安定した人気があり、条件確認しやすい案件です。";
-    }
-
-    if (offerName.includes("paypay")) {
-      return "キャッシュレス決済需要と相性がよく、比較候補に入れやすい案件です。";
-    }
-
-    if (offerName.includes("楽天カード")) {
-      return "カード案件の中でも認知度が高く、報酬面でも注目されやすい案件です。";
-    }
-
-    if (offerName.includes("楽天モバイル")) {
-      return "通信費見直し需要と相性がよく、条件を確認したい候補です。";
-    }
-
-    if (category.includes("通信")) {
-      return "通信系は固定費の見直しと相性がよく、比較しやすい案件です。";
-    }
-
-    if (category.includes("カード")) {
-      return "カード系は高額ポイントを狙いやすく、条件確認が大切な案件です。";
-    }
-
-    if (category.includes("証券")) {
-      return "証券・金融系は報酬が高めになりやすく、条件達成の確認が重要です。";
-    }
-
-    if (category.includes("ゲーム") || category.includes("アプリ")) {
-      return "アプリ系は始めやすく、ポイ活初心者でも確認しやすい案件です。";
-    }
-
     return "検索需要と案件内容の分かりやすさをもとに評価しています。";
   };
 
@@ -342,6 +380,73 @@ export default function Page() {
   const topItems = items.slice(0, 3);
   const listItems = items.slice(3, 50);
 
+  const visibleTrendTags = useMemo(() => {
+    const seen = new Set<string>();
+
+    return trendTags.filter((tag) => {
+      const key = normalizeText(tag.word);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [trendTags]);
+
+  const renderLikeButton = (offerName: string) => {
+    const isLiked = Boolean(likedOffers[offerName]);
+
+    return (
+      <button
+        type="button"
+        onClick={() => toggleLike(offerName)}
+        aria-pressed={isLiked}
+        className={`flex min-h-11 w-full max-w-[260px] items-center justify-center gap-2 rounded-full border-2 px-4 text-sm font-black shadow-md transition hover:scale-105 ${
+          isLiked
+            ? "border-transparent bg-gradient-to-r from-pink-500 to-rose-400 text-white"
+            : "border-pink-300 bg-white text-pink-600 hover:bg-pink-50"
+        }`}
+      >
+        <span>{isLiked ? "♥" : "♡"}</span>
+        <span>{isLiked ? "いいね済み" : "いいね！"}</span>
+        <span className="rounded-full bg-white px-2 py-1 text-pink-600">
+          {likeCounts[offerName] || 0}
+        </span>
+      </button>
+    );
+  };
+
+  const renderRankingActions = (item: CategoryScore, offerName: string, top = false) => {
+    return (
+      <div className="flex flex-col items-center gap-3 lg:items-end">
+        {renderLikeButton(offerName)}
+
+        <button
+          type="button"
+          onClick={() => trackMoppyClick(item)}
+          className={`flex w-full items-center justify-center bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-center font-black text-white shadow-xl transition hover:scale-105 ${
+            top
+              ? "h-16 max-w-[260px] rounded-2xl text-xl"
+              : "h-12 max-w-[210px] rounded-xl text-sm"
+          }`}
+        >
+          モッピーで探す
+          <span className="ml-2 text-xl leading-none">›</span>
+        </button>
+
+        <Link
+          href={getReviewPath(offerName)}
+          className={`flex w-full items-center justify-center border-2 border-pink-200 bg-white text-center font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50 ${
+            top
+              ? "h-14 max-w-[260px] rounded-2xl px-5 text-base"
+              : "h-11 max-w-[210px] rounded-xl px-4 text-xs"
+          }`}
+        >
+          もっと検索ワードを見る
+          <span className="ml-2 text-base leading-none">›</span>
+        </Link>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#fff8fb]">
       <header className="overflow-hidden bg-gradient-to-r from-[#FFF2F7] via-[#FFF8FA] to-[#FFF4F7]">
@@ -362,19 +467,17 @@ export default function Page() {
 
             <div className="mt-8 text-[20px] font-black leading-[1.9] text-[#27313f] lg:text-[28px]">
               <p>
-                <span className="text-pink-600">「Googleでの話題度」</span>
-                のデータを中心に、AIがおすすめのポイ活を判定し、
+                <span className="text-pink-600">「Google検索」</span>
+                のデータをもとに、いま世間で注目されているポイ活をAIが判定し、
                 <span className="text-pink-600">毎日（0:00～1:00頃）</span>
-                にランキングに反映しています。
+                ランキングに反映しています。
               </p>
             </div>
 
             <div className="mt-8 flex flex-wrap items-center gap-6">
               <div className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
                 最終更新：
-                <span className="ml-2 text-base text-slate-600">
-                  {updatedAt}
-                </span>
+                <span className="ml-2 text-base text-slate-600">{updatedAt}</span>
               </div>
 
               <Link
@@ -383,6 +486,14 @@ export default function Page() {
               >
                 <span className="mr-2 text-xl">🔰</span>
                 ポイ活とは？
+              </Link>
+
+              <Link
+                href="/free-poikatsu"
+                className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-pink-600 shadow-lg ring-2 ring-pink-200 transition hover:scale-105 hover:bg-pink-50 lg:text-base"
+              >
+                <span className="mr-2 rounded-full bg-yellow-400 px-2 py-1 text-white">0</span>
+                無料でできるポイ活特集
               </Link>
             </div>
           </div>
@@ -407,7 +518,7 @@ export default function Page() {
         >
           <div className="mb-6">
             <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-              🔍 いまGoogleで話題のポイ活関連キーワード
+              🔍 いまGoogle検索されているポイ活関連ワード
             </h2>
 
             <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
@@ -415,18 +526,13 @@ export default function Page() {
                 最終更新：
                 <span className="ml-2 text-slate-700">{updatedAt}</span>
               </div>
-
-              <p className="text-sm font-bold leading-7 text-slate-600 lg:text-base">
-                いま注目されているポイ活関連ワードをAIが整理しています。
-              </p>
             </div>
           </div>
 
           <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
             <div className="flex flex-wrap items-center gap-3">
-              {trendTags.map((tag) => {
+              {visibleTrendTags.map((tag) => {
                 const matchedRanking = findMatchedRanking(tag.word);
-
                 const textSizeClass =
                   tag.score >= 90
                     ? "text-3xl"
@@ -435,6 +541,7 @@ export default function Page() {
                       : tag.score >= 50
                         ? "text-xl"
                         : "text-base";
+                const pillClass = `rounded-full bg-pink-100 px-5 py-3 font-black text-pink-600 underline decoration-2 underline-offset-4 transition hover:scale-105 hover:bg-pink-200 active:scale-95 ${textSizeClass}`;
 
                 if (matchedRanking) {
                   return (
@@ -442,7 +549,7 @@ export default function Page() {
                       key={tag.word}
                       type="button"
                       onClick={() => scrollToRanking(matchedRanking)}
-                      className={`rounded-full bg-pink-100 px-5 py-3 font-black text-pink-600 underline decoration-2 underline-offset-4 transition hover:scale-105 hover:bg-pink-200 active:scale-95 ${textSizeClass}`}
+                      className={pillClass}
                       title="ランキング内の該当案件へ移動"
                     >
                       {tag.word}
@@ -451,12 +558,14 @@ export default function Page() {
                 }
 
                 return (
-                  <div
+                  <Link
                     key={tag.word}
-                    className={`rounded-full bg-pink-100 px-5 py-3 font-black text-pink-600 transition hover:scale-105 ${textSizeClass}`}
+                    href={getReviewPath(tag.word)}
+                    className={pillClass}
+                    title="関連ワード詳細ページを見る"
                   >
                     {tag.word}
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -467,11 +576,11 @@ export default function Page() {
           <div className="flex items-center gap-3">
             <span className="text-4xl">🔥</span>
             <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-              いま
+              【
               <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
                 AI
               </span>
-              がおすすめするポイ活ランキング
+              判定】いま注目されているポイ活ランキング
             </h2>
           </div>
 
@@ -480,10 +589,6 @@ export default function Page() {
               最終更新：
               <span className="ml-2 text-slate-700">{updatedAt}</span>
             </div>
-
-            <p className="text-sm font-bold leading-7 text-slate-600 lg:text-base">
-              「Googleでの話題度」や「モッピーで確認した案件情報」などをもとに、AIが毎日おすすめ順を見直しています。
-            </p>
           </div>
         </div>
 
@@ -502,10 +607,7 @@ export default function Page() {
                 <div className="grid gap-6 lg:grid-cols-[100px_1fr] lg:items-center xl:grid-cols-[120px_1.5fr_260px_260px]">
                   <div className="flex items-center justify-center lg:block">
                     <div className="text-center">
-                      <div className="text-4xl leading-none">
-                        {rankStyle.crown}
-                      </div>
-
+                      <div className="text-4xl leading-none">{rankStyle.crown}</div>
                       <div
                         className={`mx-auto mt-1 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br ${rankStyle.badge} text-5xl font-black text-white shadow-xl`}
                       >
@@ -544,7 +646,6 @@ export default function Page() {
                     <div className="text-base font-black text-slate-600 lg:text-lg">
                       報酬ポイントの目安
                     </div>
-
                     <div
                       className={
                         isRewardMissing(item.reward)
@@ -556,23 +657,7 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-center gap-3 lg:items-end">
-                    <button
-                      onClick={() => trackMoppyClick(item.category)}
-                      className="flex h-16 w-full max-w-[260px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-6 text-center text-xl font-black text-white shadow-xl transition hover:scale-105"
-                    >
-                      モッピーで探す
-                      <span className="ml-3 text-3xl leading-none">›</span>
-                    </button>
-
-                    <Link
-                      href={getReviewPath(offerName)}
-                      className="flex h-14 w-full max-w-[260px] items-center justify-center rounded-2xl border-2 border-pink-200 bg-white px-5 text-center text-base font-black text-pink-600 shadow-md transition hover:scale-105 hover:bg-pink-50"
-                    >
-                      {offerName}のポイ活口コミを見る
-                      <span className="ml-2 text-xl leading-none">›</span>
-                    </Link>
-                  </div>
+                  {renderRankingActions(item, offerName, true)}
                 </div>
               </article>
             );
@@ -618,10 +703,7 @@ export default function Page() {
                   </div>
 
                   <div>
-                    <h3 className="text-2xl font-black text-slate-900">
-                      {offerName}
-                    </h3>
-
+                    <h3 className="text-2xl font-black text-slate-900">{offerName}</h3>
                     <p className="mt-2 text-sm font-bold leading-7 text-slate-600">
                       {getDynamicReason(item)}
                     </p>
@@ -631,7 +713,6 @@ export default function Page() {
                     <div className="text-sm font-black text-slate-600 lg:text-base">
                       報酬ポイントの目安
                     </div>
-
                     <div
                       className={
                         isRewardMissing(item.reward)
@@ -643,23 +724,7 @@ export default function Page() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-center gap-2 lg:items-end">
-                    <button
-                      onClick={() => trackMoppyClick(item.category)}
-                      className="flex h-12 w-full max-w-[210px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-sm font-black text-white shadow-md transition hover:scale-105"
-                    >
-                      モッピーで探す
-                      <span className="ml-2 text-xl leading-none">›</span>
-                    </button>
-
-                    <Link
-                      href={getReviewPath(offerName)}
-                      className="flex h-11 w-full max-w-[210px] items-center justify-center rounded-xl border-2 border-pink-200 bg-white px-4 text-xs font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50"
-                    >
-                      {offerName}のポイ活口コミを見る
-                      <span className="ml-2 text-base leading-none">›</span>
-                    </Link>
-                  </div>
+                  {renderRankingActions(item, offerName)}
                 </article>
               );
             })}
