@@ -89,6 +89,25 @@ type CandidateItem = {
   source?: "trend" | "verified_moppy_backfill";
 };
 
+type RewardBand = "standard" | "small" | "middle" | "high";
+
+const BACKFILL_REWARD_BAND_ORDER: RewardBand[] = [
+  "standard",
+  "small",
+  "middle",
+  "high",
+];
+
+const BACKFILL_CATEGORY_ORDER = [
+  "カード",
+  "通信",
+  "アプリ・エンタメ",
+  "ショッピング",
+  "証券・金融",
+  "旅行",
+  "一般",
+];
+
 function normalizeText(value?: string | null) {
   return (value || "")
     .replace(/&amp;/g, "&")
@@ -387,8 +406,93 @@ function calculateScore(params: {
 }
 
 function calculateBackfillScore(reward: number, backfillIndex: number) {
-  const rewardScore = Math.min(reward / 100, 30);
-  return Math.round(70 + rewardScore - backfillIndex * 0.2);
+  const rewardScore = Math.min(reward / 200, 18);
+  return Math.round(68 + rewardScore - backfillIndex * 0.15);
+}
+
+function getRewardBand(reward: number): RewardBand {
+  if (reward <= 1000) return "small";
+  if (reward <= 5000) return "standard";
+  if (reward <= 15000) return "middle";
+  return "high";
+}
+
+function getBackfillGroupKey(offer: MoppyOffer) {
+  const category = getCategoryByName(offer.title, "モッピー");
+  const band = getRewardBand(offer.reward);
+  return `${band}:${category}`;
+}
+
+function selectBalancedBackfillOffers(
+  offers: MoppyOffer[],
+  seen: Set<string>,
+  limit: number
+) {
+  const eligibleOffers = offers
+    .filter((offer) => {
+      const key = normalizeName(offer.title);
+      return key && !seen.has(key);
+    })
+    .sort((a, b) => Number(b.reward) - Number(a.reward));
+
+  const groups = new Map<string, MoppyOffer[]>();
+  eligibleOffers.forEach((offer) => {
+    const groupKey = getBackfillGroupKey(offer);
+    const current = groups.get(groupKey) || [];
+    current.push(offer);
+    groups.set(groupKey, current);
+  });
+
+  const selected: MoppyOffer[] = [];
+  const selectedKeys = new Set<string>();
+  const categoryCounts = new Map<string, number>();
+  const firstPassCategoryLimit = Math.max(2, Math.ceil(limit / 5));
+
+  const tryTake = (offer: MoppyOffer, useCategoryLimit: boolean) => {
+    const key = normalizeName(offer.title);
+    if (!key || selectedKeys.has(key) || seen.has(key)) return false;
+
+    const category = getCategoryByName(offer.title, "モッピー");
+    const categoryCount = categoryCounts.get(category) || 0;
+    if (useCategoryLimit && categoryCount >= firstPassCategoryLimit) return false;
+
+    selected.push(offer);
+    selectedKeys.add(key);
+    categoryCounts.set(category, categoryCount + 1);
+    return true;
+  };
+
+  for (const useCategoryLimit of [true, false]) {
+    let madeProgress = true;
+
+    while (selected.length < limit && madeProgress) {
+      madeProgress = false;
+
+      for (const band of BACKFILL_REWARD_BAND_ORDER) {
+        for (const category of BACKFILL_CATEGORY_ORDER) {
+          const group = groups.get(`${band}:${category}`) || [];
+          const offer = group.find((item) => !selectedKeys.has(normalizeName(item.title)));
+          if (!offer) continue;
+
+          if (tryTake(offer, useCategoryLimit)) {
+            madeProgress = true;
+            if (selected.length >= limit) break;
+          }
+        }
+
+        if (selected.length >= limit) break;
+      }
+    }
+  }
+
+  if (selected.length < limit) {
+    for (const offer of eligibleOffers) {
+      if (selected.length >= limit) break;
+      tryTake(offer, false);
+    }
+  }
+
+  return selected.slice(0, limit);
 }
 
 function generateReason(offerName: string, trendKeyword: string) {
@@ -440,14 +544,8 @@ function buildCandidates(trends: TrendItem[], offers: MoppyOffer[]) {
     return rankedCandidates.slice(0, RANKING_LIMIT);
   }
 
-  const backfillOffers = offers
-    .slice()
-    .sort((a, b) => Number(b.reward) - Number(a.reward))
-    .filter((offer) => {
-      const key = normalizeName(offer.title);
-      return key && !seen.has(key);
-    })
-    .slice(0, RANKING_LIMIT - rankedCandidates.length);
+  const backfillLimit = RANKING_LIMIT - rankedCandidates.length;
+  const backfillOffers = selectBalancedBackfillOffers(offers, seen, backfillLimit);
 
   backfillOffers.forEach((offer, backfillIndex) => {
     const key = normalizeName(offer.title);
@@ -535,6 +633,8 @@ export async function GET() {
       offer_generated_suggest_seeds_enabled: false,
       verified_moppy_backfill_enabled: true,
       verified_moppy_backfill_count: backfillCount,
+      verified_moppy_backfill_balanced: true,
+      verified_moppy_backfill_reward_band_order: BACKFILL_REWARD_BAND_ORDER,
       ranking_limit: RANKING_LIMIT,
       google_trend_rss_and_search_suggest_enabled: true,
       google_trend_only: true,
