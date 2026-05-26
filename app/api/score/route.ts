@@ -23,6 +23,19 @@ type MoppyOffer = {
   reward: number;
 };
 
+const CANONICAL_MOPPY_OFFERS: MoppyOffer[] = [
+  {
+    title: "SBI証券 確定拠出年金 iDeCo",
+    url: "https://pc.moppy.jp/ad/detail.php?s_id=141744",
+    reward: 2500,
+  },
+  {
+    title: "SBI FXトレード",
+    url: "https://pc.moppy.jp/ad/detail.php?site_id=159880&track_ref=ts",
+    reward: 3500,
+  },
+];
+
 type RankingItem = {
   rank?: number | null;
   offer_name?: string | null;
@@ -72,6 +85,24 @@ const normalizeText = (text?: string | null) => {
     .replace(/[\u30fc\uff70\u2212]/g, "-")
     .replace(/[\[\]\u3010\u3011!\uff01?\uff1f\u3002\u3001\u300c\u300d\u300e\u300f()\uff08\uff09]/g, "")
     .trim();
+};
+
+const getCanonicalMoppyOffer = (...values: Array<string | null | undefined>) => {
+  const text = values.map(normalizeText).filter(Boolean).join(" ");
+  const siteIds = values.map(getMoppySiteId).filter(Boolean);
+
+  if (siteIds.includes("159880") || text.includes("sbifxトレード")) {
+    return CANONICAL_MOPPY_OFFERS.find((offer) => getMoppySiteId(offer.url) === "159880") || null;
+  }
+
+  if (
+    siteIds.includes("141744") ||
+    (text.includes("sbi証券") && (text.includes("ideco") || text.includes("確定拠出年金")))
+  ) {
+    return CANONICAL_MOPPY_OFFERS.find((offer) => getMoppySiteId(offer.url) === "141744") || null;
+  }
+
+  return null;
 };
 
 const toSearchWord = (value?: string | null) => {
@@ -167,12 +198,12 @@ const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
       },
     });
 
-    if (!response.ok) return [];
+    if (!response.ok) return CANONICAL_MOPPY_OFFERS;
 
     const json = await response.json();
     const offers = Array.isArray(json.data) ? (json.data as MoppyOffer[]) : [];
 
-    return offers
+    return [...CANONICAL_MOPPY_OFFERS, ...offers]
       .map((offer) => ({
         ...offer,
         reward: getRewardOverride(offer.url) || offer.reward,
@@ -181,7 +212,7 @@ const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
       .sort((a, b) => Number(b.reward) - Number(a.reward));
   } catch (error) {
     console.error(error);
-    return [];
+    return CANONICAL_MOPPY_OFFERS;
   }
 };
 
@@ -231,6 +262,14 @@ const isStrongNameMatch = (offerName: string, title: string) => {
 };
 
 const findMoppyOffer = (item: RankingItem, offers: MoppyOffer[]) => {
+  const canonicalOffer = getCanonicalMoppyOffer(
+    item.offer_name,
+    item.trend_keyword,
+    item.category,
+    item.primary_site_url
+  );
+  if (canonicalOffer) return canonicalOffer;
+
   const savedUrlKey = getUrlKey(item.primary_site_url);
 
   if (savedUrlKey) {
@@ -366,7 +405,8 @@ const formatRankingItem = async (
     item.category ||
     matchedOffer.title ||
     `おすすめ案件 ${index + 1}`;
-  const reward = getRewardOverride(matchedOffer.url) || matchedOffer.reward;
+  const canonicalOffer = getCanonicalMoppyOffer(offerName, matchedOffer.title, matchedOffer.url);
+  const reward = canonicalOffer?.reward || getRewardOverride(matchedOffer.url) || matchedOffer.reward;
   const category = item.category ?? "その他";
   const trendKeyword = toSearchWord(
     item.trend_keyword ?? item.offer_name ?? item.category ?? offerName
@@ -387,7 +427,7 @@ const formatRankingItem = async (
       : getDisplayReason(item, offerName),
     image_url: matchedOffer.imageUrl,
     primary_site_name: "モッピー",
-    primary_site_url: matchedOffer.url,
+    primary_site_url: canonicalOffer?.url || matchedOffer.url,
     secondary_site_name: item.secondary_site_name ?? "ポイントインカム",
     secondary_site_url: item.secondary_site_url ?? "https://pointi.jp/",
     updated_at: item.updated_at,
