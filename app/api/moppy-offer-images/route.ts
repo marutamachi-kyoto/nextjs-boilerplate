@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export const revalidate = 86400;
 
 const CATEGORY_IDS = Array.from({ length: 20 }, (_, index) => 1001 + index);
-const DETAIL_ENRICH_LIMIT = 80;
+const DETAIL_ENRICH_LIMIT = 120;
 
 const SOURCE_URLS = [
   "https://pc.moppy.jp/service/?order=1",
@@ -20,6 +20,7 @@ type MoppyOfferImage = {
   imageUrl?: string;
   url: string;
   reward: number;
+  source?: "list" | "detail";
 };
 
 const stripTags = (html: string) => {
@@ -165,7 +166,8 @@ const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
     const start = Math.max(0, match.index ?? 0);
     const around = html.slice(Math.max(0, start - 700), Math.min(html.length, start + match[0].length + 1200));
     const title = getTitle(chunk) || getTitle(around);
-    const text = stripTags(`${chunk} ${around}`);
+    const chunkReward = getReward(stripTags(chunk));
+    const nearbyReward = getReward(stripTags(around));
 
     if (!href || !title) continue;
 
@@ -173,7 +175,8 @@ const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
       title,
       imageUrl: getImageUrl(chunk, sourceUrl) || getImageUrl(around, sourceUrl),
       url: toAbsoluteUrl(href, sourceUrl),
-      reward: getReward(text),
+      reward: chunkReward || nearbyReward,
+      source: "list",
     });
   }
 
@@ -193,6 +196,7 @@ const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
       imageUrl: getImageUrl(mainHtml, sourceUrl),
       url: sourceUrl,
       reward,
+      source: "detail" as const,
     },
   ];
 };
@@ -216,6 +220,9 @@ const fetchMoppyDetailOffer = async (url: string) => {
 };
 
 const pickBetterOffer = (current: MoppyOfferImage, next: MoppyOfferImage) => {
+  if (next.source === "detail" && current.source !== "detail") return next;
+  if (current.source === "detail" && next.source !== "detail") return current;
+
   const currentScore = (current.imageUrl ? 1000000 : 0) + Number(current.reward || 0);
   const nextScore = (next.imageUrl ? 1000000 : 0) + Number(next.reward || 0);
 
@@ -257,7 +264,7 @@ export async function GET() {
     result.status === "fulfilled" ? result.value : []
   );
   const detailEnrichmentTargets = offers
-    .filter((offer) => offer.title && offer.url && offer.reward > 0 && !offer.imageUrl)
+    .filter((offer) => offer.title && offer.url && offer.reward > 0)
     .slice(0, DETAIL_ENRICH_LIMIT);
   const enrichmentResults = await Promise.allSettled(
     detailEnrichmentTargets.map((offer) => fetchMoppyDetailOffer(offer.url))
