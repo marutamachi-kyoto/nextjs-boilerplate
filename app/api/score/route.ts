@@ -10,9 +10,12 @@ const supabase = createClient(
 const MOPPY_OFFER_URL = "https://poikatu-ai.vercel.app/api/moppy-offer-images";
 const GOOGLE_SUGGEST_URL = "https://suggestqueries.google.com/complete/search";
 const RANKING_LIMIT = 50;
+const RANKING_SOURCE_LIMIT = 180;
 const BACKFILL_KEYWORD = "モッピー確認済み案件";
 const REWARD_OVERRIDES_BY_SITE_ID: Record<string, number> = {
   "141744": 2500,
+  "154516": 650,
+  "155068": 17000,
   "159880": 3500,
 };
 
@@ -22,19 +25,6 @@ type MoppyOffer = {
   url: string;
   reward: number;
 };
-
-const CANONICAL_MOPPY_OFFERS: MoppyOffer[] = [
-  {
-    title: "SBI証券 確定拠出年金 iDeCo",
-    url: "https://pc.moppy.jp/ad/detail.php?s_id=141744",
-    reward: 2500,
-  },
-  {
-    title: "SBI FXトレード",
-    url: "https://pc.moppy.jp/ad/detail.php?site_id=159880&track_ref=ts",
-    reward: 3500,
-  },
-];
 
 type RankingItem = {
   rank?: number | null;
@@ -50,6 +40,29 @@ type RankingItem = {
   secondary_site_url?: string | null;
   updated_at?: string | null;
 };
+
+const CANONICAL_MOPPY_OFFERS: MoppyOffer[] = [
+  {
+    title: "SBI証券【FX】",
+    url: "https://pc.moppy.jp/ad/detail.php?site_id=155068&track_ref=ts",
+    reward: 17000,
+  },
+  {
+    title: "SBI証券 確定拠出年金 iDeCo",
+    url: "https://pc.moppy.jp/ad/detail.php?s_id=141744",
+    reward: 2500,
+  },
+  {
+    title: "SBI FXトレード",
+    url: "https://pc.moppy.jp/ad/detail.php?site_id=159880&track_ref=ts",
+    reward: 3500,
+  },
+  {
+    title: "【超還元】DMM TV",
+    url: "https://pc.moppy.jp/ad/detail.php?site_id=154516&track_ref=ts",
+    reward: 650,
+  },
+];
 
 const getMoppySiteId = (url?: string | null) => {
   if (!url) return "";
@@ -87,9 +100,26 @@ const normalizeText = (text?: string | null) => {
     .trim();
 };
 
+const stripTags = (html: string) => {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 const getCanonicalMoppyOffer = (...values: Array<string | null | undefined>) => {
   const text = values.map(normalizeText).filter(Boolean).join(" ");
   const siteIds = values.map(getMoppySiteId).filter(Boolean);
+
+  if (siteIds.includes("155068") || text.includes("sbi証券fx")) {
+    return CANONICAL_MOPPY_OFFERS.find((offer) => getMoppySiteId(offer.url) === "155068") || null;
+  }
 
   if (siteIds.includes("159880") || text.includes("sbifxトレード")) {
     return CANONICAL_MOPPY_OFFERS.find((offer) => getMoppySiteId(offer.url) === "159880") || null;
@@ -100,6 +130,10 @@ const getCanonicalMoppyOffer = (...values: Array<string | null | undefined>) => 
     (text.includes("sbi証券") && (text.includes("ideco") || text.includes("確定拠出年金")))
   ) {
     return CANONICAL_MOPPY_OFFERS.find((offer) => getMoppySiteId(offer.url) === "141744") || null;
+  }
+
+  if (siteIds.includes("154516") || text.includes("dmmtv")) {
+    return CANONICAL_MOPPY_OFFERS.find((offer) => getMoppySiteId(offer.url) === "154516") || null;
   }
 
   return null;
@@ -136,43 +170,28 @@ const toSearchWord = (value?: string | null) => {
   return text || original;
 };
 
-const stripTags = (html: string) => {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-};
-
-const getPrimaryDetailHtml = (html: string) => {
-  const cutMarkers = [
-    "ポイ活応援サービス",
-    "ポイントの交換先",
-    "獲得条件",
-    "広告概要",
-    "特集・キャンペーン",
-    "ジャンル別ランキング",
-    "クチコミ",
+const getMainRewardText = (html: string) => {
+  const patterns = [
+    /<p[^>]+class=["'][^"']*m-item__point[^"']*["'][\s\S]*?<em[^>]+class=["'][^"']*a-item__point--now[^"']*["'][^>]*>([\s\S]*?)<\/em>/i,
+    /<em[^>]+class=["'][^"']*a-item__point--now[^"']*["'][^>]*>([\s\S]*?)<\/em>/i,
+    /<p[^>]+class=["'][^"']*m-item__point[^"']*["'][\s\S]*?([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P[\s\S]*?<\/p>/i,
   ];
 
-  return cutMarkers.reduce((current, marker) => {
-    const index = current.indexOf(marker);
-    return index >= 0 ? current.slice(0, index) : current;
-  }, html);
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    const text = match?.[1] ? stripTags(match[1]) : "";
+    if (text) return text;
+  }
+
+  return "";
 };
 
 const getPrimaryDetailReward = (html: string) => {
-  const text = stripTags(getPrimaryDetailHtml(html));
-  const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
-    .map((match) => Number(match[1].replace(/,/g, "")))
-    .filter((value) => Number.isFinite(value) && value > 0);
+  const rewardText = getMainRewardText(html);
+  if (!/P\s*$/.test(rewardText)) return 0;
 
-  return values.at(-1) || 0;
+  const reward = Number(rewardText.replace(/[^0-9]/g, ""));
+  return Number.isFinite(reward) && reward > 0 ? reward : 0;
 };
 
 const isRewardAvailable = (reward?: number | null) => {
@@ -441,7 +460,7 @@ export async function GET() {
       .select("*")
       .order("updated_at", { ascending: false })
       .order("rank", { ascending: true })
-      .limit(RANKING_LIMIT);
+      .limit(RANKING_SOURCE_LIMIT);
     const moppyOffers = await fetchMoppyOffers();
 
     if (rankingResult.error) {
@@ -459,13 +478,12 @@ export async function GET() {
         if (!isVerifiedMoppyOffer(matchedOffer)) return null;
 
         const detailReward = await fetchMoppyDetailReward(matchedOffer.url);
-        const verifiedOffer = isRewardAvailable(detailReward)
-          ? { ...matchedOffer, reward: detailReward }
-          : matchedOffer;
+        if (!isRewardAvailable(detailReward)) return null;
 
-        return isVerifiedMoppyOffer(verifiedOffer)
-          ? { item, matchedOffer: verifiedOffer }
-          : null;
+        return {
+          item,
+          matchedOffer: { ...matchedOffer, reward: detailReward },
+        };
       })
     );
 
@@ -481,9 +499,14 @@ export async function GET() {
         })
     );
 
-    return Response.json({
-      data: formatted,
-    });
+    return Response.json(
+      { data: formatted },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        },
+      }
+    );
   } catch (error) {
     console.error(error);
 
