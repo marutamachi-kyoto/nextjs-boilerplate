@@ -106,6 +106,32 @@ const getReward = (text: string) => {
   return values.length > 0 ? Math.max(...values) : 0;
 };
 
+const getPrimaryDetailHtml = (html: string) => {
+  const cutMarkers = [
+    "ポイ活応援サービス",
+    "ポイントの交換先",
+    "獲得条件",
+    "広告概要",
+    "特集・キャンペーン",
+    "ジャンル別ランキング",
+    "クチコミ",
+  ];
+
+  return cutMarkers.reduce((current, marker) => {
+    const index = current.indexOf(marker);
+    return index >= 0 ? current.slice(0, index) : current;
+  }, html);
+};
+
+const getPrimaryDetailReward = (html: string) => {
+  const text = stripTags(getPrimaryDetailHtml(html));
+  const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
+    .map((match) => Number(match[1].replace(/,/g, "")))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  return values.at(-1) || 0;
+};
+
 const isRewardAvailable = (reward?: number | null) => {
   return Number.isFinite(Number(reward)) && Number(reward) > 0;
 };
@@ -157,11 +183,7 @@ const fetchMoppyDetailReward = async (url?: string) => {
 
     if (!response.ok) return 0;
 
-    const html = await response.text();
-    const mainHtml =
-      html.split("\u30dd\u30a4\u6d3b\u5fdc\u63f4\u30b5\u30fc\u30d3\u30b9")[0]?.split("\u30dd\u30a4\u30f3\u30c8\u306e\u4ea4\u63db\u5148")[0] || html;
-
-    return getReward(stripTags(mainHtml));
+    return getPrimaryDetailReward(await response.text());
   } catch (error) {
     console.error(error);
     return 0;
