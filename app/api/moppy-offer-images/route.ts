@@ -13,11 +13,13 @@ const SOURCE_URLS = [
 ];
 
 const DETAIL_SOURCE_URLS = [
+  "https://pc.moppy.jp/ad/detail.php?site_id=154516&track_ref=ts",
   "https://pc.moppy.jp/ad/detail.php?site_id=160472",
 ];
 
 const REWARD_OVERRIDES_BY_SITE_ID: Record<string, number> = {
   "141744": 2500,
+  "154516": 650,
   "159880": 3500,
 };
 
@@ -45,6 +47,37 @@ const getRewardOverride = (url?: string | null) => {
   return siteId ? REWARD_OVERRIDES_BY_SITE_ID[siteId] || 0 : 0;
 };
 
+const normalizeTitle = (title: string) => {
+  return title
+    .toLowerCase()
+    .replace(/\u3000/g, "")
+    .replace(/\s+/g, "")
+    .replace(/[\u30fb\uff65]/g, "")
+    .replace(/[\u30fc\uff70\u2212]/g, "-")
+    .trim();
+};
+
+const sanitizeOffer = (offer: MoppyOfferImage): MoppyOfferImage => {
+  const siteId = getMoppySiteId(offer.url);
+  const rewardOverride = getRewardOverride(offer.url);
+  const normalizedTitle = normalizeTitle(offer.title);
+
+  if (siteId === "154516" || normalizedTitle.includes("dmmtv")) {
+    return {
+      ...offer,
+      title: offer.title.includes("DMM") ? offer.title : "【超還元】DMM TV",
+      imageUrl: undefined,
+      reward: 650,
+      source: "detail",
+    };
+  }
+
+  return {
+    ...offer,
+    reward: rewardOverride || offer.reward,
+  };
+};
+
 const stripTags = (html: string) => {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -55,16 +88,6 @@ const stripTags = (html: string) => {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, " ")
-    .trim();
-};
-
-const normalizeTitle = (title: string) => {
-  return title
-    .toLowerCase()
-    .replace(/\u3000/g, "")
-    .replace(/\s+/g, "")
-    .replace(/[\u30fb\uff65]/g, "")
-    .replace(/[\u30fc\uff70\u2212]/g, "-")
     .trim();
 };
 
@@ -195,13 +218,13 @@ const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
 
     if (!href || !title) continue;
 
-    offers.push({
+    offers.push(sanitizeOffer({
       title,
       imageUrl: getImageUrl(chunk, sourceUrl) || getImageUrl(around, sourceUrl),
       url: absoluteUrl,
       reward: overrideReward || chunkReward || nearbyReward,
       source: overrideReward ? "detail" : "list",
-    });
+    }));
   }
 
   return offers;
@@ -214,28 +237,24 @@ const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
 
   if (!title || reward <= 0) return [];
 
-  return [
-    {
-      title,
-      imageUrl: getImageUrl(mainHtml, sourceUrl),
-      url: sourceUrl,
-      reward,
-      source: "detail" as const,
-    },
-  ];
+  return [sanitizeOffer({
+    title,
+    imageUrl: getImageUrl(mainHtml, sourceUrl),
+    url: sourceUrl,
+    reward,
+    source: "detail" as const,
+  })];
 };
 
 const fetchMoppyDetailOffer = async (url: string) => {
   const overrideReward = getRewardOverride(url);
   if (overrideReward) {
-    return [
-      {
-        title: "Moppy verified offer",
-        url,
-        reward: overrideReward,
-        source: "detail" as const,
-      },
-    ];
+    return [sanitizeOffer({
+      title: getMoppySiteId(url) === "154516" ? "【超還元】DMM TV" : "Moppy verified offer",
+      url,
+      reward: overrideReward,
+      source: "detail" as const,
+    })];
   }
 
   try {
@@ -322,7 +341,7 @@ export async function GET() {
   );
 
   const offerMap = new Map<string, MoppyOfferImage>();
-  [...offers, ...enrichedOffers].forEach((offer) => {
+  [...offers, ...enrichedOffers].map(sanitizeOffer).forEach((offer) => {
     if (!offer.title || !offer.url || offer.reward <= 0) return;
     const key = normalizeTitle(offer.title);
     const current = offerMap.get(key);
@@ -331,5 +350,12 @@ export async function GET() {
 
   const uniqueOffers = Array.from(offerMap.values()).slice(0, 700);
 
-  return NextResponse.json({ data: uniqueOffers });
+  return NextResponse.json(
+    { data: uniqueOffers },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      },
+    }
+  );
 }
