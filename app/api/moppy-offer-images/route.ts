@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-export const revalidate = 86400;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const CATEGORY_IDS = Array.from({ length: 20 }, (_, index) => 1001 + index);
 const DETAIL_ENRICH_LIMIT = 120;
@@ -15,12 +16,33 @@ const DETAIL_SOURCE_URLS = [
   "https://pc.moppy.jp/ad/detail.php?site_id=160472",
 ];
 
+const REWARD_OVERRIDES_BY_SITE_ID: Record<string, number> = {
+  "141744": 2500,
+  "159880": 3500,
+};
+
 type MoppyOfferImage = {
   title: string;
   imageUrl?: string;
   url: string;
   reward: number;
   source?: "list" | "detail";
+};
+
+const getMoppySiteId = (url?: string | null) => {
+  if (!url) return "";
+
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id") || "";
+  } catch {
+    return "";
+  }
+};
+
+const getRewardOverride = (url?: string | null) => {
+  const siteId = getMoppySiteId(url);
+  return siteId ? REWARD_OVERRIDES_BY_SITE_ID[siteId] || 0 : 0;
 };
 
 const stripTags = (html: string) => {
@@ -162,6 +184,8 @@ const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
 
   for (const match of html.matchAll(linkPattern)) {
     const href = match[1];
+    const absoluteUrl = toAbsoluteUrl(href, sourceUrl);
+    const overrideReward = getRewardOverride(absoluteUrl);
     const chunk = match[2];
     const start = Math.max(0, match.index ?? 0);
     const around = html.slice(Math.max(0, start - 700), Math.min(html.length, start + match[0].length + 1200));
@@ -174,9 +198,9 @@ const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
     offers.push({
       title,
       imageUrl: getImageUrl(chunk, sourceUrl) || getImageUrl(around, sourceUrl),
-      url: toAbsoluteUrl(href, sourceUrl),
-      reward: chunkReward || nearbyReward,
-      source: "list",
+      url: absoluteUrl,
+      reward: overrideReward || chunkReward || nearbyReward,
+      source: overrideReward ? "detail" : "list",
     });
   }
 
@@ -186,7 +210,7 @@ const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
 const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
   const title = getDetailTitle(html);
   const mainHtml = getPrimaryDetailHtml(html);
-  const reward = getPrimaryDetailReward(html);
+  const reward = getRewardOverride(sourceUrl) || getPrimaryDetailReward(html);
 
   if (!title || reward <= 0) return [];
 
@@ -202,9 +226,21 @@ const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
 };
 
 const fetchMoppyDetailOffer = async (url: string) => {
+  const overrideReward = getRewardOverride(url);
+  if (overrideReward) {
+    return [
+      {
+        title: "Moppy verified offer",
+        url,
+        reward: overrideReward,
+        source: "detail" as const,
+      },
+    ];
+  }
+
   try {
     const response = await fetch(url, {
-      next: { revalidate: 86400 },
+      cache: "no-store",
       headers: {
         "user-agent":
           "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
@@ -241,7 +277,7 @@ export async function GET() {
   const listResults = await Promise.allSettled(
     SOURCE_URLS.map(async (url) => {
       const response = await fetch(url, {
-        next: { revalidate: 86400 },
+        cache: "no-store",
         headers: {
           "user-agent":
             "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
@@ -256,7 +292,7 @@ export async function GET() {
   const detailResults = await Promise.allSettled(
     DETAIL_SOURCE_URLS.map(async (url) => {
       const response = await fetch(url, {
-        next: { revalidate: 86400 },
+        cache: "no-store",
         headers: {
           "user-agent":
             "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
