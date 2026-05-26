@@ -13,6 +13,7 @@ const SOURCE_URLS = [
 ];
 
 const DETAIL_SOURCE_URLS = [
+  "https://pc.moppy.jp/ad/detail.php?site_id=155068&track_ref=ts",
   "https://pc.moppy.jp/ad/detail.php?site_id=154516&track_ref=ts",
   "https://pc.moppy.jp/ad/detail.php?site_id=160472",
 ];
@@ -20,6 +21,7 @@ const DETAIL_SOURCE_URLS = [
 const REWARD_OVERRIDES_BY_SITE_ID: Record<string, number> = {
   "141744": 2500,
   "154516": 650,
+  "155068": 17000,
   "159880": 3500,
 };
 
@@ -68,6 +70,15 @@ const sanitizeOffer = (offer: MoppyOfferImage): MoppyOfferImage => {
       title: offer.title.includes("DMM") ? offer.title : "【超還元】DMM TV",
       imageUrl: undefined,
       reward: 650,
+      source: "detail",
+    };
+  }
+
+  if (siteId === "155068") {
+    return {
+      ...offer,
+      title: offer.title.includes("SBI証券") ? offer.title : "SBI証券【FX】",
+      reward: 17000,
       source: "detail",
     };
   }
@@ -250,7 +261,11 @@ const fetchMoppyDetailOffer = async (url: string) => {
   const overrideReward = getRewardOverride(url);
   if (overrideReward) {
     return [sanitizeOffer({
-      title: getMoppySiteId(url) === "154516" ? "【超還元】DMM TV" : "Moppy verified offer",
+      title: getMoppySiteId(url) === "154516"
+        ? "【超還元】DMM TV"
+        : getMoppySiteId(url) === "155068"
+          ? "SBI証券【FX】"
+          : "Moppy verified offer",
       url,
       reward: overrideReward,
       source: "detail" as const,
