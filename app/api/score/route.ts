@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -12,6 +13,7 @@ const GOOGLE_SUGGEST_URL = "https://suggestqueries.google.com/complete/search";
 const RANKING_LIMIT = 50;
 const RANKING_SOURCE_LIMIT = 180;
 const BACKFILL_KEYWORD = "モッピー確認済み案件";
+
 const REWARD_OVERRIDES_BY_SITE_ID: Record<string, number> = {
   "141744": 2500,
   "154516": 650,
@@ -75,6 +77,10 @@ const getMoppySiteId = (url?: string | null) => {
   }
 };
 
+const getUrlKey = (url?: string | null) => {
+  return getMoppySiteId(url) || url || "";
+};
+
 const getRewardOverride = (url?: string | null) => {
   const siteId = getMoppySiteId(url);
   return siteId ? REWARD_OVERRIDES_BY_SITE_ID[siteId] || 0 : 0;
@@ -113,6 +119,30 @@ const stripTags = (html: string) => {
     .trim();
 };
 
+const toSearchWord = (value?: string | null) => {
+  const original = (value || "").trim();
+  if (!original) return "";
+
+  const text = original
+    .replace(/\u3010[^\u3011]*\u3011/g, " ")
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/\uff08[^\uff09]*\uff09/g, " ")
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[\u300c\u300d\u300e\u300f]/g, " ")
+    .replace(/[+\uff0b].*$/g, " ")
+    .replace(/^(\u30dd\u30a4\u30f3\u30c8\u30b5\u30a4\u30c8|\u30dd\u30a4\u6d3b|\u30e2\u30c3\u30d4\u30fc|moppy|\u516c\u5f0f)\s*/i, "")
+    .replace(/\s*(\u30dd\u30a4\u30f3\u30c8\u30b5\u30a4\u30c8|\u30dd\u30a4\u6d3b|\u30e2\u30c3\u30d4\u30fc|moppy|\u516c\u5f0f)$/i, "")
+    .replace(/\bsbi\b/gi, "SBI")
+    .replace(/\bfx\b/gi, "FX")
+    .replace(/paypay/gi, "PayPay")
+    .replace(/linemo/gi, "LINEMO")
+    .replace(/u-next/gi, "U-NEXT")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text || original;
+};
+
 const getCanonicalMoppyOffer = (...values: Array<string | null | undefined>) => {
   const text = values.map(normalizeText).filter(Boolean).join(" ");
   const siteIds = values.map(getMoppySiteId).filter(Boolean);
@@ -137,37 +167,6 @@ const getCanonicalMoppyOffer = (...values: Array<string | null | undefined>) => 
   }
 
   return null;
-};
-
-const toSearchWord = (value?: string | null) => {
-  const original = (value || "").trim();
-  if (!original) return "";
-
-  let text = original
-    .replace(/\u3010[^\u3011]*\u3011/g, " ")
-    .replace(/\[[^\]]*\]/g, " ")
-    .replace(/\uff08[^\uff09]*\uff09/g, " ")
-    .replace(/\([^)]*\)/g, " ")
-    .replace(/[\u300c\u300d\u300e\u300f]/g, " ")
-    .replace(/[+\uff0b].*$/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  text = text
-    .replace(/^(\u30dd\u30a4\u30f3\u30c8\u30b5\u30a4\u30c8|\u30dd\u30a4\u6d3b|\u30e2\u30c3\u30d4\u30fc|moppy|\u516c\u5f0f)\s*/i, "")
-    .replace(/\s*(\u30dd\u30a4\u30f3\u30c8\u30b5\u30a4\u30c8|\u30dd\u30a4\u6d3b|\u30e2\u30c3\u30d4\u30fc|moppy|\u516c\u5f0f)$/i, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  text = text
-    .replace(/\bsbi\b/gi, "SBI")
-    .replace(/\bfx\b/gi, "FX")
-    .replace(/paypay/gi, "PayPay")
-    .replace(/linemo/gi, "LINEMO")
-    .replace(/u-next/gi, "U-NEXT")
-    .trim();
-
-  return text || original;
 };
 
 const getMainRewardText = (html: string) => {
@@ -259,17 +258,6 @@ const fetchMoppyDetailReward = async (url?: string) => {
   }
 };
 
-const getUrlKey = (url?: string | null) => {
-  if (!url) return "";
-
-  try {
-    const parsed = new URL(url);
-    return parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id") || url;
-  } catch {
-    return url;
-  }
-};
-
 const isStrongNameMatch = (offerName: string, title: string) => {
   const name = normalizeText(offerName);
   const normalizedTitle = normalizeText(title);
@@ -306,69 +294,6 @@ const findMoppyOffer = (item: RankingItem, offers: MoppyOffer[]) => {
   );
 };
 
-const getGoogleRelatedReason = (offerName: string, trendKeywords: string[]) => {
-  const words = trendKeywords
-    .map((keyword) => toSearchWord(keyword))
-    .filter(Boolean)
-    .filter((keyword, index, keywords) => keywords.indexOf(keyword) === index)
-    .slice(0, 2);
-
-  const relatedWords = words.length > 0 ? words : [toSearchWord(offerName) || offerName];
-  const relatedText = relatedWords.map((keyword) => `「${keyword}」`).join("や");
-
-  return `${offerName}は、Googleの検索で${relatedText}も一緒に調べられています。`;
-};
-
-const extractQuotedWords = (text?: string | null) => {
-  const words: string[] = [];
-  const matches = String(text || "").matchAll(/「([^」]+)」/g);
-
-  for (const match of matches) {
-    const word = match[1]?.trim();
-    if (word && !words.includes(word)) words.push(word);
-  }
-
-  return words;
-};
-
-const getDisplayReason = (item: RankingItem, offerName: string) => {
-  const quotedWords = [
-    ...extractQuotedWords(item.description),
-    ...extractQuotedWords(item.reason),
-  ].filter((word, index, words) => words.indexOf(word) === index);
-
-  const relatedWords = quotedWords.length > 0
-    ? quotedWords
-    : [item.trend_keyword ?? item.category ?? offerName];
-
-  return getGoogleRelatedReason(offerName, relatedWords);
-};
-
-const getSearchKeywordForReason = (item: RankingItem, offerName: string) => {
-  const rawTrendKeyword = (item.trend_keyword || "").trim();
-
-  if (rawTrendKeyword && rawTrendKeyword !== BACKFILL_KEYWORD) {
-    return toSearchWord(rawTrendKeyword);
-  }
-
-  return toSearchWord(offerName) || offerName;
-};
-
-const cleanSuggestionHint = (suggestion: string, searchKeyword: string) => {
-  let hint = suggestion;
-  const keyword = searchKeyword.trim();
-
-  [keyword, keyword.toLowerCase(), keyword.toUpperCase()].forEach((word) => {
-    if (word) hint = hint.split(word).join("");
-  });
-
-  ["ポイ活", "口コミ", "評判", "おすすめ", "比較", "ランキング"].forEach((word) => {
-    hint = hint.split(word).join("");
-  });
-
-  return hint.replace(/\s+/g, " ").replace(/　/g, " ").trim();
-};
-
 const fetchRelatedSearchWords = async (searchKeyword: string) => {
   const fallbackWords = [
     `${searchKeyword} メリット`,
@@ -402,15 +327,38 @@ const fetchRelatedSearchWords = async (searchKeyword: string) => {
     const json = await response.json();
     const suggestions = Array.isArray(json?.[1]) ? (json[1] as string[]) : [];
     const words = suggestions
-      .map((word) => cleanSuggestionHint(word, searchKeyword))
-      .filter((word) => word && normalizeText(word) !== normalizeText(searchKeyword));
-    const uniqueWords = Array.from(new Set([...words, ...fallbackWords]));
+      .map((word) => word.replace(searchKeyword, "").trim())
+      .filter(Boolean)
+      .filter((word, index, list) => list.indexOf(word) === index);
 
-    return uniqueWords.slice(0, 10);
+    return Array.from(new Set([...words, ...fallbackWords])).slice(0, 10);
   } catch (error) {
     console.error(error);
     return fallbackWords;
   }
+};
+
+const getGoogleRelatedReason = (offerName: string, trendKeywords: string[]) => {
+  const words = trendKeywords
+    .map((keyword) => toSearchWord(keyword))
+    .filter(Boolean)
+    .filter((keyword, index, keywords) => keywords.indexOf(keyword) === index)
+    .slice(0, 2);
+
+  const relatedWords = words.length > 0 ? words : [toSearchWord(offerName) || offerName];
+  const relatedText = relatedWords.map((keyword) => `「${keyword}」`).join("や");
+
+  return `${offerName}は、Googleの検索で${relatedText}も一緒に調べられています。`;
+};
+
+const getSearchKeywordForReason = (item: RankingItem, offerName: string) => {
+  const rawTrendKeyword = (item.trend_keyword || "").trim();
+
+  if (rawTrendKeyword && rawTrendKeyword !== BACKFILL_KEYWORD) {
+    return toSearchWord(rawTrendKeyword);
+  }
+
+  return toSearchWord(offerName) || offerName;
 };
 
 const formatRankingItem = async (
@@ -441,9 +389,7 @@ const formatRankingItem = async (
     category: trendKeyword || category,
     trend_keyword: trendKeyword || offerName,
     reward,
-    reason: relatedWords.length > 0
-      ? getGoogleRelatedReason(offerName, relatedWords)
-      : getDisplayReason(item, offerName),
+    reason: getGoogleRelatedReason(offerName, relatedWords),
     image_url: matchedOffer.imageUrl,
     primary_site_name: "モッピー",
     primary_site_url: canonicalOffer?.url || matchedOffer.url,
@@ -451,6 +397,13 @@ const formatRankingItem = async (
     secondary_site_url: item.secondary_site_url ?? "https://pointi.jp/",
     updated_at: item.updated_at,
   };
+};
+
+const verifyOffer = async (offer: MoppyOffer) => {
+  if (!isVerifiedMoppyOffer(offer)) return null;
+  const detailReward = await fetchMoppyDetailReward(offer.url);
+  if (!isRewardAvailable(detailReward)) return null;
+  return { ...offer, reward: detailReward };
 };
 
 export async function GET() {
@@ -472,31 +425,46 @@ export async function GET() {
     }
 
     const sourceItems = (rankingResult.data || []) as RankingItem[];
-    const verifiedPairs = await Promise.all(
-      sourceItems.map(async (item) => {
-        const matchedOffer = findMoppyOffer(item, moppyOffers);
-        if (!isVerifiedMoppyOffer(matchedOffer)) return null;
-
-        const detailReward = await fetchMoppyDetailReward(matchedOffer.url);
-        if (!isRewardAvailable(detailReward)) return null;
-
-        return {
-          item,
-          matchedOffer: { ...matchedOffer, reward: detailReward },
-        };
-      })
+    const verifiedPairs = (
+      await Promise.all(
+        sourceItems.map(async (item) => {
+          const matchedOffer = findMoppyOffer(item, moppyOffers);
+          if (!matchedOffer) return null;
+          const verifiedOffer = await verifyOffer(matchedOffer);
+          return verifiedOffer ? { item, matchedOffer: verifiedOffer } : null;
+        })
+      )
+    ).filter(
+      (pair): pair is { item: RankingItem; matchedOffer: MoppyOffer } => Boolean(pair)
     );
 
+    const usedUrlKeys = new Set(verifiedPairs.map((pair) => getUrlKey(pair.matchedOffer.url)));
+    const latestUpdatedAt = sourceItems.map((item) => item.updated_at).filter(Boolean).sort().reverse()[0];
+
+    for (const offer of moppyOffers) {
+      if (verifiedPairs.length >= RANKING_LIMIT) break;
+      const urlKey = getUrlKey(offer.url);
+      if (!urlKey || usedUrlKeys.has(urlKey)) continue;
+
+      const verifiedOffer = await verifyOffer(offer);
+      if (!verifiedOffer) continue;
+
+      usedUrlKeys.add(urlKey);
+      verifiedPairs.push({
+        item: {
+          offer_name: verifiedOffer.title,
+          trend_keyword: BACKFILL_KEYWORD,
+          category: BACKFILL_KEYWORD,
+          updated_at: latestUpdatedAt,
+        },
+        matchedOffer: verifiedOffer,
+      });
+    }
+
     const formatted = await Promise.all(
-      verifiedPairs
-        .filter(
-          (pair): pair is { item: RankingItem; matchedOffer: MoppyOffer } =>
-            Boolean(pair)
-        )
-        .slice(0, RANKING_LIMIT)
-        .map(({ item, matchedOffer }, index) => {
-          return formatRankingItem(item, index, matchedOffer);
-        })
+      verifiedPairs.slice(0, RANKING_LIMIT).map(({ item, matchedOffer }, index) => {
+        return formatRankingItem(item, index, matchedOffer);
+      })
     );
 
     return Response.json(
