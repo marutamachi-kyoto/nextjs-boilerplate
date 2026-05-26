@@ -129,6 +129,32 @@ const getReward = (text: string) => {
   return values.length > 0 ? Math.max(...values) : 0;
 };
 
+const getPrimaryDetailHtml = (html: string) => {
+  const cutMarkers = [
+    "ポイ活応援サービス",
+    "ポイントの交換先",
+    "獲得条件",
+    "広告概要",
+    "特集・キャンペーン",
+    "ジャンル別ランキング",
+    "クチコミ",
+  ];
+
+  return cutMarkers.reduce((current, marker) => {
+    const index = current.indexOf(marker);
+    return index >= 0 ? current.slice(0, index) : current;
+  }, html);
+};
+
+const getPrimaryDetailReward = (html: string) => {
+  const text = stripTags(getPrimaryDetailHtml(html));
+  const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
+    .map((match) => Number(match[1].replace(/,/g, "")))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  return values.at(-1) || 0;
+};
+
 const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
   const offers: MoppyOfferImage[] = [];
   const linkPattern = /<a\b[^>]*href=["']([^"']*(?:detail\.php|\/ad\/detail)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
@@ -156,8 +182,8 @@ const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
 
 const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
   const title = getDetailTitle(html);
-  const mainHtml = html.split("ポイ活応援サービス")[0]?.split("ポイントの交換先")[0] || html;
-  const reward = getReward(stripTags(mainHtml));
+  const mainHtml = getPrimaryDetailHtml(html);
+  const reward = getPrimaryDetailReward(html);
 
   if (!title || reward <= 0) return [];
 
