@@ -11,6 +11,10 @@ const MOPPY_OFFER_URL = "https://poikatu-ai.vercel.app/api/moppy-offer-images";
 const GOOGLE_SUGGEST_URL = "https://suggestqueries.google.com/complete/search";
 const RANKING_LIMIT = 50;
 const BACKFILL_KEYWORD = "モッピー確認済み案件";
+const REWARD_OVERRIDES_BY_SITE_ID: Record<string, number> = {
+  "141744": 2500,
+  "159880": 3500,
+};
 
 type MoppyOffer = {
   title: string;
@@ -32,6 +36,22 @@ type RankingItem = {
   secondary_site_name?: string | null;
   secondary_site_url?: string | null;
   updated_at?: string | null;
+};
+
+const getMoppySiteId = (url?: string | null) => {
+  if (!url) return "";
+
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id") || "";
+  } catch {
+    return "";
+  }
+};
+
+const getRewardOverride = (url?: string | null) => {
+  const siteId = getMoppySiteId(url);
+  return siteId ? REWARD_OVERRIDES_BY_SITE_ID[siteId] || 0 : 0;
 };
 
 const normalizeText = (text?: string | null) => {
@@ -98,14 +118,6 @@ const stripTags = (html: string) => {
     .trim();
 };
 
-const getReward = (text: string) => {
-  const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
-    .map((match) => Number(match[1].replace(/,/g, "")))
-    .filter((value) => Number.isFinite(value) && value > 0);
-
-  return values.length > 0 ? Math.max(...values) : 0;
-};
-
 const getPrimaryDetailHtml = (html: string) => {
   const cutMarkers = [
     "ポイ活応援サービス",
@@ -148,7 +160,7 @@ const isVerifiedMoppyOffer = (offer?: MoppyOffer | null): offer is MoppyOffer =>
 const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
   try {
     const response = await fetch(MOPPY_OFFER_URL, {
-      next: { revalidate: 3600 },
+      cache: "no-store",
       headers: {
         "user-agent":
           "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
@@ -161,6 +173,10 @@ const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
     const offers = Array.isArray(json.data) ? (json.data as MoppyOffer[]) : [];
 
     return offers
+      .map((offer) => ({
+        ...offer,
+        reward: getRewardOverride(offer.url) || offer.reward,
+      }))
       .filter(isVerifiedMoppyOffer)
       .sort((a, b) => Number(b.reward) - Number(a.reward));
   } catch (error) {
@@ -172,9 +188,12 @@ const fetchMoppyOffers = async (): Promise<MoppyOffer[]> => {
 const fetchMoppyDetailReward = async (url?: string) => {
   if (!url) return 0;
 
+  const overrideReward = getRewardOverride(url);
+  if (overrideReward) return overrideReward;
+
   try {
     const response = await fetch(url, {
-      next: { revalidate: 1800 },
+      cache: "no-store",
       headers: {
         "user-agent":
           "Mozilla/5.0 (compatible; PoikatsuAI/1.0; +https://poikatu-ai.vercel.app)",
@@ -347,7 +366,7 @@ const formatRankingItem = async (
     item.category ||
     matchedOffer.title ||
     `おすすめ案件 ${index + 1}`;
-  const reward = matchedOffer.reward;
+  const reward = getRewardOverride(matchedOffer.url) || matchedOffer.reward;
   const category = item.category ?? "その他";
   const trendKeyword = toSearchWord(
     item.trend_keyword ?? item.offer_name ?? item.category ?? offerName
