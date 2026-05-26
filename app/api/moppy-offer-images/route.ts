@@ -229,6 +229,14 @@ const pickBetterOffer = (current: MoppyOfferImage, next: MoppyOfferImage) => {
   return nextScore > currentScore ? next : current;
 };
 
+const getDetailPriority = (offer: MoppyOfferImage) => {
+  if (offer.source === "detail") return 0;
+  if (offer.reward >= 30000) return 1;
+  if (!offer.imageUrl) return 2;
+  if (/fx|証券|銀行|カード|口座|投資|不動産/i.test(offer.title)) return 3;
+  return 4;
+};
+
 export async function GET() {
   const listResults = await Promise.allSettled(
     SOURCE_URLS.map(async (url) => {
@@ -265,6 +273,10 @@ export async function GET() {
   );
   const detailEnrichmentTargets = offers
     .filter((offer) => offer.title && offer.url && offer.reward > 0)
+    .sort((a, b) => {
+      const priorityDiff = getDetailPriority(a) - getDetailPriority(b);
+      return priorityDiff || Number(b.reward) - Number(a.reward);
+    })
     .slice(0, DETAIL_ENRICH_LIMIT);
   const enrichmentResults = await Promise.allSettled(
     detailEnrichmentTargets.map((offer) => fetchMoppyDetailOffer(offer.url))
