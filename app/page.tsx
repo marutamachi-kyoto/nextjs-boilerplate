@@ -24,6 +24,76 @@ type TrendItem = {
   category?: string;
 };
 
+const rewardSourceGuardScript = `
+(() => {
+  if (window.location.pathname !== "/") return;
+
+  const normalizeText = (text) => {
+    return (text || "")
+      .toLowerCase()
+      .replace(/\u3000/g, "")
+      .replace(/\s+/g, "")
+      .replace(/\uff08/g, "(")
+      .replace(/\uff09/g, ")")
+      .replace(/[\u30fb\uff65]/g, "")
+      .replace(/[\u30fc\uff70\u2212]/g, "-")
+      .replace(/[\[\]\u3010\u3011!\uff01?\uff1f\u3002\u3001\u300c\u300d\u300e\u300f()\uff08\uff09]/g, "")
+      .trim();
+  };
+
+  const getOfferName = (item) => item?.offer_name || item?.trend_keyword || item?.category || "";
+  const formatReward = (reward) => {
+    const value = Number(reward);
+    if (!Number.isFinite(value) || value <= 0) return "データが取れませんでした";
+    return value.toLocaleString("ja-JP") + "P";
+  };
+
+  const findRewardValue = (article) => {
+    const label = Array.from(article.querySelectorAll("div")).find((element) => {
+      return (element.textContent || "").trim() === "報酬ポイントの目安";
+    });
+    const rewardContainer = label?.parentElement;
+    return Array.from(rewardContainer?.children || []).find((child) => {
+      const text = child.textContent || "";
+      return child !== label && (text.includes("P") || text.includes("データ"));
+    });
+  };
+
+  const applyScoreRewards = async () => {
+    try {
+      const response = await fetch("/api/score?rewardGuard=" + Date.now(), { cache: "no-store" });
+      const json = await response.json();
+      const items = Array.isArray(json.data) ? json.data : [];
+      const rewardsByName = new Map();
+
+      items.forEach((item) => {
+        const offerName = getOfferName(item);
+        const key = normalizeText(offerName);
+        if (key) rewardsByName.set(key, item.reward);
+      });
+
+      document.querySelectorAll('article[id^="ranking-"]').forEach((article) => {
+        const heading = article.querySelector("h3");
+        const key = normalizeText(heading?.textContent || "");
+        if (!key || !rewardsByName.has(key)) return;
+
+        const rewardValue = findRewardValue(article);
+        const rewardText = formatReward(rewardsByName.get(key));
+        if (rewardValue && rewardValue.textContent !== rewardText) {
+          rewardValue.textContent = rewardText;
+          rewardValue.setAttribute("data-score-reward", "true");
+        }
+      });
+    } catch (error) {}
+  };
+
+  applyScoreRewards();
+  [300, 900, 1800, 3600, 7200, 11000].forEach((delay) => {
+    window.setTimeout(applyScoreRewards, delay);
+  });
+})();
+`;
+
 export const metadata: Metadata = {
   title: "ポイ活おすすめランキング｜モッピー案件をAI判定",
   description:
@@ -155,6 +225,11 @@ export default async function Page() {
         type="application/ld+json"
         strategy="beforeInteractive"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <Script
+        id="ranking-reward-source-guard"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{ __html: rewardSourceGuardScript }}
       />
 
       <section className="sr-only" aria-label="ポイ活おすすめランキングのSEO本文">
