@@ -58,6 +58,10 @@ const normalizeText = (text?: string | null) => {
     .trim();
 };
 
+const getMoppySearchUrl = (offerName: string) => {
+  return `https://pc.moppy.jp/search/?word=${encodeURIComponent(offerName)}`;
+};
+
 const getCanonicalOffer = (item: RankingItem) => {
   const text = [item.offer_name, item.trend_keyword, item.category, item.primary_site_url]
     .map(normalizeText)
@@ -86,7 +90,7 @@ const getCanonicalOffer = (item: RankingItem) => {
   return null;
 };
 
-const isDirectMoppyUrl = (url?: string | null) => {
+const isMoppyOfferUrl = (url?: string | null) => {
   return Boolean(
     url && url.includes("pc.moppy.jp/") && !url.includes("/entry/invite.php")
   );
@@ -112,7 +116,7 @@ const formatItem = (item: RankingItem, index: number) => {
     item.category ||
     canonicalOffer?.title ||
     `おすすめ案件 ${index + 1}`;
-  const directUrl = isDirectMoppyUrl(item.primary_site_url)
+  const directUrl = isMoppyOfferUrl(item.primary_site_url)
     ? item.primary_site_url
     : canonicalOffer?.url;
 
@@ -125,7 +129,7 @@ const formatItem = (item: RankingItem, index: number) => {
     reason: buildReason(item, offerName),
     image_url: item.image_url || null,
     primary_site_name: "モッピー",
-    primary_site_url: directUrl || item.primary_site_url || null,
+    primary_site_url: directUrl || getMoppySearchUrl(offerName),
     secondary_site_name: item.secondary_site_name || "ポイントインカム",
     secondary_site_url: item.secondary_site_url || "https://pointi.jp/",
     updated_at: item.updated_at,
