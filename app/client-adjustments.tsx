@@ -135,6 +135,38 @@ export default function ClientAdjustments() {
         aboutLink.style.padding = "0.75rem 1.5rem";
       }
 
+      const tabButtons = Array.from(document.querySelectorAll("button")).filter(
+        (button) => {
+          const text = compactText(button);
+          return text === "注目ポイ活ランキング" || text === "無料ポイ活特集";
+        }
+      ) as HTMLButtonElement[];
+      const tabContainer = tabButtons[0]?.parentElement;
+      if (tabContainer instanceof HTMLElement && tabButtons.length >= 2) {
+        tabContainer.style.display = "flex";
+        tabContainer.style.gap = "0";
+        tabContainer.style.padding = "0";
+        tabContainer.style.borderRadius = "1.25rem";
+        tabContainer.style.overflow = "hidden";
+        tabContainer.style.background = "#ffffff";
+        tabContainer.style.border = "1px solid #f9cfe2";
+        tabContainer.style.boxShadow = "0 10px 24px rgba(236, 72, 153, 0.10)";
+
+        tabButtons.forEach((button) => {
+          const isActive = button.className.toString().includes("text-white");
+          button.style.flex = "1 1 0";
+          button.style.minHeight = "58px";
+          button.style.borderRadius = "0";
+          button.style.background = "transparent";
+          button.style.boxShadow = "none";
+          button.style.color = isActive ? "#111827" : "#64748b";
+          button.style.borderBottom = isActive
+            ? "4px solid #ec4899"
+            : "4px solid transparent";
+          button.style.fontWeight = isActive ? "900" : "800";
+        });
+      }
+
       const heroCopy = header?.querySelector("h1 + div p") as HTMLElement | null;
       if (heroCopy && heroCopy.dataset.copyAdjusted !== "true") {
         heroCopy.innerHTML =
@@ -215,7 +247,11 @@ export default function ClientAdjustments() {
       if (!(target instanceof Element)) return;
 
       const text = compactText(target);
-      if (text.includes("無料ポイ活特集") || text.includes("無料でできるポイ活特集")) {
+      if (
+        text.includes("無料ポイ活特集") ||
+        text.includes("無料でできるポイ活特集") ||
+        text.includes("注目ポイ活ランキング")
+      ) {
         window.setTimeout(applyAdjustments, 100);
         window.setTimeout(applyAdjustments, 500);
         window.setTimeout(applyAdjustments, 1200);
