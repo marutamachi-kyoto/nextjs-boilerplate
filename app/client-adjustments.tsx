@@ -121,6 +121,20 @@ export default function ClientAdjustments() {
     const applyAdjustments = () => {
       const header = document.querySelector("header");
 
+      const aboutLink = header?.querySelector(
+        'a[href="/about-poikatsu"]'
+      ) as HTMLElement | null;
+      const heroActionRow = aboutLink?.parentElement;
+      if (aboutLink && heroActionRow instanceof HTMLElement) {
+        heroActionRow.style.display = "flex";
+        heroActionRow.style.flexDirection = "column";
+        heroActionRow.style.alignItems = "flex-start";
+        heroActionRow.style.gap = "1rem";
+        aboutLink.style.marginTop = "0";
+        aboutLink.style.fontSize = "0.95rem";
+        aboutLink.style.padding = "0.75rem 1.5rem";
+      }
+
       const heroCopy = header?.querySelector("h1 + div p") as HTMLElement | null;
       if (heroCopy && heroCopy.dataset.copyAdjusted !== "true") {
         heroCopy.innerHTML =
