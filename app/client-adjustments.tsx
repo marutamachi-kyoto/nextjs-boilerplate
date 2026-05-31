@@ -67,6 +67,10 @@ const findMatchedScoreItem = (items: ScoreItem[], offerName: string) => {
   );
 };
 
+const textKey = (element: Element) => {
+  return (element.textContent || "").replace(/\s+/g, "").trim();
+};
+
 export default function ClientAdjustments() {
   useEffect(() => {
     const applyAdjustments = () => {
@@ -84,39 +88,45 @@ export default function ClientAdjustments() {
         heroCopy.dataset.copyAdjusted = "true";
       }
 
-      header?.querySelectorAll('a[href="/free-poikatsu"], button').forEach((element) => {
-        const text = (element.textContent || "").replace(/\s+/g, "");
+      document.querySelectorAll('a, button').forEach((element) => {
+        const text = textKey(element);
         if (text.includes("無料でできるポイ活特集")) {
           element.remove();
         }
       });
 
-      const updatedAtBadge = Array.from(header?.querySelectorAll("div") || []).find(
-        (element) => {
-          const text = (element.textContent || "").trim();
-          return text.startsWith("最終更新：") && !element.querySelector("div");
-        }
-      ) as HTMLElement | undefined;
-      const aboutLink = header?.querySelector('a[href="/about-poikatsu"]') as
+      const aboutLink = document.querySelector('header a[href="/about-poikatsu"]') as
         | HTMLElement
         | null;
+      const updatedAtBadge = Array.from(
+        document.querySelectorAll("header div, header span")
+      ).find((element) => textKey(element).startsWith("最終更新：")) as
+        | HTMLElement
+        | undefined;
 
-      if (updatedAtBadge?.parentElement && aboutLink) {
+      if (updatedAtBadge && aboutLink) {
         const group = updatedAtBadge.parentElement as HTMLElement;
-        group.style.display = "flex";
-        group.style.flexWrap = "wrap";
-        group.style.alignItems = "center";
-        group.style.gap = "0.75rem";
-        group.style.marginTop = "2rem";
+        if (group) {
+          group.style.display = "flex";
+          group.style.flexWrap = "wrap";
+          group.style.alignItems = "center";
+          group.style.gap = "0.75rem";
+          group.style.marginTop = "2rem";
+          group.style.width = "100%";
+        }
+
         aboutLink.style.marginTop = "0";
         aboutLink.style.marginLeft = "0";
-        aboutLink.style.padding = "0.75rem 1.25rem";
-        aboutLink.style.fontSize = "0.9rem";
+        aboutLink.style.padding = "0.65rem 1.1rem";
+        aboutLink.style.fontSize = "0.875rem";
+        aboutLink.style.lineHeight = "1.2";
         aboutLink.style.minHeight = "auto";
+        aboutLink.style.width = "fit-content";
         aboutLink.style.boxShadow = "0 10px 20px rgba(15, 23, 42, 0.08)";
         const icon = aboutLink.querySelector("span") as HTMLElement | null;
         if (icon) {
-          icon.style.fontSize = "1.1rem";
+          icon.style.fontSize = "1rem";
+          icon.style.marginRight = "0.4rem";
         }
         if (aboutLink.previousElementSibling !== updatedAtBadge) {
           updatedAtBadge.insertAdjacentElement("afterend", aboutLink);
@@ -132,7 +142,7 @@ export default function ClientAdjustments() {
       });
 
       firstFreeSection?.querySelectorAll("div").forEach((element) => {
-        const text = (element.textContent || "").replace(/\s+/g, "");
+        const text = textKey(element);
         if (
           text.includes("モッピーでポイ活を始める") &&
           text.includes("広告・紹介リンク")
@@ -141,14 +151,17 @@ export default function ClientAdjustments() {
         }
       });
 
-      freePage.querySelectorAll("div, span").forEach((element) => {
+      document.querySelectorAll("div, span").forEach((element) => {
         const text = (element.textContent || "").trim();
-        if (text === "ポイ活サイト最大手！") {
-          element.textContent = "最大手！";
-          (element as HTMLElement).style.width = "fit-content";
-          (element as HTMLElement).style.maxWidth = "fit-content";
-          (element as HTMLElement).style.paddingLeft = "1rem";
-          (element as HTMLElement).style.paddingRight = "1rem";
+        if (text === "ポイ活サイト最大手！" || text === "最大手！") {
+          element.textContent = "最大手";
+          const target = element as HTMLElement;
+          target.style.display = "inline-flex";
+          target.style.width = "fit-content";
+          target.style.maxWidth = "fit-content";
+          target.style.paddingLeft = "0.85rem";
+          target.style.paddingRight = "0.85rem";
+          target.style.whiteSpace = "nowrap";
         }
       });
 
@@ -164,7 +177,7 @@ export default function ClientAdjustments() {
       const target = event.target;
       if (!(target instanceof Element)) return;
 
-      const text = (target.textContent || "").replace(/\s+/g, "");
+      const text = textKey(target);
       if (text.includes("無料ポイ活特集") || text.includes("無料でできるポイ活特集")) {
         window.setTimeout(applyAdjustments, 100);
         window.setTimeout(applyAdjustments, 500);
@@ -208,13 +221,16 @@ export default function ClientAdjustments() {
       }
     };
 
-    const timers = [0, 500, 1200, 2400].map((delay) =>
+    const timers = [0, 300, 800, 1600, 3000, 5000].map((delay) =>
       window.setTimeout(applyAdjustments, delay)
     );
+    const observer = new MutationObserver(() => applyAdjustments());
+    observer.observe(document.body, { childList: true, subtree: true });
     document.addEventListener("click", handleMoppyButtonClick, true);
 
     return () => {
       timers.forEach((timer) => window.clearTimeout(timer));
+      observer.disconnect();
       document.removeEventListener("click", handleMoppyButtonClick, true);
     };
   }, []);
