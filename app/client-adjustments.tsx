@@ -109,6 +109,7 @@ export default function ClientAdjustments() {
       event.stopPropagation();
       event.stopImmediatePropagation();
 
+      const openedWindow = window.open("", "_blank");
       const items = await getScoreItems();
       const matchedItem = findMatchedScoreItem(items, offerName);
       const url = isDirectMoppyUrl(matchedItem?.primary_site_url)
@@ -126,7 +127,12 @@ export default function ClientAdjustments() {
         });
       } catch (error) {}
 
-      window.open(url, "_blank", "noopener,noreferrer");
+      if (openedWindow) {
+        openedWindow.opener = null;
+        openedWindow.location.href = url;
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
     };
 
     applyAdjustments();
