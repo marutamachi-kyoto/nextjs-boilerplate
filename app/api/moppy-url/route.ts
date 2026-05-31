@@ -50,6 +50,41 @@ const toAbsoluteMoppyUrl = (href: string) => {
   }
 };
 
+const normalizeSpaces = (value: string) => value.replace(/\s+/g, " ").trim();
+
+const getSearchCandidates = (offerName: string) => {
+  const candidates = new Set<string>();
+  const add = (value: string) => {
+    const candidate = normalizeSpaces(value);
+    if (candidate.length >= 2) candidates.add(candidate);
+  };
+
+  add(offerName);
+
+  const withoutDecorations = offerName
+    .replace(/【[^】]*】/g, " ")
+    .replace(/\[[^\]]*\]/g, " ")
+    .replace(/＜[^＞]*＞/g, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/※[^※]*※/g, " ")
+    .replace(/★[^\s　]*/g, " ")
+    .replace(/[（(][^）)]*[）)]/g, " ");
+  add(withoutDecorations);
+
+  const beforeParen = offerName.split(/[（(]/)[0];
+  add(beforeParen);
+
+  const withoutRewardText = offerName
+    .replace(/[0-9０-９,，]+\s*(円|P|ポイント|pt|相当)/gi, " ")
+    .replace(/合計|最大|最短|限定|無料|高還元|超還元|新規|専用/g, " ");
+  add(withoutRewardText);
+
+  const slashParts = offerName.split(/[／/]/).map((part) => normalizeSpaces(part));
+  slashParts.forEach(add);
+
+  return Array.from(candidates);
+};
+
 async function resolveDetailUrl(searchUrl: string) {
   const response = await fetch(searchUrl, {
     cache: "no-store",
@@ -85,13 +120,15 @@ export async function GET(request: Request) {
     );
   }
 
-  const searchUrl = isMoppySearchUrl(providedUrl)
-    ? providedUrl
-    : offerName
-      ? getMoppySearchUrl(offerName)
-      : "";
+  const searchUrls = new Set<string>();
+  if (isMoppySearchUrl(providedUrl)) searchUrls.add(providedUrl);
+  if (offerName) {
+    getSearchCandidates(offerName).forEach((candidate) => {
+      searchUrls.add(getMoppySearchUrl(candidate));
+    });
+  }
 
-  if (!searchUrl) {
+  if (searchUrls.size === 0) {
     return Response.json(
       { url: null, resolved: false, error: "offer is required" },
       {
@@ -102,17 +139,25 @@ export async function GET(request: Request) {
   }
 
   try {
-    const detailUrl = await resolveDetailUrl(searchUrl);
+    for (const searchUrl of searchUrls) {
+      const detailUrl = await resolveDetailUrl(searchUrl);
+      if (detailUrl) {
+        return Response.json(
+          { url: detailUrl, resolved: true, searchUrl },
+          { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
+        );
+      }
+    }
 
     return Response.json(
-      { url: detailUrl, resolved: Boolean(detailUrl), searchUrl },
+      { url: null, resolved: false, searchUrl: Array.from(searchUrls)[0] },
       { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
     );
   } catch (error) {
     console.error(error);
 
     return Response.json(
-      { url: null, resolved: false, searchUrl },
+      { url: null, resolved: false, searchUrl: Array.from(searchUrls)[0] },
       { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
     );
   }
