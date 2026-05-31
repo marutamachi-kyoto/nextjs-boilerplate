@@ -1,0 +1,15 @@
+main.min-h-screen > section:first-child h1 br {
+  display: none !important;
+}
+
+main.min-h-screen > section:first-child h1 span::after {
+  content: " ";
+}
+
+main.min-h-screen > section:first-child div.rounded-\[2rem\] h2 {
+  display: none !important;
+}
+
+main.min-h-screen > section:first-child div.rounded-\[2rem\] p:first-of-type {
+  margin-top: 1.5rem !important;
+}
