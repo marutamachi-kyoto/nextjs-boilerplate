@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import FreeOfferLikeButton from "./free-poikatsu-likes";
 
 const MOPPY_URL =
   "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
@@ -24,6 +25,15 @@ type TrendTag = {
   word: string;
   score: number;
   category?: string;
+};
+
+type FreeOffer = {
+  title: string;
+  description: string;
+  reward: number;
+  rewardText: string;
+  imageUrl?: string;
+  url: string;
 };
 
 type TopPageClientProps = {
@@ -82,17 +92,32 @@ const getRankStyle = (index: number) => {
   };
 };
 
+function FallbackImage() {
+  return (
+    <div className="relative aspect-[1.35/1] overflow-hidden border-b border-slate-100 bg-gradient-to-br from-[#fffefe] to-[#fff8fb]">
+      <div className="absolute left-[15%] right-[15%] top-1/2 h-[54px] -translate-y-1/2 rounded-[14px] border-2 border-[#f4b5cf] bg-white/70" />
+      <div className="absolute left-[27%] right-[27%] top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-[#f3a7c6] to-transparent" />
+      <div className="absolute left-[30%] right-[30%] top-[calc(50%-12px)] h-px bg-[#fff2f8]" />
+      <div className="absolute left-[30%] right-[30%] top-[calc(50%+12px)] h-px bg-[#fff2f8]" />
+    </div>
+  );
+}
+
 export default function Page({
   initialItems = [],
   initialTrendTags = [],
   initialUpdatedAt = "-",
 }: TopPageClientProps) {
+  const [activeTab, setActiveTab] = useState<"ranking" | "free">("ranking");
   const [items, setItems] = useState<CategoryScore[]>(initialItems);
   const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
   const [trendTags, setTrendTags] = useState<TrendTag[]>(initialTrendTags);
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [likeDate, setLikeDate] = useState("");
   const [likedOffers, setLikedOffers] = useState<Record<string, boolean>>({});
+  const [freeOffers, setFreeOffers] = useState<FreeOffer[]>([]);
+  const [isLoadingFreeOffers, setIsLoadingFreeOffers] = useState(false);
+  const [hasLoadedFreeOffers, setHasLoadedFreeOffers] = useState(false);
 
   useEffect(() => {
     if (initialTrendTags.length === 0) {
@@ -138,6 +163,20 @@ export default function Page({
       })
       .catch(() => {});
   }, [initialItems.length, initialTrendTags.length]);
+
+  useEffect(() => {
+    if (activeTab !== "free" || hasLoadedFreeOffers || isLoadingFreeOffers) return;
+
+    setIsLoadingFreeOffers(true);
+    fetch("/api/free-poikatsu", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : { data: [] }))
+      .then((json) => {
+        setFreeOffers(Array.isArray(json.data) ? json.data : []);
+        setHasLoadedFreeOffers(true);
+      })
+      .catch(() => setHasLoadedFreeOffers(true))
+      .finally(() => setIsLoadingFreeOffers(false));
+  }, [activeTab, hasLoadedFreeOffers, isLoadingFreeOffers]);
 
   useEffect(() => {
     if (typeof window === "undefined" || items.length === 0) return;
@@ -214,10 +253,13 @@ export default function Page({
   };
 
   const scrollToTrendKeywords = () => {
-    document.getElementById("trend-keywords")?.scrollIntoView({
-      behavior: "auto",
-      block: "start",
-    });
+    setActiveTab("ranking");
+    window.setTimeout(() => {
+      document.getElementById("trend-keywords")?.scrollIntoView({
+        behavior: "auto",
+        block: "start",
+      });
+    }, 0);
   };
 
   const trackMoppyClick = async (item: CategoryScore) => {
@@ -371,7 +413,7 @@ export default function Page({
           <button
             type="button"
             onClick={() => trackMoppyClick(item)}
-            className="flex h-12 w-full max-w-[210px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-sm font-black text-white shadow-md transition hover:scale-105"
+            className="flex h-14 w-full max-w-[230px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 text-base font-black text-white shadow-md transition hover:scale-105"
           >
             モッピーで探す
             <span className="ml-2 text-xl leading-none">›</span>
@@ -379,13 +421,149 @@ export default function Page({
 
           <Link
             href={getReviewPath(offerName)}
-            className="flex h-14 w-full max-w-[210px] items-center justify-center rounded-xl border-2 border-pink-200 bg-white px-4 text-xs font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50"
+            className="flex h-11 w-full max-w-[190px] items-center justify-center rounded-xl border-2 border-pink-200 bg-white px-3 text-[11px] font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50"
           >
             もっと検索ワードを見る
             <span className="ml-2 text-base leading-none">›</span>
           </Link>
         </div>
       </article>
+    );
+  };
+
+  const renderFreePanel = () => {
+    return (
+      <main className="min-h-screen bg-[#fff8fb]">
+        <section className="border-b border-pink-100 bg-gradient-to-r from-pink-50 via-white to-orange-50">
+          <div className="mx-auto max-w-[1120px] px-5 py-10 lg:py-14">
+            <h1 className="mt-0 text-5xl font-black leading-tight tracking-tight text-slate-950 lg:text-7xl">
+              <span className="text-pink-600">無料でできる</span>
+              <br />
+              ポイ活特集
+            </h1>
+
+            <p className="mt-6 max-w-[1040px] text-lg font-bold leading-9 text-slate-900 lg:text-xl lg:leading-10">
+              <span className="text-pink-600">商品購入や有料サービスの申し込みではない、</span>
+              無料でできるポイ活をまとめます。
+            </p>
+
+            <div className="mt-10 rounded-[2rem] border border-pink-100 bg-white/95 px-6 py-8 text-center shadow-xl shadow-pink-100/70 lg:px-12 lg:py-10">
+              <div className="inline-flex items-center rounded-full bg-pink-500 px-6 py-2 text-sm font-black text-white shadow-md shadow-pink-200/70 lg:text-base">
+                ポイ活サイト最大手！
+              </div>
+              <h2 className="mt-5 text-4xl font-black leading-tight tracking-tight text-slate-950 lg:text-5xl">
+                モッピーでポイ活を始める
+              </h2>
+              <p className="mx-auto mt-5 max-w-[840px] text-base font-bold leading-8 text-slate-700 lg:text-lg lg:leading-9">
+                はじめての人は、モッピーの
+                <span className="text-pink-600">会員登録（無料）</span>
+                からスタート
+              </p>
+              <a
+                href={MOPPY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mx-auto mt-7 flex min-h-[64px] w-full max-w-[620px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-8 text-lg font-black text-white shadow-xl shadow-pink-200/70 transition hover:scale-105 lg:text-xl"
+              >
+                モッピーでポイ活を始める ›
+              </a>
+              <p className="mt-4 text-xs font-bold leading-6 text-slate-400 lg:text-sm">
+                ※このページには広告・紹介リンクを含みます。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-[1120px] px-5 py-10">
+          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <h2 className="text-4xl font-black leading-tight text-slate-950 lg:text-5xl">
+              <span className="text-orange-400">🔥</span> 無料でできるポイ活一覧
+            </h2>
+            <div className="w-fit rounded-full bg-white px-5 py-3 text-sm font-black text-slate-600 shadow-lg ring-1 ring-slate-100">
+              最終更新：{updatedAt}
+            </div>
+          </div>
+
+          {isLoadingFreeOffers && freeOffers.length === 0 ? (
+            <div className="rounded-[2rem] bg-white p-8 text-center shadow-lg ring-1 ring-pink-100">
+              <p className="text-xl font-black leading-9 text-slate-800">
+                無料ポイ活案件を読み込んでいます。
+              </p>
+            </div>
+          ) : freeOffers.length > 0 ? (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {freeOffers.map((offer) => (
+                <article
+                  key={offer.title}
+                  className="flex min-h-full flex-col overflow-hidden rounded-[1.25rem] bg-white shadow-lg ring-1 ring-pink-100"
+                >
+                  {offer.imageUrl ? (
+                    <img
+                      src={offer.imageUrl}
+                      alt={offer.title}
+                      className="aspect-[1.35/1] w-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <FallbackImage />
+                  )}
+
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-xl font-black leading-snug text-slate-950">
+                        {offer.title}
+                      </h3>
+                      <FreeOfferLikeButton offerName={offer.title} compact />
+                    </div>
+
+                    <p className="mt-3 text-sm font-bold leading-7 text-slate-600">
+                      {offer.description}
+                    </p>
+
+                    <div className="mt-auto pt-5">
+                      <div className="text-sm font-black text-slate-600">
+                        報酬ポイントの目安
+                      </div>
+                      <div className="mt-1 text-3xl font-black text-pink-500">
+                        {offer.rewardText}
+                      </div>
+                    </div>
+
+                    <a
+                      href={offer.url || MOPPY_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 flex min-h-[52px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-center text-base font-black text-white shadow-lg transition hover:scale-105"
+                    >
+                      モッピーで確認
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-[2rem] bg-white p-8 text-center shadow-lg ring-1 ring-pink-100">
+              <p className="text-xl font-black leading-9 text-slate-800">
+                現在、モッピーの無料案件情報を取得できませんでした。
+                時間をおいて再度確認するか、モッピー公式ページで無料案件を探してください。
+              </p>
+              <a
+                href={MOPPY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 inline-flex min-h-[56px] items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-8 text-base font-black text-white shadow-lg transition hover:scale-105"
+              >
+                モッピーで探す
+              </a>
+            </div>
+          )}
+
+          <p className="mt-6 text-center text-xs font-bold leading-6 text-slate-400 lg:text-sm">
+            ※ モッピー上で確認できる情報をもとに表示しています。ポイント数や条件は変わることがあります。
+            申し込み前に必ずモッピーの案件詳細ページで最新条件を確認してください。
+          </p>
+        </section>
+      </main>
     );
   };
 
@@ -429,14 +607,6 @@ export default function Page({
                 <span className="mr-2 text-xl">🔰</span>
                 ポイ活とは？
               </Link>
-
-              <Link
-                href="/free-poikatsu"
-                className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-pink-600 shadow-lg ring-2 ring-pink-200 transition hover:scale-105 hover:bg-pink-50 lg:text-base"
-              >
-                <span className="mr-2 rounded-full bg-yellow-400 px-2 py-1 text-white">0</span>
-                無料でできるポイ活特集
-              </Link>
             </div>
           </div>
 
@@ -453,15 +623,99 @@ export default function Page({
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10">
-        <section
-          id="trend-keywords"
-          className="scroll-mt-6 mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8"
-        >
-          <div className="mb-6">
-            <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-              🔍 いまGoogle検索されているポイ活関連ワード
-            </h2>
+      <div className="mx-auto max-w-[1500px] px-4 pt-6 lg:px-8">
+        <div className="grid gap-2 rounded-[1.35rem] border border-pink-100 bg-white p-2 shadow-lg shadow-pink-100/60 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("ranking")}
+            className={`min-h-[58px] rounded-2xl px-4 text-base font-black transition lg:text-lg ${
+              activeTab === "ranking"
+                ? "bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg shadow-pink-100"
+                : "bg-white text-pink-600 hover:bg-pink-50"
+            }`}
+          >
+            注目ポイ活ランキング
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("free")}
+            className={`min-h-[58px] rounded-2xl px-4 text-base font-black transition lg:text-lg ${
+              activeTab === "free"
+                ? "bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg shadow-pink-100"
+                : "bg-white text-pink-600 hover:bg-pink-50"
+            }`}
+          >
+            無料ポイ活特集
+          </button>
+        </div>
+      </div>
+
+      {activeTab === "ranking" ? (
+        <main className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10">
+          <section
+            id="trend-keywords"
+            className="scroll-mt-6 mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8"
+          >
+            <div className="mb-6">
+              <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
+                🔍 いまGoogle検索されているポイ活関連ワード
+              </h2>
+
+              <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
+                <div className="inline-flex w-fit items-center rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
+                  最終更新：
+                  <span className="ml-2 text-slate-700">{updatedAt}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
+              <div className="flex flex-wrap items-center gap-3">
+                {visibleTrendTags.map((tag) => {
+                  const matchedRanking = findMatchedRanking(tag.word);
+                  const pillClass =
+                    "rounded-full bg-pink-100 px-5 py-3 text-base font-black text-pink-600 underline decoration-2 underline-offset-4 transition hover:scale-105 hover:bg-pink-200 active:scale-95";
+
+                  if (matchedRanking) {
+                    return (
+                      <button
+                        key={tag.word}
+                        type="button"
+                        onClick={() => scrollToRanking(matchedRanking)}
+                        className={pillClass}
+                        title="ランキング内の該当案件へ移動"
+                      >
+                        {tag.word}
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={tag.word}
+                      href={getReviewPath(tag.word)}
+                      className={pillClass}
+                      title="関連ワード詳細ページを見る"
+                    >
+                      {tag.word}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          <div id="ranking-section" className="mt-12 mb-6 scroll-mt-6">
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">🔥</span>
+              <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
+                【
+                <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
+                  AI
+                </span>
+                判定】いま注目されているポイ活ランキング
+              </h2>
+            </div>
 
             <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
               <div className="inline-flex w-fit items-center rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
@@ -471,80 +725,29 @@ export default function Page({
             </div>
           </div>
 
-          <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
-            <div className="flex flex-wrap items-center gap-3">
-              {visibleTrendTags.map((tag) => {
-                const matchedRanking = findMatchedRanking(tag.word);
-                const pillClass =
-                  "rounded-full bg-pink-100 px-5 py-3 text-base font-black text-pink-600 underline decoration-2 underline-offset-4 transition hover:scale-105 hover:bg-pink-200 active:scale-95";
-
-                if (matchedRanking) {
-                  return (
-                    <button
-                      key={tag.word}
-                      type="button"
-                      onClick={() => scrollToRanking(matchedRanking)}
-                      className={pillClass}
-                      title="ランキング内の該当案件へ移動"
-                    >
-                      {tag.word}
-                    </button>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={tag.word}
-                    href={getReviewPath(tag.word)}
-                    className={pillClass}
-                    title="関連ワード詳細ページを見る"
-                  >
-                    {tag.word}
-                  </Link>
-                );
-              })}
+          <section className="mt-6 overflow-hidden rounded-[2rem] bg-white shadow-lg ring-1 ring-pink-100">
+            <div className="divide-y divide-pink-100">
+              {items.slice(0, 50).map((item, index) => renderRankingRow(item, index))}
             </div>
-          </div>
-        </section>
+          </section>
 
-        <div id="ranking-section" className="mt-12 mb-6 scroll-mt-6">
-          <div className="flex items-center gap-3">
-            <span className="text-4xl">🔥</span>
-            <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-              【
-              <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
-                AI
-              </span>
-              判定】いま注目されているポイ活ランキング
-            </h2>
-          </div>
+          <p className="mt-8 text-center text-xs font-bold text-slate-400 lg:text-sm">
+            ※ 本ランキングはAIによる分析結果をもとに作成しています。実際の成果やポイント獲得を保証するものではありません。
+          </p>
+        </main>
+      ) : (
+        renderFreePanel()
+      )}
 
-          <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
-            <div className="inline-flex w-fit items-center rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
-              最終更新：
-              <span className="ml-2 text-slate-700">{updatedAt}</span>
-            </div>
-          </div>
-        </div>
-
-        <section className="mt-6 overflow-hidden rounded-[2rem] bg-white shadow-lg ring-1 ring-pink-100">
-          <div className="divide-y divide-pink-100">
-            {items.slice(0, 50).map((item, index) => renderRankingRow(item, index))}
-          </div>
-        </section>
-
-        <p className="mt-8 text-center text-xs font-bold text-slate-400 lg:text-sm">
-          ※ 本ランキングはAIによる分析結果をもとに作成しています。実際の成果やポイント獲得を保証するものではありません。
-        </p>
-      </main>
-
-      <button
-        type="button"
-        onClick={scrollToTrendKeywords}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-4 text-sm font-black text-white shadow-2xl transition hover:scale-105 active:scale-95 lg:bottom-8 lg:right-8 lg:px-6 lg:text-base"
-      >
-        🔍 話題キーワードへ
-      </button>
+      {activeTab === "ranking" && (
+        <button
+          type="button"
+          onClick={scrollToTrendKeywords}
+          className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-4 text-sm font-black text-white shadow-2xl transition hover:scale-105 active:scale-95 lg:bottom-8 lg:right-8 lg:px-6 lg:text-base"
+        >
+          🔍 話題キーワードへ
+        </button>
+      )}
     </div>
   );
 }
