@@ -61,6 +61,31 @@ header h1 + div {
   width: 100% !important;
 }
 
+header h1 + div + div {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+}
+
+header h1 + div + div > div,
+header h1 + div + div > a {
+  flex-shrink: 0 !important;
+  width: fit-content !important;
+}
+
+header h1 + div + div > a[href="/about-poikatsu"] {
+  padding: 0.65rem 1.1rem !important;
+  font-size: 0.875rem !important;
+  min-height: auto !important;
+}
+
+header h1 + div + div > a[href="/about-poikatsu"] span {
+  font-size: 1rem !important;
+  margin-right: 0.4rem !important;
+}
+
 header > div > div:last-child {
   flex-shrink: 0 !important;
   min-width: 0 !important;
@@ -267,6 +292,10 @@ main article[id^="ranking-"] a[href*="/reviews/"]::after {
     margin-top: 1.25rem !important;
     font-size: 1rem !important;
     line-height: 1.75 !important;
+  }
+
+  header h1 + div + div {
+    flex-wrap: wrap !important;
   }
 
   header img {
