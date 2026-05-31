@@ -67,6 +67,10 @@ const findMatchedScoreItem = (items: ScoreItem[], offerName: string) => {
   );
 };
 
+const compactText = (element: Element) => {
+  return (element.textContent || "").replace(/\s+/g, "").trim();
+};
+
 export default function ClientAdjustments() {
   useEffect(() => {
     const applyAdjustments = () => {
@@ -84,8 +88,8 @@ export default function ClientAdjustments() {
         heroCopy.dataset.copyAdjusted = "true";
       }
 
-      header?.querySelectorAll('a[href="/free-poikatsu"], button').forEach((element) => {
-        const text = (element.textContent || "").replace(/\s+/g, "");
+      header?.querySelectorAll("a, button").forEach((element) => {
+        const text = compactText(element);
         if (text.includes("無料でできるポイ活特集")) {
           element.remove();
         }
@@ -93,8 +97,8 @@ export default function ClientAdjustments() {
 
       const updatedAtBadge = Array.from(header?.querySelectorAll("div") || []).find(
         (element) => {
-          const text = (element.textContent || "").trim();
-          return text.startsWith("最終更新：") && !element.querySelector("div");
+          const text = compactText(element);
+          return text.startsWith("最終更新：") && text.length < 40;
         }
       ) as HTMLElement | undefined;
       const aboutLink = header?.querySelector('a[href="/about-poikatsu"]') as
@@ -104,6 +108,7 @@ export default function ClientAdjustments() {
       if (updatedAtBadge?.parentElement && aboutLink) {
         const group = updatedAtBadge.parentElement as HTMLElement;
         group.style.display = "flex";
+        group.style.flexDirection = "row";
         group.style.flexWrap = "wrap";
         group.style.alignItems = "center";
         group.style.gap = "0.75rem";
@@ -135,7 +140,7 @@ export default function ClientAdjustments() {
       });
 
       firstFreeSection?.querySelectorAll("div").forEach((element) => {
-        const text = (element.textContent || "").replace(/\s+/g, "");
+        const text = compactText(element);
         if (
           text.includes("モッピーでポイ活を始める") &&
           text.includes("広告・紹介リンク")
@@ -180,7 +185,7 @@ export default function ClientAdjustments() {
       const target = event.target;
       if (!(target instanceof Element)) return;
 
-      const text = (target.textContent || "").replace(/\s+/g, "");
+      const text = compactText(target);
       if (text.includes("無料ポイ活特集") || text.includes("無料でできるポイ活特集")) {
         window.setTimeout(applyAdjustments, 100);
         window.setTimeout(applyAdjustments, 500);
@@ -224,7 +229,7 @@ export default function ClientAdjustments() {
       }
     };
 
-    const timers = [0, 500, 1200, 2400].map((delay) =>
+    const timers = [0, 500, 1200, 2400, 4000].map((delay) =>
       window.setTimeout(applyAdjustments, delay)
     );
     document.addEventListener("click", handleMoppyButtonClick, true);
