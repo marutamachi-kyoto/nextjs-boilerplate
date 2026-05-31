@@ -125,6 +125,21 @@ const isFreeOffer = (text: string) => {
   );
 };
 
+const isMoppyPromotionBanner = (
+  title: string,
+  text: string,
+  imageUrl?: string
+) => {
+  const joined = `${title} ${text} ${imageUrl || ""}`;
+  return (
+    joined.includes("累計会員数") ||
+    joined.includes("1400万人") ||
+    joined.includes("内職/副業/お小遣い稼ぎ") ||
+    joined.includes("無料で貯まる") ||
+    joined.includes("エンジョイ盛り沢山")
+  );
+};
+
 const parseMoppyOffers = (html: string, sourceUrl: string) => {
   const offers: FreeOffer[] = [];
   const linkPattern = /<a\b[^>]*href=["']([^"']*(?:detail\.php|\/ad\/detail)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
@@ -140,6 +155,9 @@ const parseMoppyOffers = (html: string, sourceUrl: string) => {
     const title = getTitle(chunk);
     if (!title || title.length < 3) continue;
 
+    const imageUrl = getImageUrl(chunk, sourceUrl);
+    if (isMoppyPromotionBanner(title, text, imageUrl)) continue;
+
     const description = text
       .replace(title, "")
       .replace(/\d{1,3}(,\d{3})*P/g, "")
@@ -154,7 +172,7 @@ const parseMoppyOffers = (html: string, sourceUrl: string) => {
         "無料で始めやすい案件です。ポイント獲得条件をモッピーで確認してから申し込めます。",
       reward,
       rewardText: `${reward.toLocaleString("ja-JP")}P`,
-      imageUrl: getImageUrl(chunk, sourceUrl),
+      imageUrl,
       url: toAbsoluteUrl(href, sourceUrl),
     });
   }
