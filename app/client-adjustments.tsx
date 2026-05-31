@@ -108,23 +108,34 @@ export default function ClientAdjustments() {
 
       Array.from(document.querySelectorAll("main span, main div")).forEach((element) => {
         const text = (element.textContent || "").trim();
-        if (text === "ポイ活サイト最大手！") {
-          element.textContent = "最大手！";
+        if (text === "ポイ活サイト最大手！" || text === "最大手！") {
+          element.textContent = "最大手";
+          (element as HTMLElement).style.display = "inline-flex";
+          (element as HTMLElement).style.width = "fit-content";
+          (element as HTMLElement).style.maxWidth = "fit-content";
+          (element as HTMLElement).style.paddingLeft = "1rem";
+          (element as HTMLElement).style.paddingRight = "1rem";
         }
       });
 
-      const updatedAtBadge = Array.from(header.querySelectorAll("div")).find((element) =>
-        (element.textContent || "").includes("最終更新")
-      );
+      const updatedAtBadge = Array.from(header.querySelectorAll("div")).find((element) => {
+        const text = (element.textContent || "").trim();
+        const childDivCount = element.querySelectorAll("div").length;
+        return text.startsWith("最終更新") && childDivCount === 0;
+      });
       const aboutLink = Array.from(header.querySelectorAll("a")).find((element) =>
         (element.textContent || "").includes("ポイ活とは？")
       );
 
-      if (
-        updatedAtBadge?.parentElement &&
-        aboutLink &&
-        aboutLink.parentElement !== updatedAtBadge.parentElement
-      ) {
+      if (updatedAtBadge?.parentElement && aboutLink) {
+        const group = updatedAtBadge.parentElement as HTMLElement;
+        group.style.display = "flex";
+        group.style.flexWrap = "wrap";
+        group.style.alignItems = "center";
+        group.style.gap = "1rem";
+        group.style.marginTop = "2rem";
+        aboutLink.style.marginTop = "0";
+        aboutLink.style.marginLeft = "0";
         updatedAtBadge.insertAdjacentElement("afterend", aboutLink);
       }
     };
