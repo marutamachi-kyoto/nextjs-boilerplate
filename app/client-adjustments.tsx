@@ -146,15 +146,25 @@ export default function ClientAdjustments() {
 
       freePage.querySelectorAll("div, span").forEach((element) => {
         const text = (element.textContent || "").trim();
-        if (text === "ポイ活サイト最大手！" || text === "最大手！") {
-          element.textContent = "最大手";
+        if (text === "ポイ活サイト最大手！" || text === "最大手！" || text === "最大手") {
+          element.textContent = "ポイ活サイト最大手！";
           const target = element as HTMLElement;
           target.style.display = "inline-flex";
+          target.style.alignItems = "center";
+          target.style.justifyContent = "center";
           target.style.width = "fit-content";
           target.style.maxWidth = "fit-content";
-          target.style.paddingLeft = "0.85rem";
-          target.style.paddingRight = "0.85rem";
+          target.style.marginLeft = "auto";
+          target.style.marginRight = "auto";
+          target.style.paddingLeft = "1.5rem";
+          target.style.paddingRight = "1.5rem";
+          target.style.paddingTop = "0.5rem";
+          target.style.paddingBottom = "0.5rem";
+          target.style.borderRadius = "9999px";
           target.style.whiteSpace = "nowrap";
+          target.style.background = "#ec4899";
+          target.style.color = "#ffffff";
+          target.style.boxShadow = "0 10px 22px rgba(236, 72, 153, 0.28)";
         }
       });
 
