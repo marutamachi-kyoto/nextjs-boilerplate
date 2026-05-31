@@ -96,25 +96,30 @@ export default function ClientAdjustments() {
       });
 
       Array.from(document.querySelectorAll("main div, section div")).forEach((element) => {
+        if (element.getAttribute("data-promo-removed") === "true") return;
         const text = (element.textContent || "").replace(/\s+/g, "");
         if (
           text.includes("ポイ活サイト最大手") &&
           text.includes("モッピーでポイ活を始める") &&
           text.includes("会員登録")
         ) {
+          element.setAttribute("data-promo-removed", "true");
           element.remove();
         }
       });
 
       Array.from(document.querySelectorAll("main span, main div")).forEach((element) => {
+        const htmlElement = element as HTMLElement;
+        if (htmlElement.dataset.labelAdjusted === "true") return;
         const text = (element.textContent || "").trim();
         if (text === "ポイ活サイト最大手！" || text === "最大手！") {
           element.textContent = "最大手";
-          (element as HTMLElement).style.display = "inline-flex";
-          (element as HTMLElement).style.width = "fit-content";
-          (element as HTMLElement).style.maxWidth = "fit-content";
-          (element as HTMLElement).style.paddingLeft = "1rem";
-          (element as HTMLElement).style.paddingRight = "1rem";
+          htmlElement.dataset.labelAdjusted = "true";
+          htmlElement.style.display = "inline-flex";
+          htmlElement.style.width = "fit-content";
+          htmlElement.style.maxWidth = "fit-content";
+          htmlElement.style.paddingLeft = "1rem";
+          htmlElement.style.paddingRight = "1rem";
         }
       });
 
@@ -136,7 +141,9 @@ export default function ClientAdjustments() {
         group.style.marginTop = "2rem";
         aboutLink.style.marginTop = "0";
         aboutLink.style.marginLeft = "0";
-        updatedAtBadge.insertAdjacentElement("afterend", aboutLink);
+        if (aboutLink.previousElementSibling !== updatedAtBadge) {
+          updatedAtBadge.insertAdjacentElement("afterend", aboutLink);
+        }
       }
     };
 
@@ -181,14 +188,13 @@ export default function ClientAdjustments() {
       }
     };
 
-    applyAdjustments();
-
-    const observer = new MutationObserver(applyAdjustments);
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    const timers = [0, 300, 1000].map((delay) =>
+      window.setTimeout(applyAdjustments, delay)
+    );
     document.addEventListener("click", handleMoppyButtonClick, true);
 
     return () => {
-      observer.disconnect();
+      timers.forEach((timer) => window.clearTimeout(timer));
       document.removeEventListener("click", handleMoppyButtonClick, true);
     };
   }, []);
