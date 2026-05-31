@@ -88,47 +88,17 @@ export default function ClientAdjustments() {
         heroCopy.dataset.copyAdjusted = "true";
       }
 
-      header?.querySelectorAll("a, button").forEach((element) => {
+      header?.querySelectorAll("a, button, div, span").forEach((element) => {
         const text = compactText(element);
-        if (text.includes("無料でできるポイ活特集")) {
-          element.remove();
+        if (!text.includes("無料でできるポイ活特集")) return;
+
+        const removable = element.closest("a, button") ||
+          (element instanceof HTMLElement && element.children.length <= 1 ? element : null);
+        if (removable instanceof HTMLElement) {
+          removable.style.display = "none";
+          removable.setAttribute("aria-hidden", "true");
         }
       });
-
-      const updatedAtBadge = Array.from(header?.querySelectorAll("div") || []).find(
-        (element) => {
-          const text = compactText(element);
-          return text.startsWith("最終更新：") && text.length < 40;
-        }
-      ) as HTMLElement | undefined;
-      const aboutLink = header?.querySelector('a[href="/about-poikatsu"]') as
-        | HTMLElement
-        | null;
-
-      if (updatedAtBadge?.parentElement && aboutLink) {
-        const group = updatedAtBadge.parentElement as HTMLElement;
-        group.style.display = "flex";
-        group.style.flexDirection = "row";
-        group.style.flexWrap = "wrap";
-        group.style.alignItems = "center";
-        group.style.gap = "0.75rem";
-        group.style.marginTop = "2rem";
-        aboutLink.style.marginTop = "0";
-        aboutLink.style.marginLeft = "0";
-        aboutLink.style.padding = "0.65rem 1.1rem";
-        aboutLink.style.fontSize = "0.875rem";
-        aboutLink.style.minHeight = "auto";
-        aboutLink.style.width = "fit-content";
-        aboutLink.style.boxShadow = "0 10px 20px rgba(15, 23, 42, 0.08)";
-        const icon = aboutLink.querySelector("span") as HTMLElement | null;
-        if (icon) {
-          icon.style.fontSize = "1rem";
-          icon.style.marginRight = "0.4rem";
-        }
-        if (aboutLink.previousElementSibling !== updatedAtBadge) {
-          updatedAtBadge.insertAdjacentElement("afterend", aboutLink);
-        }
-      }
 
       const freePage = document.querySelector("main.min-h-screen") as HTMLElement | null;
       const isFreePanel = Boolean(freePage?.textContent?.includes("無料でできるポイ活一覧"));
