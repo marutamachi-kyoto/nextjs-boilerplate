@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const MOPPY_ORIGIN = "https://pc.moppy.jp";
+const MOPPY_FETCH_TIMEOUT_MS = 3500;
+const MAX_SEARCH_CANDIDATES = 4;
 
 const isMoppySearchUrl = (url?: string | null) => {
   if (!url) return false;
@@ -82,30 +84,40 @@ const getSearchCandidates = (offerName: string) => {
   const slashParts = offerName.split(/[／/]/).map((part) => normalizeSpaces(part));
   slashParts.forEach(add);
 
-  return Array.from(candidates);
+  return Array.from(candidates).slice(0, MAX_SEARCH_CANDIDATES);
 };
 
 async function resolveDetailUrl(searchUrl: string) {
-  const response = await fetch(searchUrl, {
-    cache: "no-store",
-    headers: {
-      "user-agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36",
-      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), MOPPY_FETCH_TIMEOUT_MS);
 
-  if (!response.ok) return null;
+  try {
+    const response = await fetch(searchUrl, {
+      cache: "no-store",
+      signal: controller.signal,
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36",
+        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    });
 
-  const html = await response.text();
-  const matches = html.matchAll(/href=["']([^"']*\/ad\/detail\.php[^"']*)["']/g);
+    if (!response.ok) return null;
 
-  for (const match of matches) {
-    const detailUrl = toAbsoluteMoppyUrl(match[1]);
-    if (isMoppyDetailUrl(detailUrl)) return detailUrl;
+    const html = await response.text();
+    const matches = html.matchAll(/href=["']([^"']*\/ad\/detail\.php[^"']*)["']/g);
+
+    for (const match of matches) {
+      const detailUrl = toAbsoluteMoppyUrl(match[1]);
+      if (isMoppyDetailUrl(detailUrl)) return detailUrl;
+    }
+
+    return null;
+  } catch (error) {
+    return null;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return null;
 }
 
 export async function GET(request: Request) {
@@ -138,27 +150,18 @@ export async function GET(request: Request) {
     );
   }
 
-  try {
-    for (const searchUrl of searchUrls) {
-      const detailUrl = await resolveDetailUrl(searchUrl);
-      if (detailUrl) {
-        return Response.json(
-          { url: detailUrl, resolved: true, searchUrl },
-          { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
-        );
-      }
+  for (const searchUrl of searchUrls) {
+    const detailUrl = await resolveDetailUrl(searchUrl);
+    if (detailUrl) {
+      return Response.json(
+        { url: detailUrl, resolved: true, searchUrl },
+        { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
+      );
     }
-
-    return Response.json(
-      { url: null, resolved: false, searchUrl: Array.from(searchUrls)[0] },
-      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
-    );
-  } catch (error) {
-    console.error(error);
-
-    return Response.json(
-      { url: null, resolved: false, searchUrl: Array.from(searchUrls)[0] },
-      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
-    );
   }
+
+  return Response.json(
+    { url: null, resolved: false, searchUrl: Array.from(searchUrls)[0] },
+    { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
+  );
 }
