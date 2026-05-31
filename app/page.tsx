@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const BASE_URL = "https://poikatu-ai.vercel.app";
+const BACKFILL_KEYWORD = "モッピー確認済み案件";
 
 type RankingItem = {
   category: string;
@@ -15,6 +16,9 @@ type RankingItem = {
   offer_name?: string;
   reward?: number | null;
   reason?: string;
+  image_url?: string;
+  primary_site_name?: string;
+  primary_site_url?: string;
   updated_at?: string;
 };
 
@@ -23,76 +27,6 @@ type TrendItem = {
   score: number;
   category?: string;
 };
-
-const rewardSourceGuardScript = `
-(() => {
-  if (window.location.pathname !== "/") return;
-
-  const normalizeText = (text) => {
-    return (text || "")
-      .toLowerCase()
-      .replace(/\u3000/g, "")
-      .replace(/\s+/g, "")
-      .replace(/\uff08/g, "(")
-      .replace(/\uff09/g, ")")
-      .replace(/[\u30fb\uff65]/g, "")
-      .replace(/[\u30fc\uff70\u2212]/g, "-")
-      .replace(/[\[\]\u3010\u3011!\uff01?\uff1f\u3002\u3001\u300c\u300d\u300e\u300f()\uff08\uff09]/g, "")
-      .trim();
-  };
-
-  const getOfferName = (item) => item?.offer_name || item?.trend_keyword || item?.category || "";
-  const formatReward = (reward) => {
-    const value = Number(reward);
-    if (!Number.isFinite(value) || value <= 0) return "データが取れませんでした";
-    return value.toLocaleString("ja-JP") + "P";
-  };
-
-  const findRewardValue = (article) => {
-    const label = Array.from(article.querySelectorAll("div")).find((element) => {
-      return (element.textContent || "").trim() === "報酬ポイントの目安";
-    });
-    const rewardContainer = label?.parentElement;
-    return Array.from(rewardContainer?.children || []).find((child) => {
-      const text = child.textContent || "";
-      return child !== label && (text.includes("P") || text.includes("データ"));
-    });
-  };
-
-  const applyScoreRewards = async () => {
-    try {
-      const response = await fetch("/api/score?rewardGuard=" + Date.now(), { cache: "no-store" });
-      const json = await response.json();
-      const items = Array.isArray(json.data) ? json.data : [];
-      const rewardsByName = new Map();
-
-      items.forEach((item) => {
-        const offerName = getOfferName(item);
-        const key = normalizeText(offerName);
-        if (key) rewardsByName.set(key, item.reward);
-      });
-
-      document.querySelectorAll('article[id^="ranking-"]').forEach((article) => {
-        const heading = article.querySelector("h3");
-        const key = normalizeText(heading?.textContent || "");
-        if (!key || !rewardsByName.has(key)) return;
-
-        const rewardValue = findRewardValue(article);
-        const rewardText = formatReward(rewardsByName.get(key));
-        if (rewardValue && rewardValue.textContent !== rewardText) {
-          rewardValue.textContent = rewardText;
-          rewardValue.setAttribute("data-score-reward", "true");
-        }
-      });
-    } catch (error) {}
-  };
-
-  applyScoreRewards();
-  [300, 900, 1800, 3600, 7200, 11000].forEach((delay) => {
-    window.setTimeout(applyScoreRewards, delay);
-  });
-})();
-`;
 
 export const metadata: Metadata = {
   title: "ポイ活おすすめランキング｜モッピー案件をAI判定",
@@ -164,24 +98,77 @@ function formatUpdatedAt(items: RankingItem[]) {
   });
 }
 
+function normalizeSpaces(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function normalizeKey(value: string) {
+  return normalizeSpaces(value)
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[・･]/g, "")
+    .replace(/[ーｰ−]/g, "-")
+    .trim();
+}
+
+function toDisplayKeyword(item: RankingItem) {
+  const trendKeyword = (item.trend_keyword || "").trim();
+  const offerName = (item.offer_name || "").trim();
+
+  if (!trendKeyword || trendKeyword === BACKFILL_KEYWORD) {
+    return offerName;
+  }
+
+  return normalizeSpaces(trendKeyword);
+}
+
+function getReason(item: RankingItem) {
+  if (item.reason) return item.reason;
+
+  const offerName = getOfferName(item);
+  const keyword = toDisplayKeyword(item) || offerName;
+
+  return `${offerName}は、Googleの検索で「${keyword}」も一緒に調べられています。`;
+}
+
 async function getRankings() {
   const { data } = await getSupabase()
     .from("rankings")
-    .select("category, rank, trend_keyword, offer_name, reward, reason, updated_at")
+    .select(
+      "category, rank, trend_keyword, offer_name, reward, reason, image_url, primary_site_name, primary_site_url, updated_at"
+    )
     .order("rank", { ascending: true })
     .limit(50);
 
-  return Array.isArray(data) ? (data as RankingItem[]) : [];
+  return Array.isArray(data)
+    ? (data as RankingItem[]).map((item, index) => ({
+        ...item,
+        rank: item.rank || index + 1,
+        reason: getReason(item),
+      }))
+    : [];
 }
 
-async function getTrendItems() {
-  const { data } = await getSupabase()
-    .from("trends")
-    .select("word, score, category")
-    .order("score", { ascending: false })
-    .limit(50);
+function getTrendItems(rankings: RankingItem[]) {
+  const seen = new Set<string>();
 
-  return Array.isArray(data) ? (data as TrendItem[]) : [];
+  return rankings
+    .map((item, index) => {
+      const word = toDisplayKeyword(item);
+      return {
+        word,
+        score: Math.max(100 - index * 2, 10),
+        category: item.category || "Google検索由来",
+      };
+    })
+    .filter((item) => item.word && normalizeKey(item.word).length >= 2)
+    .filter((item) => {
+      const key = normalizeKey(item.word);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 50) as TrendItem[];
 }
 
 function buildStructuredData(rankings: RankingItem[]) {
@@ -214,7 +201,8 @@ function buildStructuredData(rankings: RankingItem[]) {
 }
 
 export default async function Page() {
-  const [rankings, trendItems] = await Promise.all([getRankings(), getTrendItems()]);
+  const rankings = await getRankings();
+  const trendItems = getTrendItems(rankings);
   const updatedAt = formatUpdatedAt(rankings);
   const structuredData = buildStructuredData(rankings);
 
@@ -225,11 +213,6 @@ export default async function Page() {
         type="application/ld+json"
         strategy="beforeInteractive"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
-      <Script
-        id="ranking-reward-source-guard"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{ __html: rewardSourceGuardScript }}
       />
 
       <section className="sr-only" aria-label="ポイ活おすすめランキングのSEO本文">
@@ -268,7 +251,11 @@ export default async function Page() {
         )}
       </section>
 
-      <TopPageClient />
+      <TopPageClient
+        initialItems={rankings}
+        initialTrendTags={trendItems}
+        initialUpdatedAt={updatedAt}
+      />
     </>
   );
 }
