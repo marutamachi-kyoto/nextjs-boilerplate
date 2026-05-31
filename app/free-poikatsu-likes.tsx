@@ -23,7 +23,15 @@ const getStorageKey = (offerName: string, likeDate: string) => {
   return `poikatu-liked:${likeDate || "today"}:${offerName}`;
 };
 
-export default function FreeOfferLikeButton({ offerName }: { offerName: string }) {
+type FreeOfferLikeButtonProps = {
+  offerName: string;
+  compact?: boolean;
+};
+
+export default function FreeOfferLikeButton({
+  offerName,
+  compact = false,
+}: FreeOfferLikeButtonProps) {
   const [count, setCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [likeDate, setLikeDate] = useState("");
@@ -116,7 +124,11 @@ export default function FreeOfferLikeButton({ offerName }: { offerName: string }
       aria-pressed={liked}
       onClick={toggleLike}
       disabled={isSaving}
-      className={`mt-4 flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl border-2 px-4 text-sm font-black shadow-md transition hover:scale-105 disabled:cursor-wait disabled:opacity-70 ${
+      className={`flex items-center justify-center gap-2 border-2 font-black shadow-md transition hover:scale-105 disabled:cursor-wait disabled:opacity-70 ${
+        compact
+          ? "min-h-8 rounded-full px-3 py-1 text-xs"
+          : "mt-4 min-h-[50px] w-full rounded-2xl px-4 text-sm"
+      } ${
         liked
           ? "border-pink-500 bg-pink-500 text-white shadow-pink-100"
           : "border-pink-300 bg-white text-pink-600 shadow-pink-50 hover:bg-pink-50"
