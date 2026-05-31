@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
+import "./top-tabs-fixes.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://poikatu-ai.vercel.app"),
