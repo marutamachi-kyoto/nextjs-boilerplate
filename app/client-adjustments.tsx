@@ -80,9 +80,19 @@ export default function ClientAdjustments() {
         heroCopy.dataset.copyAdjusted = "true";
       }
 
-      const updatedAtBadge = header?.querySelector("div.mt-8.flex > div") as
-        | HTMLElement
-        | null;
+      header?.querySelectorAll('a[href="/free-poikatsu"], button').forEach((element) => {
+        const text = (element.textContent || "").replace(/\s+/g, "");
+        if (text.includes("無料でできるポイ活特集")) {
+          element.remove();
+        }
+      });
+
+      const updatedAtBadge = Array.from(header?.querySelectorAll("div") || []).find(
+        (element) => {
+          const text = (element.textContent || "").trim();
+          return text.startsWith("最終更新：") && !element.querySelector("div");
+        }
+      ) as HTMLElement | undefined;
       const aboutLink = header?.querySelector('a[href="/about-poikatsu"]') as
         | HTMLElement
         | null;
@@ -93,6 +103,7 @@ export default function ClientAdjustments() {
         group.style.flexWrap = "wrap";
         group.style.alignItems = "center";
         group.style.gap = "1rem";
+        group.style.marginTop = "2rem";
         aboutLink.style.marginTop = "0";
         aboutLink.style.marginLeft = "0";
         if (aboutLink.previousElementSibling !== updatedAtBadge) {
@@ -103,21 +114,20 @@ export default function ClientAdjustments() {
       const freeSection = document.querySelector("main.min-h-screen > section:first-child");
       if (!freeSection) return;
 
-      Array.from(freeSection.querySelectorAll("div")).forEach((element) => {
-        const text = (element.textContent || "").replace(/\s+/g, "");
-        if (
-          text.includes("ポイ活サイト最大手") &&
-          text.includes("モッピーでポイ活を始める") &&
-          text.includes("会員登録")
-        ) {
-          element.remove();
-        }
+      freeSection.querySelectorAll("img, picture").forEach((element) => {
+        (element as HTMLElement).style.display = "none";
       });
     };
 
     const handleMoppyButtonClick = async (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
+
+      const text = (target.textContent || "").replace(/\s+/g, "");
+      if (text.includes("無料ポイ活特集") || text.includes("無料でできるポイ活特集")) {
+        window.setTimeout(applyAdjustments, 100);
+        window.setTimeout(applyAdjustments, 500);
+      }
 
       const button = target.closest("button");
       if (!button || !(button.textContent || "").includes("モッピーで探す")) return;
@@ -156,7 +166,9 @@ export default function ClientAdjustments() {
       }
     };
 
-    const timers = [0, 500].map((delay) => window.setTimeout(applyAdjustments, delay));
+    const timers = [0, 500, 1200].map((delay) =>
+      window.setTimeout(applyAdjustments, delay)
+    );
     document.addEventListener("click", handleMoppyButtonClick, true);
 
     return () => {
