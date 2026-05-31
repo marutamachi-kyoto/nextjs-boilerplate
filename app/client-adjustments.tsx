@@ -71,6 +71,12 @@ const compactText = (element: Element) => {
   return (element.textContent || "").replace(/\s+/g, "").trim();
 };
 
+const hideReactOwnedElement = (element: Element) => {
+  if (!(element instanceof HTMLElement)) return;
+  element.style.display = "none";
+  element.setAttribute("aria-hidden", "true");
+};
+
 export default function ClientAdjustments() {
   useEffect(() => {
     const applyAdjustments = () => {
@@ -79,18 +85,18 @@ export default function ClientAdjustments() {
       const heroCopy = header?.querySelector("h1 + div p") as HTMLElement | null;
       if (heroCopy && heroCopy.dataset.copyAdjusted !== "true") {
         heroCopy.innerHTML =
-          "「Google検索」のデータをもとに、" +
-          '<span class="text-pink-600">いま世間で注目されているポイ活</span>' +
-          "をAIが判定し、" +
-          '<span class="text-pink-600">毎日更新</span>' +
-          "しています" +
-          '<span class="text-[#27313f]">（0:00～1:00頃）</span>';
+          "\u300cGoogle\u691c\u7d22\u300d\u306e\u30c7\u30fc\u30bf\u3092\u3082\u3068\u306b\u3001" +
+          '<span class="text-pink-600">\u3044\u307e\u4e16\u9593\u3067\u6ce8\u76ee\u3055\u308c\u3066\u3044\u308b\u30dd\u30a4\u6d3b</span>' +
+          "\u3092AI\u304c\u5224\u5b9a\u3057\u3001" +
+          '<span class="text-pink-600">\u6bce\u65e5\u66f4\u65b0</span>' +
+          "\u3057\u3066\u3044\u307e\u3059" +
+          '<span class="text-[#27313f]">\uff080:00\uff5e1:00\u9803\uff09</span>';
         heroCopy.dataset.copyAdjusted = "true";
       }
 
       header?.querySelectorAll("a, button, div, span").forEach((element) => {
         const text = compactText(element);
-        if (!text.includes("無料でできるポイ活特集")) return;
+        if (!text.includes("\u7121\u6599\u3067\u3067\u304d\u308b\u30dd\u30a4\u6d3b\u7279\u96c6")) return;
 
         const removable = element.closest("a, button") ||
           (element instanceof HTMLElement && element.children.length <= 1 ? element : null);
@@ -101,28 +107,28 @@ export default function ClientAdjustments() {
       });
 
       const freePage = document.querySelector("main.min-h-screen") as HTMLElement | null;
-      const isFreePanel = Boolean(freePage?.textContent?.includes("無料でできるポイ活一覧"));
+      const isFreePanel = Boolean(freePage?.textContent?.includes("\u7121\u6599\u3067\u3067\u304d\u308b\u30dd\u30a4\u6d3b\u4e00\u89a7"));
       if (!freePage || !isFreePanel) return;
 
       const firstFreeSection = freePage.querySelector("section:first-child");
       firstFreeSection?.querySelectorAll("img, picture").forEach((element) => {
-        (element as HTMLElement).style.display = "none";
+        hideReactOwnedElement(element);
       });
 
       firstFreeSection?.querySelectorAll("div").forEach((element) => {
         const text = compactText(element);
         if (
-          text.includes("モッピーでポイ活を始める") &&
-          text.includes("広告・紹介リンク")
+          text.includes("\u30e2\u30c3\u30d4\u30fc\u3067\u30dd\u30a4\u6d3b\u3092\u59cb\u3081\u308b") &&
+          text.includes("\u5e83\u544a\u30fb\u7d39\u4ecb\u30ea\u30f3\u30af")
         ) {
-          element.remove();
+          hideReactOwnedElement(element);
         }
       });
 
       freePage.querySelectorAll("div, span").forEach((element) => {
         const text = (element.textContent || "").trim();
-        if (text === "ポイ活サイト最大手！" || text === "最大手！" || text === "最大手") {
-          element.textContent = "ポイ活サイト最大手！";
+        if (text === "\u30dd\u30a4\u6d3b\u30b5\u30a4\u30c8\u6700\u5927\u624b\uff01" || text === "\u6700\u5927\u624b\uff01" || text === "\u6700\u5927\u624b") {
+          element.textContent = "\u30dd\u30a4\u6d3b\u30b5\u30a4\u30c8\u6700\u5927\u624b\uff01";
           const target = element as HTMLElement;
           target.style.display = "inline-flex";
           target.style.alignItems = "center";
@@ -145,8 +151,8 @@ export default function ClientAdjustments() {
 
       freePage.querySelectorAll("section article p").forEach((element) => {
         const text = (element.textContent || "").trim();
-        if (text && !text.startsWith("※")) {
-          element.remove();
+        if (text && !text.startsWith("\u203b")) {
+          hideReactOwnedElement(element);
         }
       });
     };
@@ -156,14 +162,14 @@ export default function ClientAdjustments() {
       if (!(target instanceof Element)) return;
 
       const text = compactText(target);
-      if (text.includes("無料ポイ活特集") || text.includes("無料でできるポイ活特集")) {
+      if (text.includes("\u7121\u6599\u30dd\u30a4\u6d3b\u7279\u96c6") || text.includes("\u7121\u6599\u3067\u3067\u304d\u308b\u30dd\u30a4\u6d3b\u7279\u96c6")) {
         window.setTimeout(applyAdjustments, 100);
         window.setTimeout(applyAdjustments, 500);
         window.setTimeout(applyAdjustments, 1200);
       }
 
       const button = target.closest("button");
-      if (!button || !(button.textContent || "").includes("モッピーで探す")) return;
+      if (!button || !(button.textContent || "").includes("\u30e2\u30c3\u30d4\u30fc\u3067\u63a2\u3059")) return;
 
       const article = button.closest("article");
       const offerName = article?.querySelector("h3")?.textContent?.trim();
@@ -186,7 +192,7 @@ export default function ClientAdjustments() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             category: matchedItem?.category || offerName,
-            site_name: "モッピー",
+            site_name: "\u30e2\u30c3\u30d4\u30fc",
           }),
         });
       } catch (error) {}
