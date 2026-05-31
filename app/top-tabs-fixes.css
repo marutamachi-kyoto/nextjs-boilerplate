@@ -13,3 +13,8 @@ main.min-h-screen > section:first-child div.rounded-\[2rem\] h2 {
 main.min-h-screen > section:first-child div.rounded-\[2rem\] p:first-of-type {
   margin-top: 1.5rem !important;
 }
+
+main.min-h-screen article:has(img[src*="/pub/pc/friend/"]),
+main.min-h-screen article:has(img[src*="300x250-1.jpg"]) {
+  display: none !important;
+}
