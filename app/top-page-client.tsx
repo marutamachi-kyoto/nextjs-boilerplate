@@ -13,7 +13,7 @@ type CategoryScore = {
   trend_keyword: string;
   offer_name?: string;
   reward?: number | null;
-  reason: string;
+  reason?: string;
   image_url?: string;
   primary_site_name?: string;
   primary_site_url?: string;
@@ -24,6 +24,12 @@ type TrendTag = {
   word: string;
   score: number;
   category?: string;
+};
+
+type TopPageClientProps = {
+  initialItems?: CategoryScore[];
+  initialTrendTags?: TrendTag[];
+  initialUpdatedAt?: string;
 };
 
 const normalizeText = (text?: string) => {
@@ -50,27 +56,6 @@ const isDirectMoppyUrl = (url?: string) => {
 };
 
 const getRankStyle = (index: number) => {
-  if (index === 0) {
-    return {
-      badge: "from-yellow-300 to-amber-500",
-      card: "from-yellow-50 via-white to-amber-50",
-    };
-  }
-
-  if (index === 1) {
-    return {
-      badge: "from-slate-300 to-slate-500",
-      card: "from-slate-50 via-white to-blue-50",
-    };
-  }
-
-  if (index === 2) {
-    return {
-      badge: "from-orange-400 to-orange-700",
-      card: "from-orange-50 via-white to-rose-50",
-    };
-  }
-
   const pastelCards = [
     "from-pink-50 via-white to-rose-50",
     "from-emerald-50 via-white to-teal-50",
@@ -89,7 +74,7 @@ const getRankStyle = (index: number) => {
     "from-orange-300 to-pink-400",
   ];
 
-  const colorIndex = (index - 3) % pastelCards.length;
+  const colorIndex = index % pastelCards.length;
 
   return {
     badge: pastelBadges[colorIndex],
@@ -97,45 +82,53 @@ const getRankStyle = (index: number) => {
   };
 };
 
-export default function Page() {
-  const [items, setItems] = useState<CategoryScore[]>([]);
-  const [updatedAt, setUpdatedAt] = useState("-");
-  const [trendTags, setTrendTags] = useState<TrendTag[]>([]);
+export default function Page({
+  initialItems = [],
+  initialTrendTags = [],
+  initialUpdatedAt = "-",
+}: TopPageClientProps) {
+  const [items, setItems] = useState<CategoryScore[]>(initialItems);
+  const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
+  const [trendTags, setTrendTags] = useState<TrendTag[]>(initialTrendTags);
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [likeDate, setLikeDate] = useState("");
   const [likedOffers, setLikedOffers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    fetch("/api/trends", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((json) => setTrendTags(json.data || []))
-      .catch(() => {});
+    if (initialTrendTags.length === 0) {
+      fetch("/api/trends", { cache: "no-store" })
+        .then((res) => res.json())
+        .then((json) => setTrendTags(json.data || []))
+        .catch(() => {});
+    }
 
-    fetch("/api/score", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((json) => {
-        const data = json.data || [];
-        setItems(data.slice(0, 50));
+    if (initialItems.length === 0) {
+      fetch("/api/score", { cache: "no-store" })
+        .then((res) => res.json())
+        .then((json) => {
+          const data = json.data || [];
+          setItems(data.slice(0, 50));
 
-        const latestUpdatedAt = data
-          .map((item: CategoryScore) => item.updated_at)
-          .filter(Boolean)
-          .sort()
-          .reverse()[0];
+          const latestUpdatedAt = data
+            .map((item: CategoryScore) => item.updated_at)
+            .filter(Boolean)
+            .sort()
+            .reverse()[0];
 
-        if (latestUpdatedAt) {
-          setUpdatedAt(
-            new Date(latestUpdatedAt).toLocaleString("ja-JP", {
-              year: "numeric",
-              month: "numeric",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          );
-        }
-      })
-      .catch(() => {});
+          if (latestUpdatedAt) {
+            setUpdatedAt(
+              new Date(latestUpdatedAt).toLocaleString("ja-JP", {
+                year: "numeric",
+                month: "numeric",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            );
+          }
+        })
+        .catch(() => {});
+    }
 
     fetch("/api/likes", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : { counts: {}, likeDate: "" }))
@@ -144,7 +137,7 @@ export default function Page() {
         setLikeDate(json.likeDate || "");
       })
       .catch(() => {});
-  }, []);
+  }, [initialItems.length, initialTrendTags.length]);
 
   useEffect(() => {
     if (typeof window === "undefined" || items.length === 0) return;
@@ -351,7 +344,7 @@ export default function Page() {
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h3 className="text-2xl font-black text-slate-900">{offerName}</h3>
-            {renderLikeButton(offerName)}
+            <span className="inline-flex">{renderLikeButton(offerName)}</span>
           </div>
 
           <p className="mt-2 text-sm font-bold leading-7 text-slate-600">
