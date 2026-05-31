@@ -63,10 +63,10 @@ header h1 + div {
 
 header h1 + div + div {
   display: flex !important;
-  flex-direction: row !important;
+  flex-direction: column !important;
   flex-wrap: nowrap !important;
-  align-items: center !important;
-  gap: 0.75rem !important;
+  align-items: flex-start !important;
+  gap: 0.9rem !important;
 }
 
 header h1 + div + div > div,
@@ -100,6 +100,33 @@ header img {
 
 header a[href="/free-poikatsu"] {
   display: none !important;
+}
+
+header + div > div {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid #f9cfe2 !important;
+  border-radius: 1.25rem !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(236, 72, 153, 0.10) !important;
+}
+
+header + div > div > button {
+  min-height: 58px !important;
+  border-radius: 0 !important;
+  border-bottom: 4px solid transparent !important;
+  background: transparent !important;
+  background-image: none !important;
+  color: #64748b !important;
+  box-shadow: none !important;
+}
+
+header + div > div > button.text-white {
+  border-bottom-color: #ec4899 !important;
+  color: #111827 !important;
 }
 
 a[href="/free-poikatsu"] span:first-child {
