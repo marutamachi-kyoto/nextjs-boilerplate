@@ -79,7 +79,9 @@ export default function ClientAdjustments() {
 
       if (heroCopy && heroCopy.getAttribute("data-copy-adjusted") !== "true") {
         heroCopy.innerHTML =
-          "「Google検索」のデータをもとに、いま世間で注目されているポイ活をAIが判定し、" +
+          "「Google検索」のデータをもとに、" +
+          '<span class="text-pink-600">いま世間で注目されているポイ活</span>' +
+          "をAIが判定し、" +
           '<span class="text-pink-600">毎日更新</span>' +
           "しています" +
           '<span class="text-[#27313f]">（0:00～1:00頃）</span>';
@@ -92,6 +94,21 @@ export default function ClientAdjustments() {
           element.remove();
         }
       });
+
+      const updatedAtBadge = Array.from(header.querySelectorAll("div")).find((element) =>
+        (element.textContent || "").includes("最終更新")
+      );
+      const aboutLink = Array.from(header.querySelectorAll("a")).find((element) =>
+        (element.textContent || "").includes("ポイ活とは？")
+      );
+
+      if (
+        updatedAtBadge?.parentElement &&
+        aboutLink &&
+        aboutLink.parentElement !== updatedAtBadge.parentElement
+      ) {
+        updatedAtBadge.insertAdjacentElement("afterend", aboutLink);
+      }
     };
 
     const handleMoppyButtonClick = async (event: MouseEvent) => {
