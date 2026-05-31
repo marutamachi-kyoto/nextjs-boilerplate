@@ -136,9 +136,7 @@ export async function GET() {
   try {
     const rankingResult = await supabase
       .from("rankings")
-      .select(
-        "rank, offer_name, trend_keyword, category, reward, reason, image_url, primary_site_name, primary_site_url, secondary_site_name, secondary_site_url, updated_at"
-      )
+      .select("*")
       .order("rank", { ascending: true })
       .limit(RANKING_LIMIT);
 
