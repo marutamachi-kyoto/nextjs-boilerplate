@@ -35,6 +35,48 @@ body {
   border: 1px solid #ffd4e8;
 }
 
+header > div {
+  align-items: center !important;
+}
+
+header > div > div:first-child {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+header h1,
+header h1 + div,
+header h1 + div p {
+  display: block !important;
+  max-width: 100% !important;
+  position: static !important;
+  white-space: normal !important;
+}
+
+header h1 + div {
+  clear: both !important;
+  width: 100% !important;
+}
+
+header > div > div:last-child {
+  flex-shrink: 0 !important;
+  min-width: 0 !important;
+  position: relative !important;
+  z-index: 0 !important;
+}
+
+header img {
+  display: block !important;
+  position: static !important;
+}
+
+header a[href="/free-poikatsu"] {
+  display: none !important;
+}
+
 a[href="/free-poikatsu"] span:first-child {
   color: transparent !important;
   font-size: 0 !important;
