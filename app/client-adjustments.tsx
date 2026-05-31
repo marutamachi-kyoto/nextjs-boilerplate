@@ -21,10 +21,14 @@ const normalizeText = (value?: string | null) => {
     .trim();
 };
 
-const isDirectMoppyUrl = (url?: string) => {
+const isMoppyOfferUrl = (url?: string) => {
   return Boolean(
     url && url.includes("pc.moppy.jp/") && !url.includes("/entry/invite.php")
   );
+};
+
+const getMoppySearchUrl = (offerName: string) => {
+  return `https://pc.moppy.jp/search/?word=${encodeURIComponent(offerName)}`;
 };
 
 let scoreItemsPromise: Promise<ScoreItem[]> | null = null;
@@ -143,9 +147,9 @@ export default function ClientAdjustments() {
       const openedWindow = window.open("", "_blank");
       const items = await getScoreItems();
       const matchedItem = findMatchedScoreItem(items, offerName);
-      const url = isDirectMoppyUrl(matchedItem?.primary_site_url)
+      const url = isMoppyOfferUrl(matchedItem?.primary_site_url)
         ? matchedItem!.primary_site_url!
-        : MOPPY_INVITE_URL;
+        : getMoppySearchUrl(offerName) || MOPPY_INVITE_URL;
 
       try {
         await fetch("/api/click", {
