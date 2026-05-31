@@ -16,9 +16,6 @@ type RankingItem = {
   offer_name?: string;
   reward?: number | null;
   reason?: string;
-  image_url?: string;
-  primary_site_name?: string;
-  primary_site_url?: string;
   updated_at?: string;
 };
 
@@ -134,9 +131,7 @@ function getReason(item: RankingItem) {
 async function getRankings() {
   const { data } = await getSupabase()
     .from("rankings")
-    .select(
-      "category, rank, trend_keyword, offer_name, reward, reason, image_url, primary_site_name, primary_site_url, updated_at"
-    )
+    .select("category, rank, trend_keyword, offer_name, reward, reason, updated_at")
     .order("rank", { ascending: true })
     .limit(50);
 
