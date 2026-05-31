@@ -130,13 +130,15 @@ const isMoppyPromotionBanner = (
   text: string,
   imageUrl?: string
 ) => {
-  const joined = `${title} ${text} ${imageUrl || ""}`;
+  const joined = `${title} ${text} ${imageUrl || ""}`.toLowerCase();
   return (
     joined.includes("累計会員数") ||
     joined.includes("1400万人") ||
     joined.includes("内職/副業/お小遣い稼ぎ") ||
     joined.includes("無料で貯まる") ||
-    joined.includes("エンジョイ盛り沢山")
+    joined.includes("エンジョイ盛り沢山") ||
+    joined.includes("img.moppy.jp/pub/pc/friend/") ||
+    joined.includes("300x250-1.jpg")
   );
 };
 
