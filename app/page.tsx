@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { createClient } from "@supabase/supabase-js";
+import ClientAdjustments from "./client-adjustments";
 import TopPageClient from "./top-page-client";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,11 @@ type RankingItem = {
   offer_name?: string;
   reward?: number | null;
   reason?: string;
+  image_url?: string;
+  primary_site_name?: string;
+  primary_site_url?: string;
+  secondary_site_name?: string;
+  secondary_site_url?: string;
   updated_at?: string;
 };
 
@@ -131,7 +137,9 @@ function getReason(item: RankingItem) {
 async function getRankings() {
   const { data } = await getSupabase()
     .from("rankings")
-    .select("category, rank, trend_keyword, offer_name, reward, reason, updated_at")
+    .select(
+      "category, rank, trend_keyword, offer_name, reward, reason, image_url, primary_site_name, primary_site_url, secondary_site_name, secondary_site_url, updated_at"
+    )
     .order("rank", { ascending: true })
     .limit(50);
 
@@ -246,6 +254,7 @@ export default async function Page() {
         )}
       </section>
 
+      <ClientAdjustments />
       <TopPageClient
         initialItems={rankings}
         initialTrendTags={trendItems}
