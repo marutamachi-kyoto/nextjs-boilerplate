@@ -95,6 +95,24 @@ export default function ClientAdjustments() {
         }
       });
 
+      Array.from(document.querySelectorAll("main div, section div")).forEach((element) => {
+        const text = (element.textContent || "").replace(/\s+/g, "");
+        if (
+          text.includes("ポイ活サイト最大手") &&
+          text.includes("モッピーでポイ活を始める") &&
+          text.includes("会員登録")
+        ) {
+          element.remove();
+        }
+      });
+
+      Array.from(document.querySelectorAll("main span, main div")).forEach((element) => {
+        const text = (element.textContent || "").trim();
+        if (text === "ポイ活サイト最大手！") {
+          element.textContent = "最大手！";
+        }
+      });
+
       const updatedAtBadge = Array.from(header.querySelectorAll("div")).find((element) =>
         (element.textContent || "").includes("最終更新")
       );
