@@ -22,9 +22,14 @@ const normalizeText = (value?: string | null) => {
 };
 
 const isMoppyOfferUrl = (url?: string) => {
-  return Boolean(
-    url && url.includes("pc.moppy.jp/") && !url.includes("/entry/invite.php")
-  );
+  if (!url) return false;
+
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === "pc.moppy.jp" && parsed.pathname === "/ad/detail.php";
+  } catch {
+    return false;
+  }
 };
 
 const getMoppySearchUrl = (offerName: string) => {
@@ -42,6 +47,24 @@ const getScoreItems = () => {
   }
 
   return scoreItemsPromise;
+};
+
+const resolveMoppyDetailUrl = async (offerName: string, currentUrl?: string) => {
+  if (isMoppyOfferUrl(currentUrl)) return currentUrl!;
+
+  try {
+    const params = new URLSearchParams({ offer: offerName });
+    if (currentUrl) params.set("url", currentUrl);
+
+    const response = await fetch(`/api/moppy-url?${params.toString()}`, {
+      cache: "no-store",
+    });
+    const json = await response.json();
+
+    if (isMoppyOfferUrl(json.url)) return json.url as string;
+  } catch (error) {}
+
+  return getMoppySearchUrl(offerName) || MOPPY_INVITE_URL;
 };
 
 const findMatchedScoreItem = (items: ScoreItem[], offerName: string) => {
@@ -182,9 +205,10 @@ export default function ClientAdjustments() {
       const openedWindow = window.open("", "_blank");
       const items = await getScoreItems();
       const matchedItem = findMatchedScoreItem(items, offerName);
-      const url = isMoppyOfferUrl(matchedItem?.primary_site_url)
-        ? matchedItem!.primary_site_url!
-        : getMoppySearchUrl(offerName) || MOPPY_INVITE_URL;
+      const url = await resolveMoppyDetailUrl(
+        offerName,
+        matchedItem?.primary_site_url
+      );
 
       try {
         await fetch("/api/click", {
