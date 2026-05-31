@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 const MOPPY_URL =
@@ -26,12 +26,6 @@ type TrendTag = {
   category?: string;
 };
 
-type TrendBadge = {
-  icon: string;
-  text: string;
-  className: string;
-};
-
 const normalizeText = (text?: string) => {
   return (text || "")
     .toLowerCase()
@@ -45,83 +39,62 @@ const normalizeText = (text?: string) => {
     .trim();
 };
 
-const normalizeSpaces = (value: string) => value.replace(/\s+/g, " ").trim();
-
-const OFFER_KEYWORD_RULES: Array<[RegExp, string]> = [
-  [/出光カード/i, "出光カード"],
-  [/apollostation|アポロステーション/i, "出光カード"],
-  [/SBI\s*FX|SBI.*FX/i, "SBI FXトレード"],
-  [/SBI.*証券/i, "SBI証券"],
-  [/楽天証券/, "楽天証券"],
-  [/楽天銀行/, "楽天銀行"],
-  [/楽天モバイル/, "楽天モバイル"],
-  [/au\s*ひかり|auひかり/i, "auひかり"],
-  [/ahamo/i, "ahamo"],
-  [/povo/i, "povo"],
-  [/U-?NEXT/i, "U-NEXT"],
-  [/coin\s*together/i, "coin together"],
-  [/JP\s*リターンズ|JPリターンズ/i, "JPリターンズ"],
-  [/プロパティエージェント/, "プロパティエージェント"],
-  [/CREAL/i, "CREAL"],
-  [/チクフル/, "チクフル不動産投資"],
-  [/CAMEL/i, "CAMEL"],
-  [/セカンドオピニオン|不動産会社で相談中/i, "不動産投資 セカンドオピニオン"],
-  [/モバレコ\s*Air|モバレコAir/i, "モバレコAir"],
-  [/ソフトバンク\s*Air|SoftBank\s*Air/i, "ソフトバンクAir"],
-  [/ドコモ\s*mini|ドコモミニ/i, "ドコモmini"],
-  [/グローバル\s*WiFi|グローバルWiFi/i, "グローバルWiFi"],
-  [/コミュファ光/i, "コミュファ光"],
-  [/ビッグローブ光|BIGLOBE光/i, "ビッグローブ光"],
-  [/GMOとくとくBB.*ドコモ光|ドコモ光.*GMOとくとくBB/i, "GMOとくとくBB ドコモ光"],
-  [/おてがる光クロス/i, "おてがる光クロス"],
-  [/ドコモ光/i, "ドコモ光"],
-  [/WiFi革命セット/i, "WiFi革命セット"],
-  [/WiMAX.*5G/i, "WiMAX +5G"],
-  [/FXブロードネット/i, "FXブロードネット"],
-  [/三菱UFJ.*スマート証券.*FX/i, "三菱UFJ eスマート証券 FX"],
-  [/みんなのFX/i, "みんなのFX"],
-  [/LIGHT\s*FX/i, "LIGHT FX"],
-  [/外為どっとコム/i, "外為どっとコム"],
-  [/イオンカードセレクト/i, "イオンカードセレクト"],
-  [/サクページ/i, "サクページ"],
-  [/愛車.*高価買取|車.*買取/i, "車買取"],
-  [/アメリカン.*エキスプレス.*ゴールド.*プリファード/i, "アメリカン・エキスプレス・ゴールド・プリファード・カード"],
-];
-
-const toSearchLikeOfferKeyword = (value?: string) => {
-  const original = normalizeSpaces(value || "");
-  if (!original) return "";
-
-  const matchedRule = OFFER_KEYWORD_RULES.find(([pattern]) => pattern.test(original));
-  if (matchedRule) return matchedRule[1];
-
-  return "";
-};
-
-const isLooseMatch = (left?: string, right?: string) => {
-  const leftKey = normalizeText(left);
-  const rightKey = normalizeText(right);
-
-  if (!leftKey || !rightKey) return false;
-  if (leftKey === rightKey) return true;
-
-  return (
-    leftKey.length >= 3 &&
-    rightKey.length >= 3 &&
-    (leftKey.includes(rightKey) || rightKey.includes(leftKey))
-  );
+const getStorageKey = (offerName: string, likeDate?: string) => {
+  return `poikatu-liked:${likeDate || "today"}:${offerName}`;
 };
 
 const isDirectMoppyUrl = (url?: string) => {
   return Boolean(
-    url &&
-      url.includes("pc.moppy.jp/") &&
-      !url.includes("/entry/invite.php")
+    url && url.includes("pc.moppy.jp/") && !url.includes("/entry/invite.php")
   );
 };
 
-const getStorageKey = (offerName: string, likeDate?: string) => {
-  return `poikatu-liked:${likeDate || "today"}:${offerName}`;
+const getRankStyle = (index: number) => {
+  if (index === 0) {
+    return {
+      badge: "from-yellow-300 to-amber-500",
+      card: "from-yellow-50 via-white to-amber-50",
+    };
+  }
+
+  if (index === 1) {
+    return {
+      badge: "from-slate-300 to-slate-500",
+      card: "from-slate-50 via-white to-blue-50",
+    };
+  }
+
+  if (index === 2) {
+    return {
+      badge: "from-orange-400 to-orange-700",
+      card: "from-orange-50 via-white to-rose-50",
+    };
+  }
+
+  const pastelCards = [
+    "from-pink-50 via-white to-rose-50",
+    "from-emerald-50 via-white to-teal-50",
+    "from-violet-50 via-white to-fuchsia-50",
+    "from-amber-50 via-white to-yellow-50",
+    "from-cyan-50 via-white to-sky-50",
+    "from-orange-50 via-white to-pink-50",
+  ];
+
+  const pastelBadges = [
+    "from-pink-300 to-rose-400",
+    "from-emerald-300 to-teal-400",
+    "from-violet-300 to-fuchsia-400",
+    "from-amber-300 to-orange-400",
+    "from-cyan-300 to-sky-400",
+    "from-orange-300 to-pink-400",
+  ];
+
+  const colorIndex = (index - 3) % pastelCards.length;
+
+  return {
+    badge: pastelBadges[colorIndex],
+    card: pastelCards[colorIndex],
+  };
 };
 
 export default function Page() {
@@ -135,7 +108,8 @@ export default function Page() {
   useEffect(() => {
     fetch("/api/trends", { cache: "no-store" })
       .then((res) => res.json())
-      .then((json) => setTrendTags(json.data || []));
+      .then((json) => setTrendTags(json.data || []))
+      .catch(() => {});
 
     fetch("/api/score", { cache: "no-store" })
       .then((res) => res.json())
@@ -160,7 +134,8 @@ export default function Page() {
             })
           );
         }
-      });
+      })
+      .catch(() => {});
 
     fetch("/api/likes", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : { counts: {}, likeDate: "" }))
@@ -172,8 +147,7 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (items.length === 0) return;
+    if (typeof window === "undefined" || items.length === 0) return;
 
     const nextLiked: Record<string, boolean> = {};
     items.forEach((item) => {
@@ -218,22 +192,21 @@ export default function Page() {
     return `ranking-${index + 1}-${normalizeText(getOfferName(item))}`;
   };
 
-  const getMatchCandidates = (item: CategoryScore) => {
-    const offerName = getOfferName(item);
-    return [
-      offerName,
-      item.trend_keyword,
-      item.category,
-      toSearchLikeOfferKeyword(offerName),
-      toSearchLikeOfferKeyword(item.trend_keyword),
-      toSearchLikeOfferKeyword(item.category),
-    ].filter(Boolean);
-  };
-
   const findMatchedRanking = (tagWord: string) => {
+    const normalizedTagWord = normalizeText(tagWord);
+
     return items.find((item) => {
-      return getMatchCandidates(item).some((value) =>
-        isLooseMatch(value, tagWord)
+      const candidates = [getOfferName(item), item.trend_keyword, item.category]
+        .map((value) => normalizeText(value))
+        .filter(Boolean);
+
+      return candidates.some(
+        (candidate) =>
+          candidate === normalizedTagWord ||
+          (candidate.length >= 3 &&
+            normalizedTagWord.length >= 3 &&
+            (candidate.includes(normalizedTagWord) ||
+              normalizedTagWord.includes(candidate)))
       );
     });
   };
@@ -241,11 +214,7 @@ export default function Page() {
   const scrollToRanking = (item: CategoryScore) => {
     const index = items.findIndex((rankingItem) => rankingItem === item);
     const targetId = getRankingId(item, index);
-    const target = document.getElementById(targetId);
-
-    if (!target) return;
-
-    target.scrollIntoView({
+    document.getElementById(targetId)?.scrollIntoView({
       behavior: "smooth",
       block: "center",
     });
@@ -324,126 +293,10 @@ export default function Page() {
     return `${reward!.toLocaleString("ja-JP")}P`;
   };
 
-  const getTrendBadges = (item: CategoryScore): TrendBadge[] => {
-    const category = item.category;
-
-    if (category.includes("通信")) {
-      return [
-        {
-          icon: "🔥",
-          text: "急上昇",
-          className: "bg-red-50 text-red-500 ring-1 ring-red-100",
-        },
-        {
-          icon: "💰",
-          text: "高還元",
-          className: "bg-yellow-50 text-yellow-700 ring-1 ring-yellow-100",
-        },
-      ];
-    }
-
-    if (category.includes("カード")) {
-      return [
-        {
-          icon: "📈",
-          text: "検索急増",
-          className: "bg-pink-50 text-pink-500 ring-1 ring-pink-100",
-        },
-        {
-          icon: "💰",
-          text: "高単価",
-          className: "bg-orange-50 text-orange-600 ring-1 ring-orange-100",
-        },
-      ];
-    }
-
-    if (category.includes("ゲーム") || category.includes("アプリ")) {
-      return [
-        {
-          icon: "🎮",
-          text: "人気拡大",
-          className: "bg-violet-50 text-violet-600 ring-1 ring-violet-100",
-        },
-        {
-          icon: "🔥",
-          text: "SNS話題",
-          className: "bg-rose-50 text-rose-500 ring-1 ring-rose-100",
-        },
-      ];
-    }
-
-    return [
-      {
-        icon: "📈",
-        text: "トレンド",
-        className: "bg-pink-50 text-pink-500 ring-1 ring-pink-100",
-      },
-    ];
-  };
-
   const getDynamicReason = (item: CategoryScore) => {
     if (item.reason) return item.reason;
     return "検索需要と案件内容の分かりやすさをもとに評価しています。";
   };
-
-  const getRankStyle = (index: number) => {
-    if (index === 0) {
-      return {
-        crown: "👑",
-        badge: "from-yellow-300 to-amber-500",
-        ring: "ring-yellow-100",
-        card: "from-yellow-50 via-white to-amber-50",
-      };
-    }
-
-    if (index === 1) {
-      return {
-        crown: "♛",
-        badge: "from-slate-300 to-slate-500",
-        ring: "ring-slate-100",
-        card: "from-slate-50 via-white to-blue-50",
-      };
-    }
-
-    if (index === 2) {
-      return {
-        crown: "♛",
-        badge: "from-orange-400 to-orange-700",
-        ring: "ring-orange-100",
-        card: "from-orange-50 via-white to-rose-50",
-      };
-    }
-
-    const pastelCards = [
-      "from-pink-50 via-white to-rose-50",
-      "from-emerald-50 via-white to-teal-50",
-      "from-violet-50 via-white to-fuchsia-50",
-      "from-amber-50 via-white to-yellow-50",
-      "from-cyan-50 via-white to-sky-50",
-      "from-orange-50 via-white to-pink-50",
-    ];
-
-    const pastelBadges = [
-      "from-pink-300 to-rose-400",
-      "from-emerald-300 to-teal-400",
-      "from-violet-300 to-fuchsia-400",
-      "from-amber-300 to-orange-400",
-      "from-cyan-300 to-sky-400",
-      "from-orange-300 to-pink-400",
-    ];
-
-    const colorIndex = (index - 3) % pastelCards.length;
-
-    return {
-      crown: "",
-      badge: pastelBadges[colorIndex],
-      ring: "ring-pink-100",
-      card: pastelCards[colorIndex],
-    };
-  };
-
-  const topItems = items.slice(0, 3);
-  const listItems = items.slice(3, 50);
 
   const visibleTrendTags = useMemo(() => {
     const seen = new Set<string>();
@@ -464,51 +317,82 @@ export default function Page() {
         type="button"
         onClick={() => toggleLike(offerName)}
         aria-pressed={isLiked}
-        className={`flex min-h-11 w-full max-w-[260px] items-center justify-center gap-2 rounded-full border-2 px-4 text-sm font-black shadow-md transition hover:scale-105 ${
+        className={`inline-flex min-h-8 items-center gap-2 rounded-full border-2 px-3 py-1 text-xs font-black shadow-sm transition hover:scale-105 ${
           isLiked
             ? "border-transparent bg-gradient-to-r from-pink-500 to-rose-400 text-white"
-            : "border-pink-300 bg-white text-pink-600 hover:bg-pink-50"
+            : "border-pink-200 bg-white text-pink-600 hover:bg-pink-50"
         }`}
       >
         <span>{isLiked ? "♥" : "♡"}</span>
         <span>{isLiked ? "いいね済み" : "いいね！"}</span>
-        <span className="rounded-full bg-white px-2 py-1 text-pink-600">
-          {likeCounts[offerName] || 0}
-        </span>
+        <span>{likeCounts[offerName] || 0}</span>
       </button>
     );
   };
 
-  const renderRankingActions = (item: CategoryScore, offerName: string, top = false) => {
+  const renderRankingRow = (item: CategoryScore, index: number) => {
+    const offerName = getOfferName(item);
+    const rankStyle = getRankStyle(index);
+
     return (
-      <div className="flex flex-col items-center gap-3 lg:items-end">
-        {renderLikeButton(offerName)}
+      <article
+        key={`${item.rank}-${item.offer_name}-${index}`}
+        id={getRankingId(item, index)}
+        className={`scroll-mt-8 grid gap-4 bg-gradient-to-r ${rankStyle.card} p-5 transition hover:scale-[1.01] xl:grid-cols-[58px_1.3fr_220px_210px] xl:items-center xl:gap-5`}
+      >
+        <div className="flex items-center gap-3 lg:justify-center">
+          <div
+            className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${rankStyle.badge} text-lg font-black text-white shadow-lg`}
+          >
+            {index + 1}
+          </div>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => trackMoppyClick(item)}
-          className={`flex w-full items-center justify-center bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-center font-black text-white shadow-xl transition hover:scale-105 ${
-            top
-              ? "h-16 max-w-[260px] rounded-2xl text-xl"
-              : "h-12 max-w-[210px] rounded-xl text-sm"
-          }`}
-        >
-          モッピーで探す
-          <span className="ml-2 text-xl leading-none">›</span>
-        </button>
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h3 className="text-2xl font-black text-slate-900">{offerName}</h3>
+            {renderLikeButton(offerName)}
+          </div>
 
-        <Link
-          href={getReviewPath(offerName)}
-          className={`flex w-full items-center justify-center border-2 border-pink-200 bg-white text-center font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50 ${
-            top
-              ? "h-14 max-w-[260px] rounded-2xl px-5 text-base"
-              : "h-11 max-w-[210px] rounded-xl px-4 text-xs"
-          }`}
-        >
-          もっと検索ワードを見る
-          <span className="ml-2 text-base leading-none">›</span>
-        </Link>
-      </div>
+          <p className="mt-2 text-sm font-bold leading-7 text-slate-600">
+            {getDynamicReason(item)}
+          </p>
+        </div>
+
+        <div className="rounded-2xl bg-white/90 px-4 py-4 text-center shadow-sm ring-1 ring-pink-100">
+          <div className="text-sm font-black text-slate-600 lg:text-base">
+            報酬ポイントの目安
+          </div>
+          <div
+            className={
+              isRewardMissing(item.reward)
+                ? "mt-1 text-xs font-black leading-5 text-pink-500 lg:text-sm"
+                : "mt-1 text-xl font-black text-pink-500 lg:text-2xl"
+            }
+          >
+            {formatReward(item.reward)}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-2 lg:items-end">
+          <button
+            type="button"
+            onClick={() => trackMoppyClick(item)}
+            className="flex h-12 w-full max-w-[210px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-sm font-black text-white shadow-md transition hover:scale-105"
+          >
+            モッピーで探す
+            <span className="ml-2 text-xl leading-none">›</span>
+          </button>
+
+          <Link
+            href={getReviewPath(offerName)}
+            className="flex h-14 w-full max-w-[210px] items-center justify-center rounded-xl border-2 border-pink-200 bg-white px-4 text-xs font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50"
+          >
+            もっと検索ワードを見る
+            <span className="ml-2 text-base leading-none">›</span>
+          </Link>
+        </div>
+      </article>
     );
   };
 
@@ -598,15 +482,8 @@ export default function Page() {
             <div className="flex flex-wrap items-center gap-3">
               {visibleTrendTags.map((tag) => {
                 const matchedRanking = findMatchedRanking(tag.word);
-                const textSizeClass =
-                  tag.score >= 90
-                    ? "text-3xl"
-                    : tag.score >= 70
-                      ? "text-2xl"
-                      : tag.score >= 50
-                        ? "text-xl"
-                        : "text-base";
-                const pillClass = `rounded-full bg-pink-100 px-5 py-3 font-black text-pink-600 underline decoration-2 underline-offset-4 transition hover:scale-105 hover:bg-pink-200 active:scale-95 ${textSizeClass}`;
+                const pillClass =
+                  "rounded-full bg-pink-100 px-5 py-3 text-base font-black text-pink-600 underline decoration-2 underline-offset-4 transition hover:scale-105 hover:bg-pink-200 active:scale-95";
 
                 if (matchedRanking) {
                   return (
@@ -657,142 +534,9 @@ export default function Page() {
           </div>
         </div>
 
-        <section className="space-y-4">
-          {topItems.map((item, index) => {
-            const badges = getTrendBadges(item);
-            const offerName = getOfferName(item);
-            const rankStyle = getRankStyle(index);
-
-            return (
-              <article
-                key={`${item.rank}-${item.offer_name}-${index}`}
-                id={getRankingId(item, index)}
-                className={`scroll-mt-8 rounded-[2rem] bg-gradient-to-r ${rankStyle.card} p-5 shadow-lg ring-1 ${rankStyle.ring} lg:p-7`}
-              >
-                <div className="grid gap-6 lg:grid-cols-[100px_1fr] lg:items-center xl:grid-cols-[120px_1.5fr_260px_260px]">
-                  <div className="flex items-center justify-center lg:block">
-                    <div className="text-center">
-                      <div className="text-4xl leading-none">{rankStyle.crown}</div>
-                      <div
-                        className={`mx-auto mt-1 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br ${rankStyle.badge} text-5xl font-black text-white shadow-xl`}
-                      >
-                        {index + 1}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                      <div className="inline-flex rounded-full bg-white/80 px-5 py-2 text-sm font-black text-pink-500 ring-1 ring-pink-100">
-                        {item.category}
-                      </div>
-
-                      {badges.map((badge) => (
-                        <div
-                          key={badge.text}
-                          className={`inline-flex items-center rounded-full px-4 py-2 text-xs font-black ${badge.className}`}
-                        >
-                          <span className="mr-1">{badge.icon}</span>
-                          {badge.text}
-                        </div>
-                      ))}
-                    </div>
-
-                    <h3 className="text-3xl font-black leading-tight text-slate-900 lg:text-4xl">
-                      {offerName}
-                    </h3>
-
-                    <p className="mt-4 text-base font-bold leading-8 text-slate-600">
-                      {getDynamicReason(item)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-[1.5rem] bg-white/90 px-5 py-5 text-center shadow-sm ring-1 ring-pink-100">
-                    <div className="text-base font-black text-slate-600 lg:text-lg">
-                      報酬ポイントの目安
-                    </div>
-                    <div
-                      className={
-                        isRewardMissing(item.reward)
-                          ? "mt-2 text-sm font-black leading-5 text-pink-500 lg:text-base"
-                          : "mt-2 text-2xl font-black tracking-tight text-pink-500 lg:text-4xl"
-                      }
-                    >
-                      {formatReward(item.reward)}
-                    </div>
-                  </div>
-
-                  {renderRankingActions(item, offerName, true)}
-                </div>
-              </article>
-            );
-          })}
-        </section>
-
         <section className="mt-6 overflow-hidden rounded-[2rem] bg-white shadow-lg ring-1 ring-pink-100">
           <div className="divide-y divide-pink-100">
-            {listItems.map((item, listIndex) => {
-              const index = listIndex + 3;
-              const badges = getTrendBadges(item);
-              const offerName = getOfferName(item);
-              const rankStyle = getRankStyle(index);
-
-              return (
-                <article
-                  key={`${item.rank}-${item.offer_name}-${index}`}
-                  id={getRankingId(item, index)}
-                  className={`scroll-mt-8 grid gap-4 bg-gradient-to-r ${rankStyle.card} p-5 transition hover:scale-[1.01] xl:grid-cols-[58px_170px_1.3fr_220px_210px] xl:items-center xl:gap-5`}
-                >
-                  <div className="flex items-center gap-3 lg:justify-center">
-                    <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${rankStyle.badge} text-lg font-black text-white shadow-lg`}
-                    >
-                      {index + 1}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="inline-flex rounded-full bg-white/80 px-4 py-1.5 text-sm font-black text-pink-500 ring-1 ring-pink-100">
-                      {item.category}
-                    </div>
-
-                    {badges.map((badge) => (
-                      <div
-                        key={badge.text}
-                        className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-black ${badge.className}`}
-                      >
-                        <span className="mr-1">{badge.icon}</span>
-                        {badge.text}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div>
-                    <h3 className="text-2xl font-black text-slate-900">{offerName}</h3>
-                    <p className="mt-2 text-sm font-bold leading-7 text-slate-600">
-                      {getDynamicReason(item)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-white/90 px-4 py-4 text-center shadow-sm ring-1 ring-pink-100">
-                    <div className="text-sm font-black text-slate-600 lg:text-base">
-                      報酬ポイントの目安
-                    </div>
-                    <div
-                      className={
-                        isRewardMissing(item.reward)
-                          ? "mt-1 text-xs font-black leading-5 text-pink-500 lg:text-sm"
-                          : "mt-1 text-xl font-black text-pink-500 lg:text-2xl"
-                      }
-                    >
-                      {formatReward(item.reward)}
-                    </div>
-                  </div>
-
-                  {renderRankingActions(item, offerName)}
-                </article>
-              );
-            })}
+            {items.slice(0, 50).map((item, index) => renderRankingRow(item, index))}
           </div>
         </section>
 
