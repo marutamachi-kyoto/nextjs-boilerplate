@@ -16,12 +16,13 @@ export default function ClientAdjustments() {
         );
       });
 
-      if (heroCopy) {
+      if (heroCopy && heroCopy.getAttribute("data-copy-adjusted") !== "true") {
         heroCopy.innerHTML =
           "「Google検索」のデータをもとに、いま世間で注目されているポイ活をAIが判定し、" +
           '<span class="text-pink-600">毎日更新</span>' +
           "しています" +
           '<span class="text-[#27313f]">（0:00～1:00頃）</span>';
+        heroCopy.setAttribute("data-copy-adjusted", "true");
       }
 
       Array.from(header.querySelectorAll("a, button")).forEach((element) => {
