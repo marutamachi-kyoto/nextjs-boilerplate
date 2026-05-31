@@ -67,10 +67,6 @@ const findMatchedScoreItem = (items: ScoreItem[], offerName: string) => {
   );
 };
 
-const textKey = (element: Element) => {
-  return (element.textContent || "").replace(/\s+/g, "").trim();
-};
-
 export default function ClientAdjustments() {
   useEffect(() => {
     const applyAdjustments = () => {
@@ -88,38 +84,34 @@ export default function ClientAdjustments() {
         heroCopy.dataset.copyAdjusted = "true";
       }
 
-      document.querySelectorAll('a, button').forEach((element) => {
-        const text = textKey(element);
+      header?.querySelectorAll('a[href="/free-poikatsu"], button').forEach((element) => {
+        const text = (element.textContent || "").replace(/\s+/g, "");
         if (text.includes("無料でできるポイ活特集")) {
           element.remove();
         }
       });
 
-      const aboutLink = document.querySelector('header a[href="/about-poikatsu"]') as
+      const updatedAtBadge = Array.from(header?.querySelectorAll("div") || []).find(
+        (element) => {
+          const text = (element.textContent || "").trim();
+          return text.startsWith("最終更新：") && !element.querySelector("div");
+        }
+      ) as HTMLElement | undefined;
+      const aboutLink = header?.querySelector('a[href="/about-poikatsu"]') as
         | HTMLElement
         | null;
-      const updatedAtBadge = Array.from(
-        document.querySelectorAll("header div, header span")
-      ).find((element) => textKey(element).startsWith("最終更新：")) as
-        | HTMLElement
-        | undefined;
 
-      if (updatedAtBadge && aboutLink) {
+      if (updatedAtBadge?.parentElement && aboutLink) {
         const group = updatedAtBadge.parentElement as HTMLElement;
-        if (group) {
-          group.style.display = "flex";
-          group.style.flexWrap = "wrap";
-          group.style.alignItems = "center";
-          group.style.gap = "0.75rem";
-          group.style.marginTop = "2rem";
-          group.style.width = "100%";
-        }
-
+        group.style.display = "flex";
+        group.style.flexWrap = "wrap";
+        group.style.alignItems = "center";
+        group.style.gap = "0.75rem";
+        group.style.marginTop = "2rem";
         aboutLink.style.marginTop = "0";
         aboutLink.style.marginLeft = "0";
         aboutLink.style.padding = "0.65rem 1.1rem";
         aboutLink.style.fontSize = "0.875rem";
-        aboutLink.style.lineHeight = "1.2";
         aboutLink.style.minHeight = "auto";
         aboutLink.style.width = "fit-content";
         aboutLink.style.boxShadow = "0 10px 20px rgba(15, 23, 42, 0.08)";
@@ -134,7 +126,8 @@ export default function ClientAdjustments() {
       }
 
       const freePage = document.querySelector("main.min-h-screen") as HTMLElement | null;
-      if (!freePage) return;
+      const isFreePanel = Boolean(freePage?.textContent?.includes("無料でできるポイ活一覧"));
+      if (!freePage || !isFreePanel) return;
 
       const firstFreeSection = freePage.querySelector("section:first-child");
       firstFreeSection?.querySelectorAll("img, picture").forEach((element) => {
@@ -142,7 +135,7 @@ export default function ClientAdjustments() {
       });
 
       firstFreeSection?.querySelectorAll("div").forEach((element) => {
-        const text = textKey(element);
+        const text = (element.textContent || "").replace(/\s+/g, "");
         if (
           text.includes("モッピーでポイ活を始める") &&
           text.includes("広告・紹介リンク")
@@ -151,7 +144,7 @@ export default function ClientAdjustments() {
         }
       });
 
-      document.querySelectorAll("div, span").forEach((element) => {
+      freePage.querySelectorAll("div, span").forEach((element) => {
         const text = (element.textContent || "").trim();
         if (text === "ポイ活サイト最大手！" || text === "最大手！") {
           element.textContent = "最大手";
@@ -177,7 +170,7 @@ export default function ClientAdjustments() {
       const target = event.target;
       if (!(target instanceof Element)) return;
 
-      const text = textKey(target);
+      const text = (target.textContent || "").replace(/\s+/g, "");
       if (text.includes("無料ポイ活特集") || text.includes("無料でできるポイ活特集")) {
         window.setTimeout(applyAdjustments, 100);
         window.setTimeout(applyAdjustments, 500);
@@ -221,16 +214,13 @@ export default function ClientAdjustments() {
       }
     };
 
-    const timers = [0, 300, 800, 1600, 3000, 5000].map((delay) =>
+    const timers = [0, 500, 1200, 2400].map((delay) =>
       window.setTimeout(applyAdjustments, delay)
     );
-    const observer = new MutationObserver(() => applyAdjustments());
-    observer.observe(document.body, { childList: true, subtree: true });
     document.addEventListener("click", handleMoppyButtonClick, true);
 
     return () => {
       timers.forEach((timer) => window.clearTimeout(timer));
-      observer.disconnect();
       document.removeEventListener("click", handleMoppyButtonClick, true);
     };
   }, []);
