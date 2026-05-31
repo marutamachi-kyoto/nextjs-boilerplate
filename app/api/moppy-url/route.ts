@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const MOPPY_ORIGIN = "https://pc.moppy.jp";
-const MOPPY_FETCH_TIMEOUT_MS = 3500;
-const MAX_SEARCH_CANDIDATES = 4;
+const MOPPY_FETCH_TIMEOUT_MS = 2200;
+const MAX_SEARCH_CANDIDATES = 3;
 
 const isMoppySearchUrl = (url?: string | null) => {
   if (!url) return false;
@@ -150,14 +150,19 @@ export async function GET(request: Request) {
     );
   }
 
-  for (const searchUrl of searchUrls) {
-    const detailUrl = await resolveDetailUrl(searchUrl);
-    if (detailUrl) {
-      return Response.json(
-        { url: detailUrl, resolved: true, searchUrl },
-        { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
-      );
-    }
+  const results = await Promise.all(
+    Array.from(searchUrls).map(async (searchUrl) => ({
+      searchUrl,
+      detailUrl: await resolveDetailUrl(searchUrl),
+    }))
+  );
+  const resolved = results.find((result) => result.detailUrl);
+
+  if (resolved?.detailUrl) {
+    return Response.json(
+      { url: resolved.detailUrl, resolved: true, searchUrl: resolved.searchUrl },
+      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
+    );
   }
 
   return Response.json(
