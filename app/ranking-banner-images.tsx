@@ -98,6 +98,7 @@ const addBannerImage = (article: HTMLElement, offerName: string, imageUrl: strin
 
   const slot = document.createElement("div");
   slot.className = "ranking-banner-slot";
+  slot.dataset.rankingImage = "true";
   slot.style.width = "150px";
   slot.style.maxWidth = "100%";
   slot.style.aspectRatio = "1.35 / 1";
