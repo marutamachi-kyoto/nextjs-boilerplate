@@ -13,8 +13,8 @@ const normalizeText = (value?: string | null) => {
   return (value || "")
     .toLowerCase()
     .replace(/\s+/g, "")
-    .replace(/[「」『』【】\[\]（）()・･]/g, "")
-    .replace(/[ーｰ−]/g, "-")
+    .replace(/[\u300c\u300d\u300e\u300f\u3010\u3011\[\]\uff08\uff09()\u30fb\uff65]/g, "")
+    .replace(/[\u30fc\uff70\u2212]/g, "-")
     .trim();
 };
 
@@ -68,6 +68,14 @@ const fetchBannerImage = async (offerName: string, currentUrl?: string | null) =
   }
 };
 
+const applyArticleLayout = (article: HTMLElement) => {
+  if (window.innerWidth >= 1280) {
+    article.style.gridTemplateColumns = "58px 150px minmax(0, 1fr) 220px 210px";
+  } else {
+    article.style.removeProperty("grid-template-columns");
+  }
+};
+
 const addBannerImage = (article: HTMLElement, offerName: string, imageUrl: string) => {
   if (article.querySelector(".ranking-banner-slot")) return;
 
@@ -76,20 +84,40 @@ const addBannerImage = (article: HTMLElement, offerName: string, imageUrl: strin
 
   const slot = document.createElement("div");
   slot.className = "ranking-banner-slot";
+  slot.style.width = "150px";
+  slot.style.maxWidth = "100%";
+  slot.style.aspectRatio = "1.35 / 1";
+  slot.style.overflow = "hidden";
+  slot.style.borderRadius = "16px";
+  slot.style.background = "#ffffff";
+  slot.style.border = "1px solid #f9cfe2";
+  slot.style.boxShadow = "0 10px 22px rgba(236, 72, 153, 0.12)";
+  slot.style.alignSelf = "center";
+  slot.style.justifySelf = "center";
 
   const image = document.createElement("img");
   image.src = imageUrl;
   image.alt = `${offerName}のバナー画像`;
   image.loading = "lazy";
+  image.style.display = "block";
+  image.style.width = "100%";
+  image.style.height = "100%";
+  image.style.objectFit = "cover";
 
   slot.appendChild(image);
   rankColumn.insertAdjacentElement("afterend", slot);
   article.classList.add("ranking-image-list");
+  applyArticleLayout(article);
 };
 
 export default function RankingBannerImages() {
   useEffect(() => {
     let cancelled = false;
+    const resizedArticles = new Set<HTMLElement>();
+
+    const onResize = () => {
+      resizedArticles.forEach(applyArticleLayout);
+    };
 
     const applyImages = async () => {
       const scoreItems = await fetchScoreItems();
@@ -114,6 +142,7 @@ export default function RankingBannerImages() {
         if (!imageUrl || cancelled) return;
 
         addBannerImage(article, offerName, imageUrl);
+        resizedArticles.add(article);
       });
 
       const concurrency = 4;
@@ -129,12 +158,14 @@ export default function RankingBannerImages() {
       );
     };
 
+    window.addEventListener("resize", onResize);
     const timers = [800, 1800, 3200].map((delay) =>
       window.setTimeout(applyImages, delay)
     );
 
     return () => {
       cancelled = true;
+      window.removeEventListener("resize", onResize);
       timers.forEach((timer) => window.clearTimeout(timer));
     };
   }, []);
