@@ -105,14 +105,7 @@ const blockLegacyBannerImage = (article: HTMLElement) => {
   article.appendChild(marker);
 };
 
-const addBannerImage = (article: HTMLElement, offerName: string, imageUrl: string) => {
-  if (article.querySelector(".ranking-banner-slot")) return;
-
-  const rankColumn = article.firstElementChild;
-  if (!rankColumn) return;
-
-  removeLegacyBannerImage(article);
-
+const createBannerSlot = () => {
   const slot = document.createElement("div");
   slot.className = "ranking-banner-slot";
   slot.dataset.rankingImage = "true";
@@ -127,6 +120,36 @@ const addBannerImage = (article: HTMLElement, offerName: string, imageUrl: strin
   slot.style.alignSelf = "center";
   slot.style.justifySelf = "center";
 
+  return slot;
+};
+
+const insertBannerSlot = (article: HTMLElement, slot: HTMLElement) => {
+  const rankColumn = article.firstElementChild;
+  if (!rankColumn) return false;
+
+  removeLegacyBannerImage(article);
+  rankColumn.insertAdjacentElement("afterend", slot);
+  article.classList.add("ranking-image-list");
+  applyArticleLayout(article);
+  return true;
+};
+
+const addFallbackImage = (article: HTMLElement) => {
+  if (article.querySelector(".ranking-banner-slot")) return;
+
+  const slot = createBannerSlot();
+  slot.classList.add("ranking-image-box", "ranking-fallback-image");
+
+  if (!insertBannerSlot(article, slot)) {
+    blockLegacyBannerImage(article);
+  }
+};
+
+const addBannerImage = (article: HTMLElement, offerName: string, imageUrl: string) => {
+  if (article.querySelector(".ranking-banner-slot")) return;
+
+  const slot = createBannerSlot();
+
   const image = document.createElement("img");
   image.src = imageUrl;
   image.alt = `${offerName}のバナー画像`;
@@ -137,9 +160,7 @@ const addBannerImage = (article: HTMLElement, offerName: string, imageUrl: strin
   image.style.objectFit = "cover";
 
   slot.appendChild(image);
-  rankColumn.insertAdjacentElement("afterend", slot);
-  article.classList.add("ranking-image-list");
-  applyArticleLayout(article);
+  insertBannerSlot(article, slot);
 };
 
 export default function RankingBannerImages() {
@@ -175,7 +196,8 @@ export default function RankingBannerImages() {
         removeLegacyBannerImage(article);
         if (cancelled) return;
         if (!imageUrl) {
-          blockLegacyBannerImage(article);
+          addFallbackImage(article);
+          resizedArticles.add(article);
           return;
         }
 
