@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { createClient } from "@supabase/supabase-js";
 import ClientAdjustments from "./client-adjustments";
+import RankingBannerImages from "./ranking-banner-images";
 import TopPageClient from "./top-page-client";
 
 export const dynamic = "force-dynamic";
@@ -233,6 +234,7 @@ export default async function Page() {
         initialTrendTags={trendItems}
         initialUpdatedAt={updatedAt}
       />
+      <RankingBannerImages />
     </>
   );
 }
