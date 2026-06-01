@@ -38,6 +38,15 @@ const toAbsoluteUrl = (url: string, baseUrl: string) => {
 
 const normalizeSpaces = (value: string) => value.replace(/\s+/g, " ").trim();
 
+const normalizeForMatch = (value?: string | null) => {
+  return (value || "")
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[\u300c\u300d\u300e\u300f\u3010\u3011\[\]\uff08\uff09()\u30fb\uff65]/g, "")
+    .replace(/[\u30fc\uff70\u2212]/g, "-")
+    .trim();
+};
+
 const getSearchCandidates = (offerName: string) => {
   const candidates = new Set<string>();
   const add = (value: string) => {
@@ -48,16 +57,16 @@ const getSearchCandidates = (offerName: string) => {
   add(offerName);
   add(
     offerName
-      .replace(/【[^】]*】/g, " ")
+      .replace(/\u3010[^\u3011]*\u3011/g, " ")
       .replace(/\[[^\]]*\]/g, " ")
-      .replace(/＜[^＞]*＞/g, " ")
+      .replace(/\uff1c[^\uff1e]*\uff1e/g, " ")
       .replace(/<[^>]*>/g, " ")
-      .replace(/※[^※]*※/g, " ")
-      .replace(/★[^\s　]*/g, " ")
-      .replace(/[（(][^）)]*[）)]/g, " ")
+      .replace(/\u203b[^\u203b]*\u203b/g, " ")
+      .replace(/\u2605[^\s\u3000]*/g, " ")
+      .replace(/[\uff08(][^\uff09)]*[\uff09)]/g, " ")
   );
-  add(offerName.split(/[（(]/)[0]);
-  offerName.split(/[／/]/).forEach(add);
+  add(offerName.split(/[\uff08(]/)[0]);
+  offerName.split(/[\uff0f/]/).forEach(add);
 
   return Array.from(candidates).slice(0, MAX_SEARCH_CANDIDATES);
 };
@@ -104,8 +113,8 @@ const resolveDetailUrl = async (offerName: string, providedUrl?: string | null) 
   return null;
 };
 
-const isUsableImageUrl = (url?: string) => {
-  if (!url) return false;
+const isHardBlockedImageUrl = (url?: string) => {
+  if (!url) return true;
 
   const lowerUrl = url.toLowerCase();
   const blockedPatterns = [
@@ -114,26 +123,69 @@ const isUsableImageUrl = (url?: string) => {
     "doubleclick",
     "pixel",
     "1x1",
-    "logo",
-    "icon",
+    "qr.php",
+    "hamburger-menu",
+    "icon_square",
+    "global/common/icon",
+    "global/pc/lp/common",
+    "cashback/logo",
+    "aboutmoppy",
     "loading",
     "noimage",
   ];
 
-  return !blockedPatterns.some((pattern) => lowerUrl.includes(pattern));
+  return blockedPatterns.some((pattern) => lowerUrl.includes(pattern));
 };
 
-const getImageUrl = (html: string, baseUrl: string) => {
-  const imageMatches = [...html.matchAll(/<img\b[^>]+src=["']([^"']+)["'][^>]*>/gi)];
+const getAttribute = (html: string, attributeName: string) => {
+  const match = html.match(new RegExp(`${attributeName}=["']([^"']+)["']`, "i"));
+  return match ? decodeHtmlEntities(match[1]) : "";
+};
 
-  for (const match of imageMatches) {
-    const imageUrl = toAbsoluteUrl(match[1], baseUrl);
-    if (isUsableImageUrl(imageUrl)) return imageUrl;
+const scoreImageCandidate = (tag: string, imageUrl: string, offerName: string) => {
+  if (isHardBlockedImageUrl(imageUrl)) return -1;
+
+  const alt = getAttribute(tag, "alt");
+  const gaLabel = getAttribute(tag, "data-ga-label");
+  const gaAction = getAttribute(tag, "data-ga-action");
+  const normalizedOffer = normalizeForMatch(offerName);
+  const normalizedAlt = normalizeForMatch(alt);
+  const normalizedLabel = normalizeForMatch(gaLabel);
+  let score = 0;
+
+  if (normalizedOffer) {
+    if (normalizedAlt && (normalizedAlt.includes(normalizedOffer) || normalizedOffer.includes(normalizedAlt))) {
+      score += 120;
+    }
+    if (normalizedLabel && (normalizedLabel.includes(normalizedOffer) || normalizedOffer.includes(normalizedLabel))) {
+      score += 120;
+    }
   }
+  if (gaAction.includes("広告バナー")) score += 100;
+  if (imageUrl.includes("h.accesstrade.net")) score += 70;
+  if (imageUrl.includes("/ad/")) score += 30;
+  if (imageUrl.includes("banner")) score += 20;
+  if (imageUrl.includes("global/banners")) score -= 80;
+
+  return score;
+};
+
+const getImageUrl = (html: string, baseUrl: string, offerName: string) => {
+  const imageMatches = [...html.matchAll(/<img\b[^>]+src=["']([^"']+)["'][^>]*>/gi)];
+  const candidates = imageMatches
+    .map((match) => {
+      const tag = match[0];
+      const imageUrl = toAbsoluteUrl(match[1], baseUrl);
+      return { imageUrl, score: scoreImageCandidate(tag, imageUrl, offerName) };
+    })
+    .filter((candidate) => candidate.score >= 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (candidates[0]) return candidates[0].imageUrl;
 
   const ogImage = html.match(/<meta\b[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i)?.[1];
   const absoluteOgImage = ogImage ? toAbsoluteUrl(ogImage, baseUrl) : undefined;
-  if (isUsableImageUrl(absoluteOgImage)) return absoluteOgImage;
+  if (!isHardBlockedImageUrl(absoluteOgImage)) return absoluteOgImage || null;
 
   return null;
 };
@@ -159,7 +211,7 @@ export async function GET(request: Request) {
   }
 
   const html = await fetchText(detailUrl);
-  const imageUrl = html ? getImageUrl(html, detailUrl) : null;
+  const imageUrl = html ? getImageUrl(html, detailUrl, offerName) : null;
 
   return Response.json(
     { imageUrl, url: detailUrl, resolved: Boolean(imageUrl) },
