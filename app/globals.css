@@ -47,6 +47,27 @@ header > div > div:first-child {
   z-index: 1 !important;
 }
 
+header > div > div:first-child > div:first-child {
+  width: fit-content !important;
+  max-width: fit-content !important;
+  padding: 0.7rem 1.25rem !important;
+}
+
+header > div > div:first-child > div:first-child > span:last-child {
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+header > div > div:first-child > div:first-child > span:last-child::before {
+  content: "AI判定中！" !important;
+  color: #db2777 !important;
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+}
+
 header h1,
 header h1 + div,
 header h1 + div p {
@@ -168,6 +189,10 @@ main.min-h-screen > section:nth-of-type(2) > div:first-child > div {
 }
 
 @media (min-width: 1024px) {
+  header > div > div:first-child > div:first-child > span:last-child::before {
+    font-size: 1.1rem !important;
+  }
+
   main.min-h-screen > section:first-child div.rounded-\[2rem\] > div:first-child {
     font-size: 1.22rem !important;
   }
@@ -341,6 +366,14 @@ main article[id^="ranking-"] a[href*="/reviews/"]::after {
   header div.inline-flex {
     padding: 0.65rem 1rem !important;
     font-size: 0.85rem !important;
+  }
+
+  header > div > div:first-child > div:first-child {
+    padding: 0.65rem 1rem !important;
+  }
+
+  header > div > div:first-child > div:first-child > span:last-child::before {
+    font-size: 0.9rem !important;
   }
 
   main.mx-auto {
