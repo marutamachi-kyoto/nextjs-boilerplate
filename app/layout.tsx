@@ -192,7 +192,14 @@ const rankingDisplayScript = `
     return promise;
   };
 
-  const collectHintsFromQueries = async (offerName, queries, limit) => {
+  const cleanRankingSuggestionHint = (suggestion, query) => {
+    const hint = compactSpaces(suggestion);
+    if (!hint) return "";
+    if (normalizeCompact(hint) === normalizeCompact(query)) return "";
+    return hint;
+  };
+
+  const collectHintsFromQueries = async (offerName, queries, limit, keepFullSuggestion) => {
     const hints = [];
     const seen = new Set();
 
@@ -200,7 +207,9 @@ const rankingDisplayScript = `
       const suggestions = await fetchSuggestionQuery(query);
 
       for (const suggestion of suggestions) {
-        const hint = cleanSuggestionHint(suggestion, offerName);
+        const hint = keepFullSuggestion
+          ? cleanRankingSuggestionHint(suggestion, query)
+          : cleanSuggestionHint(suggestion, offerName);
         const key = normalizeCompact(hint);
         if (!hint || seen.has(key)) continue;
 
@@ -214,24 +223,7 @@ const rankingDisplayScript = `
   };
 
   const fetchSuggestionHints = async (offerName, category) => {
-    return collectHintsFromQueries(offerName, getFallbackQueries(offerName, category), 2);
-  };
-
-  const getAdviceFromHints = (hints) => {
-    const text = hints.join(" ").toLowerCase();
-    const advice = [];
-
-    if (containsAny(text, ["料金", "月額", "価格", "費用", "安い", "高い"])) advice.push("料金や月額条件");
-    if (containsAny(text, ["キャンペーン", "特典", "入会", "新規", "クーポン"])) advice.push("キャンペーン内容");
-    if (containsAny(text, ["審査", "発行", "本人確認"])) advice.push("申し込みや審査条件");
-    if (containsAny(text, ["還元", "ポイント", "付与", "反映"])) advice.push("ポイント還元条件");
-    if (containsAny(text, ["評判", "口コミ", "デメリット", "危険", "使えない"])) advice.push("口コミや注意点");
-    if (containsAny(text, ["海外", "手数料", "為替"])) advice.push("海外利用や手数料");
-    if (containsAny(text, ["解約", "退会", "無料", "期間"])) advice.push("無料期間や解約条件");
-    if (containsAny(text, ["乗り換え", "工事", "エリア", "速度"])) advice.push("回線条件や利用エリア");
-    if (containsAny(text, ["口座", "nisa", "取引", "手数料"])) advice.push("口座開設や取引条件");
-
-    return Array.from(new Set(advice)).slice(0, 2);
+    return collectHintsFromQueries(offerName, getFallbackQueries(offerName, category), 2, true);
   };
 
   const buildTrendReason = (offerName, hints) => {
@@ -240,10 +232,8 @@ const rankingDisplayScript = `
     const quotedHints = hints
       .map((hint) => '<span class="trend-reason-keyword">「' + escapeHtml(hint) + '」</span>')
       .join("や");
-    const advice = getAdviceFromHints(hints);
-    const adviceText = advice.length > 0 ? advice.join("、") : "関連条件";
 
-    return escapeHtml(offerName) + "は、Googleの検索動向で" + quotedHints + "も一緒に調べられています。" + adviceText + "を申し込み前に確認したい案件です。";
+    return "Googleの検索で" + quotedHints + "が一緒に調べられています。";
   };
 
   const buildReviewPoint = (offerName, hint, type, index) => {
