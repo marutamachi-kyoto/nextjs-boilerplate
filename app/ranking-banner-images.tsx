@@ -90,11 +90,28 @@ const applyArticleLayout = (article: HTMLElement) => {
   }
 };
 
+const removeLegacyBannerImage = (article: HTMLElement) => {
+  article
+    .querySelectorAll<HTMLElement>('[data-ranking-image="true"]:not(.ranking-banner-slot)')
+    .forEach((element) => element.remove());
+};
+
+const blockLegacyBannerImage = (article: HTMLElement) => {
+  if (article.querySelector('[data-ranking-image="true"]')) return;
+
+  const marker = document.createElement("span");
+  marker.dataset.rankingImage = "true";
+  marker.hidden = true;
+  article.appendChild(marker);
+};
+
 const addBannerImage = (article: HTMLElement, offerName: string, imageUrl: string) => {
   if (article.querySelector(".ranking-banner-slot")) return;
 
   const rankColumn = article.firstElementChild;
   if (!rankColumn) return;
+
+  removeLegacyBannerImage(article);
 
   const slot = document.createElement("div");
   slot.className = "ranking-banner-slot";
@@ -155,7 +172,12 @@ export default function RankingBannerImages() {
           offerName,
           matchedItem?.primary_site_url
         );
-        if (!imageUrl || cancelled) return;
+        removeLegacyBannerImage(article);
+        if (cancelled) return;
+        if (!imageUrl) {
+          blockLegacyBannerImage(article);
+          return;
+        }
 
         addBannerImage(article, offerName, imageUrl);
         resizedArticles.add(article);
