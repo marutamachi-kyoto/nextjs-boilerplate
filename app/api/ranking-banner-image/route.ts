@@ -4,6 +4,7 @@ export const revalidate = 0;
 const MOPPY_ORIGIN = "https://pc.moppy.jp";
 const MOPPY_FETCH_TIMEOUT_MS = 3500;
 const MAX_SEARCH_CANDIDATES = 3;
+const MIN_IMAGE_SCORE = 100;
 
 const isMoppyDetailUrl = (url?: string | null) => {
   if (!url) return false;
@@ -178,7 +179,7 @@ const getImageUrl = (html: string, baseUrl: string, offerName: string) => {
       const imageUrl = toAbsoluteUrl(match[1], baseUrl);
       return { imageUrl, score: scoreImageCandidate(tag, imageUrl, offerName) };
     })
-    .filter((candidate) => candidate.score >= 0)
+    .filter((candidate) => candidate.score >= MIN_IMAGE_SCORE)
     .sort((a, b) => b.score - a.score);
 
   if (candidates[0]) return candidates[0].imageUrl;
