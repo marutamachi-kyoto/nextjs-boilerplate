@@ -9,6 +9,8 @@ type ScoreItem = {
   primary_site_url?: string | null;
 };
 
+const BANNER_LOOKUP_VERSION = "20260601-offer-banners-v2";
+
 const normalizeText = (value?: string | null) => {
   return (value || "")
     .toLowerCase()
@@ -54,7 +56,10 @@ const fetchScoreItems = async () => {
 };
 
 const fetchBannerImage = async (offerName: string, currentUrl?: string | null) => {
-  const params = new URLSearchParams({ offer: offerName });
+  const params = new URLSearchParams({
+    offer: offerName,
+    v: BANNER_LOOKUP_VERSION,
+  });
   if (currentUrl) params.set("url", currentUrl);
 
   try {
