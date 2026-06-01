@@ -10,6 +10,7 @@ type ScoreItem = {
 };
 
 const BANNER_LOOKUP_VERSION = "20260601-offer-banners-v2";
+const SCORE_LOOKUP_TIMEOUT_MS = 1800;
 
 const normalizeText = (value?: string | null) => {
   return (value || "")
@@ -53,6 +54,13 @@ const fetchScoreItems = async () => {
   } catch {
     return [];
   }
+};
+
+const fetchScoreItemsWithTimeout = async () => {
+  return Promise.race<ScoreItem[]>([
+    fetchScoreItems(),
+    new Promise((resolve) => window.setTimeout(() => resolve([]), SCORE_LOOKUP_TIMEOUT_MS)),
+  ]);
 };
 
 const fetchBannerImage = async (offerName: string, currentUrl?: string | null) => {
@@ -125,12 +133,13 @@ export default function RankingBannerImages() {
     };
 
     const applyImages = async () => {
-      const scoreItems = await fetchScoreItems();
-      if (cancelled) return;
-
       const articles = Array.from(
         document.querySelectorAll<HTMLElement>('article[id^="ranking-"]')
       ).slice(0, 50);
+      if (!articles.length) return;
+
+      const scoreItems = await fetchScoreItemsWithTimeout();
+      if (cancelled) return;
 
       const queue = articles.map((article) => async () => {
         if (cancelled || article.dataset.bannerChecked === "true") return;
@@ -164,7 +173,7 @@ export default function RankingBannerImages() {
     };
 
     window.addEventListener("resize", onResize);
-    const timers = [800, 1800, 3200].map((delay) =>
+    const timers = [500, 1400, 2800, 5000].map((delay) =>
       window.setTimeout(applyImages, delay)
     );
 
