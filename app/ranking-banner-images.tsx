@@ -57,10 +57,11 @@ const fetchScoreItems = async () => {
 };
 
 const fetchScoreItemsWithTimeout = async () => {
-  return Promise.race<ScoreItem[]>([
-    fetchScoreItems(),
-    new Promise((resolve) => window.setTimeout(() => resolve([]), SCORE_LOOKUP_TIMEOUT_MS)),
-  ]);
+  const timeoutPromise: Promise<ScoreItem[]> = new Promise((resolve) => {
+    window.setTimeout(() => resolve([]), SCORE_LOOKUP_TIMEOUT_MS);
+  });
+
+  return Promise.race([fetchScoreItems(), timeoutPromise]);
 };
 
 const fetchBannerImage = async (offerName: string, currentUrl?: string | null) => {
