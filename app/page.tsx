@@ -3,6 +3,7 @@ import Script from "next/script";
 import { createClient } from "@supabase/supabase-js";
 import ClientAdjustments from "./client-adjustments";
 import RankingBannerImages from "./ranking-banner-images";
+import RankingRelatedReasons from "./ranking-related-reasons";
 import TopPageClient from "./top-page-client";
 import TrendKeywordJumps from "./trend-keyword-jumps";
 
@@ -134,17 +135,55 @@ function getMatchTerms(item: DisplayRankingItem) {
   );
 }
 
+const TREND_TARGET_RULES = [
+  { wordKeys: ["sbi", "nisa"], targetKeys: ["sbi"] },
+  { wordKeys: ["amazon"], targetKeys: ["amazon"] },
+  { wordKeys: ["u-next", "unext"], targetKeys: ["u-next", "unext"] },
+  { wordKeys: ["paypay", "aupay", "au"], targetKeys: ["paypay", "aupay", "au"] },
+  { wordKeys: ["moppy", "\u30e2\u30c3\u30d4\u30fc"], targetKeys: ["moppy", "\u30e2\u30c3\u30d4\u30fc"] },
+  { wordKeys: ["mercari", "\u30e1\u30eb\u30ab\u30ea", "\u30e1\u30eb\u30ab\u30fc\u30c9"], targetKeys: ["mercari", "\u30e1\u30eb\u30ab\u30ea", "\u30e1\u30eb\u30ab\u30fc\u30c9"] },
+  { wordKeys: ["wifi", "wimax"], targetKeys: ["wifi", "wimax"] },
+  { wordKeys: ["fx"], targetKeys: ["fx"] },
+  { wordKeys: ["jcb"], targetKeys: ["jcb"] },
+  { wordKeys: ["dmm"], targetKeys: ["dmm"] },
+  { wordKeys: ["rakuten", "\u697d\u5929"], targetKeys: ["rakuten", "\u697d\u5929"] },
+  { wordKeys: ["olive"], targetKeys: ["olive"] },
+  { wordKeys: ["ahamo"], targetKeys: ["ahamo"] },
+  { wordKeys: ["povo"], targetKeys: ["povo"] },
+  { wordKeys: ["chocozap"], targetKeys: ["chocozap"] },
+];
+
+function findRuleTarget(word: string, rankings: DisplayRankingItem[]) {
+  const trendKey = normalizeKey(word);
+  const matchedRule = TREND_TARGET_RULES.find((rule) =>
+    rule.wordKeys.some((key) => trendKey.includes(normalizeKey(key)))
+  );
+
+  if (!matchedRule) return null;
+
+  return (
+    rankings.find((item) => {
+      const terms = getMatchTerms(item);
+      return matchedRule.targetKeys.some((key) => {
+        const targetKey = normalizeKey(key);
+        return terms.some((term) => term.includes(targetKey));
+      });
+    }) || null
+  );
+}
+
 function findTrendTarget(word: string, rankings: DisplayRankingItem[]) {
   const trendKey = normalizeKey(word);
   if (trendKey.length < 2) return null;
 
-  return (
+  const directMatch =
     rankings.find((item) =>
       getMatchTerms(item).some((term) => {
         return trendKey.includes(term) || term.includes(trendKey);
       })
-    ) || null
-  );
+    ) || null;
+
+  return directMatch || findRuleTarget(word, rankings);
 }
 
 function getOfferName(item: RankingItem) {
@@ -302,6 +341,7 @@ export default async function Page() {
         initialUpdatedAt={updatedAt}
       />
       <TrendKeywordJumps />
+      <RankingRelatedReasons />
       <RankingBannerImages />
     </>
   );
