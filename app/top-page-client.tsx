@@ -650,8 +650,12 @@ export default function Page({
         </div>
       </div>
 
-      {activeTab === "ranking" ? (
-        <main className="mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10">
+      <main
+        className={`mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10 ${
+          activeTab === "ranking" ? "" : "hidden"
+        }`}
+        aria-hidden={activeTab !== "ranking"}
+      >
           <section
             id="trend-keywords"
             className="scroll-mt-6 mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8"
@@ -735,9 +739,8 @@ export default function Page({
             ※ 本ランキングはAIによる分析結果をもとに作成しています。実際の成果やポイント獲得を保証するものではありません。
           </p>
         </main>
-      ) : (
-        renderFreePanel()
-      )}
+
+      {activeTab === "free" && renderFreePanel()}
 
       {activeTab === "ranking" && (
         <button
