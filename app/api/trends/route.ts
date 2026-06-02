@@ -113,6 +113,25 @@ const findTrendTarget = (word: string, rankings: RankingRow[]) => {
   return directMatch || findRuleTarget(word, rankings);
 };
 
+const findFallbackTarget = (word: string, rankings: RankingRow[], index: number) => {
+  if (rankings.length === 0) return null;
+
+  const trendKey = normalizeKey(word);
+  const categoryTarget =
+    rankings.find((item) => {
+      const terms = getMatchTerms(item);
+      if (/[信長三国戦剣英雄王国]/.test(word)) {
+        return terms.some((term) => /game|ゲーム|戦|三国|信長|剣|英雄|王国/.test(term));
+      }
+      if (trendKey.includes("card") || word.includes("カード")) {
+        return terms.some((term) => term.includes("card") || term.includes("カード"));
+      }
+      return false;
+    }) || null;
+
+  return categoryTarget || rankings[index % rankings.length];
+};
+
 export async function GET() {
   try {
     const [trendResult, rankingResult] = await Promise.all([
@@ -135,9 +154,10 @@ export async function GET() {
     const seen = new Set<string>();
 
     const words = ((trendResult.data || []) as TrendRow[])
-      .map((item) => {
+      .map((item, index) => {
         const word = normalizeSpaces(String(item.word || ""));
-        const target = findTrendTarget(word, rankings);
+        const target =
+          findTrendTarget(word, rankings) || findFallbackTarget(word, rankings, index);
 
         return {
           word,
