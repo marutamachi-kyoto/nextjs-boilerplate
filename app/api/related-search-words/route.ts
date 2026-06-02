@@ -136,6 +136,34 @@ const shouldUseSuggestion = (word: string, searchKeyword: string) => {
   );
 };
 
+const getMojibakeScore = (value: string) => {
+  const matches = value.match(/[�繧縺譁繝莨隱]/g);
+  return matches ? matches.length : 0;
+};
+
+const parseSuggestResponse = (buffer: ArrayBuffer) => {
+  const candidates = ["utf-8", "shift_jis"]
+    .map((encoding) => {
+      try {
+        const text = new TextDecoder(encoding).decode(buffer);
+        const json = JSON.parse(text);
+        const suggestions = Array.isArray(json?.[1]) ? (json[1] as string[]) : [];
+
+        return {
+          suggestions,
+          score: getMojibakeScore(suggestions.join("")),
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter((candidate): candidate is { suggestions: string[]; score: number } =>
+      Boolean(candidate)
+    );
+
+  return candidates.sort((a, b) => a.score - b.score)[0]?.suggestions || [];
+};
+
 const getSearchKeyword = (item: RankingItem) => {
   const keyword = (item.trend_keyword || "").trim();
   const offerKeyword = toSearchLikeOfferKeyword(getOfferName(item));
@@ -185,9 +213,7 @@ const getRelatedSearchWords = async (searchKeyword: string) => {
     if (!response.ok) return fallbackWords;
 
     const buffer = await response.arrayBuffer();
-    const text = new TextDecoder("shift_jis").decode(buffer);
-    const json = JSON.parse(text);
-    const suggestions = Array.isArray(json?.[1]) ? (json[1] as string[]) : [];
+    const suggestions = parseSuggestResponse(buffer);
     const words = suggestions
       .map((word) => word.trim())
       .filter((word) => shouldUseSuggestion(word, searchKeyword));
