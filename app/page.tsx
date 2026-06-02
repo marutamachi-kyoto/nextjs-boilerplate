@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import ClientAdjustments from "./client-adjustments";
 import RankingBannerImages from "./ranking-banner-images";
 import TopPageClient from "./top-page-client";
+import TrendKeywordJumps from "./trend-keyword-jumps";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -45,6 +46,7 @@ type TrendItem = {
   word: string;
   score: number;
   category?: string;
+  target_offer_name?: string;
 };
 
 export const metadata: Metadata = {
@@ -96,6 +98,53 @@ function normalizeKey(value: string) {
     .replace(/[・･]/g, "")
     .replace(/[ーｰ−]/g, "-")
     .trim();
+}
+
+function getMatchTerms(item: DisplayRankingItem) {
+  const text = [
+    item.offer_name,
+    item.trend_keyword,
+    item.category,
+    item.primary_site_name,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const cleaned = normalizeSpaces(
+    text
+      .replace(/【[^】]*】/g, " ")
+      .replace(/\[[^\]]*\]/g, " ")
+      .replace(/（[^）]*）/g, " ")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/[「」『』]/g, " ")
+  );
+
+  return Array.from(
+    new Set(
+      [
+        item.offer_name,
+        item.trend_keyword,
+        item.category,
+        cleaned,
+        ...cleaned.split(/[|｜／/、。!！?？\s]+/),
+      ]
+        .map((value) => normalizeKey(value || ""))
+        .filter((value) => value.length >= 2)
+    )
+  );
+}
+
+function findTrendTarget(word: string, rankings: DisplayRankingItem[]) {
+  const trendKey = normalizeKey(word);
+  if (trendKey.length < 2) return null;
+
+  return (
+    rankings.find((item) =>
+      getMatchTerms(item).some((term) => {
+        return trendKey.includes(term) || term.includes(trendKey);
+      })
+    ) || null
+  );
 }
 
 function getOfferName(item: RankingItem) {
@@ -171,15 +220,33 @@ async function getRankings() {
   return (data as RankingItem[]).map(formatRankingItem);
 }
 
-function getTrendItems(rankings: DisplayRankingItem[]) {
+async function getTrendItems(rankings: DisplayRankingItem[]) {
   const seen = new Set<string>();
 
-  return rankings
-    .map((item, index) => ({
-      word: item.trend_keyword || item.offer_name || item.category,
-      score: Math.max(100 - index * 2, 10),
-      category: item.category || "Google検索由来",
-    }))
+  const { data, error } = await getSupabase()
+    .from("trends")
+    .select("word, score, category")
+    .order("score", { ascending: false })
+    .limit(100);
+
+  if (error || !Array.isArray(data)) {
+    if (error) console.error(error);
+    return [];
+  }
+
+  return data
+    .map((item) => {
+      const word = normalizeSpaces(String(item.word || ""));
+      const target = findTrendTarget(word, rankings);
+
+      return {
+        word,
+        score: Number(item.score || 0),
+        category: String(item.category || "Googleトレンド由来"),
+        target_offer_name: target?.offer_name,
+      };
+    })
+    .filter((item) => item.target_offer_name)
     .filter((item) => item.word && normalizeKey(item.word).length >= 2)
     .filter((item) => {
       const key = normalizeKey(item.word);
@@ -216,7 +283,7 @@ function buildStructuredData(rankings: DisplayRankingItem[]) {
 
 export default async function Page() {
   const rankings = await getRankings();
-  const trendItems = getTrendItems(rankings);
+  const trendItems = await getTrendItems(rankings);
   const updatedAt = formatUpdatedAt(rankings);
   const structuredData = buildStructuredData(rankings);
 
@@ -234,6 +301,7 @@ export default async function Page() {
         initialTrendTags={trendItems}
         initialUpdatedAt={updatedAt}
       />
+      <TrendKeywordJumps />
       <RankingBannerImages />
     </>
   );

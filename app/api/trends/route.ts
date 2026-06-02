@@ -9,11 +9,17 @@ const supabase = createClient(
 const TREND_LIMIT = 50;
 const BACKFILL_KEYWORD = "モッピー確認済み案件";
 
-type RankingTrendRow = {
-  trend_keyword?: string | null;
-  offer_name?: string | null;
-  final_score?: number | null;
+type TrendRow = {
+  word?: string | null;
+  score?: number | null;
   category?: string | null;
+};
+
+type RankingRow = {
+  offer_name?: string | null;
+  trend_keyword?: string | null;
+  category?: string | null;
+  primary_site_name?: string | null;
 };
 
 const normalizeSpaces = (value: string) => value.replace(/\s+/g, " ").trim();
@@ -26,173 +32,91 @@ const normalizeKey = (value: string) =>
     .replace(/[ーｰ−]/g, "-")
     .trim();
 
-const BROAD_SEARCH_PREFIXES = [
-  "ポイ活",
-  "ポイントサイト",
-  "モッピー",
-  "無料 ポイ活",
-  "無料でできる ポイ活",
-  "お金をかけない ポイ活",
-];
-
-const OFFER_KEYWORD_RULES: Array<[RegExp, string]> = [
-  [/出光カード/i, "出光カード"],
-  [/apollostation|アポロステーション/i, "出光カード"],
-  [/SBI\s*FX|SBI.*FX/i, "SBI FXトレード"],
-  [/SBI.*証券/i, "SBI証券"],
-  [/楽天証券/, "楽天証券"],
-  [/楽天銀行/, "楽天銀行"],
-  [/楽天モバイル/, "楽天モバイル"],
-  [/au\s*ひかり|auひかり/i, "auひかり"],
-  [/ahamo/i, "ahamo"],
-  [/povo/i, "povo"],
-  [/U-?NEXT/i, "U-NEXT"],
-  [/coin\s*together/i, "coin together"],
-  [/JP\s*リターンズ|JPリターンズ/i, "JPリターンズ"],
-  [/プロパティエージェント/, "プロパティエージェント"],
-  [/CREAL/i, "CREAL"],
-  [/チクフル/, "チクフル不動産投資"],
-  [/CAMEL/i, "CAMEL"],
-  [/セカンドオピニオン|不動産会社で相談中/i, "不動産投資 セカンドオピニオン"],
-  [/モバレコ\s*Air|モバレコAir/i, "モバレコAir"],
-  [/ソフトバンク\s*Air|SoftBank\s*Air/i, "ソフトバンクAir"],
-  [/ドコモ\s*mini|ドコモミニ/i, "ドコモmini"],
-  [/グローバル\s*WiFi|グローバルWiFi/i, "グローバルWiFi"],
-  [/コミュファ光/i, "コミュファ光"],
-  [/ビッグローブ光|BIGLOBE光/i, "ビッグローブ光"],
-  [/GMOとくとくBB.*ドコモ光|ドコモ光.*GMOとくとくBB/i, "GMOとくとくBB ドコモ光"],
-  [/おてがる光クロス/i, "おてがる光クロス"],
-  [/ドコモ光/i, "ドコモ光"],
-  [/WiFi革命セット/i, "WiFi革命セット"],
-  [/WiMAX.*5G/i, "WiMAX +5G"],
-  [/FXブロードネット/i, "FXブロードネット"],
-  [/三菱UFJ.*スマート証券.*FX/i, "三菱UFJ eスマート証券 FX"],
-  [/みんなのFX/i, "みんなのFX"],
-  [/LIGHT\s*FX/i, "LIGHT FX"],
-  [/外為どっとコム/i, "外為どっとコム"],
-  [/イオンカードセレクト/i, "イオンカードセレクト"],
-  [/サクページ/i, "サクページ"],
-  [/愛車.*高価買取|車.*買取/i, "車買取"],
-  [/アメリカン.*エキスプレス.*ゴールド.*プリファード/i, "アメリカン・エキスプレス・ゴールド・プリファード・カード"],
-];
-
-const isBroadSearchSeed = (keyword: string) => {
-  const normalized = normalizeKey(keyword);
-  return BROAD_SEARCH_PREFIXES.some((prefix) => normalized.startsWith(normalizeKey(prefix)));
+const getOfferName = (item: RankingRow) => {
+  return (item.offer_name || item.trend_keyword || item.category || "").trim();
 };
 
-const looksLikeOfferCopy = (keyword: string) => {
-  return /年収|万円以上|無料個別|WEB面談|ご相談|相談中|オススメ|対象|投資完了|高還元|超還元|合計|PR/i.test(
-    keyword
-  );
-};
-
-const looksLikeNoteFragment = (keyword: string) => {
-  const text = normalizeSpaces(keyword);
-  return /^[※*＊]?\s*[0-9０-９]+$/.test(text) || /^[※*＊]+$/.test(text);
-};
-
-const toSearchLikeOfferKeyword = (offerName: string) => {
-  const normalizedOfferName = normalizeSpaces(offerName);
-  if (!normalizedOfferName) return "";
-
-  const matchedRule = OFFER_KEYWORD_RULES.find(([pattern]) =>
-    pattern.test(normalizedOfferName)
-  );
-  if (matchedRule) return matchedRule[1];
+const getMatchTerms = (item: RankingRow) => {
+  const offerName = getOfferName(item);
+  const trendKeyword =
+    item.trend_keyword && item.trend_keyword !== BACKFILL_KEYWORD
+      ? item.trend_keyword
+      : "";
+  const text = [offerName, trendKeyword, item.category, item.primary_site_name]
+    .filter(Boolean)
+    .join(" ");
 
   const cleaned = normalizeSpaces(
-    normalizedOfferName
+    text
       .replace(/【[^】]*】/g, " ")
       .replace(/\[[^\]]*\]/g, " ")
       .replace(/（[^）]*）/g, " ")
       .replace(/\([^)]*\)/g, " ")
-      .replace(/[「」『』★☆]/g, " ")
-      .replace(/[+＋].*$/g, " ")
-      .replace(/^[\s_・:：-]*(PR|超還元|高還元|無料|公式)\s*/i, " ")
-      .replace(/年収\s*[0-9０-９,，]+\s*万円以上/gi, " ")
-      .replace(/[0-9０-９,，]+\s*P/gi, " ")
-      .replace(/無料(個別)?(WEB)?面談/gi, " ")
-      .replace(/個別面談|WEB面談|ご相談なら|ご相談|投資完了|新規|のみ対象/gi, " ")
-      .replace(/[＿_]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
+      .replace(/[「」『』]/g, " ")
   );
 
-  if (!cleaned || looksLikeOfferCopy(cleaned) || looksLikeNoteFragment(cleaned)) return "";
-
-  const firstPhrase = cleaned
-    .split(/[｜|／/、。!！?？]/)
-    .map((part) => part.trim())
-    .find(Boolean);
-
-  const keyword = firstPhrase || cleaned;
-  if (looksLikeOfferCopy(keyword) || looksLikeNoteFragment(keyword)) return "";
-  if (keyword.length > 28) return "";
-
-  return keyword;
+  return Array.from(
+    new Set(
+      [offerName, trendKeyword, item.category, cleaned, ...cleaned.split(/[|｜／/、。!！?？\s]+/)]
+        .map((value) => normalizeKey(value || ""))
+        .filter((value) => value.length >= 2)
+    )
+  );
 };
 
-const isDisplayableKeyword = (keyword: string) => {
-  if (!keyword) return false;
-  if (looksLikeNoteFragment(keyword)) return false;
-  const key = normalizeKey(keyword);
-  if (key.length < 2) return false;
-  return /[a-z\u3040-\u30ff\u3400-\u9fff]/i.test(keyword);
-};
+const findTrendTarget = (word: string, rankings: RankingRow[]) => {
+  const trendKey = normalizeKey(word);
+  if (trendKey.length < 2) return null;
 
-const toDisplayKeyword = (item: RankingTrendRow) => {
-  const trendKeyword = (item.trend_keyword || "").trim();
-  const offerName = (item.offer_name || "").trim();
-  const offerKeyword = toSearchLikeOfferKeyword(offerName);
-
-  if (!trendKeyword || trendKeyword === BACKFILL_KEYWORD) {
-    return offerKeyword;
-  }
-
-  if (
-    isBroadSearchSeed(trendKeyword) &&
-    offerKeyword &&
-    !normalizeKey(trendKeyword).includes(normalizeKey(offerKeyword))
-  ) {
-    return offerKeyword;
-  }
-
-  return normalizeSpaces(trendKeyword);
+  return (
+    rankings.find((item) =>
+      getMatchTerms(item).some((term) => trendKey.includes(term) || term.includes(trendKey))
+    ) || null
+  );
 };
 
 export async function GET() {
   try {
-    const { data, error } = await supabase
-      .from("rankings")
-      .select("trend_keyword, offer_name, final_score, category")
-      .order("rank", { ascending: true })
-      .limit(100);
+    const [trendResult, rankingResult] = await Promise.all([
+      supabase
+        .from("trends")
+        .select("word, score, category")
+        .order("score", { ascending: false })
+        .limit(100),
+      supabase
+        .from("rankings")
+        .select("offer_name, trend_keyword, category, primary_site_name")
+        .order("rank", { ascending: true })
+        .limit(100),
+    ]);
 
-    if (error) {
-      throw error;
-    }
+    if (trendResult.error) throw trendResult.error;
+    if (rankingResult.error) throw rankingResult.error;
 
+    const rankings = (rankingResult.data || []) as RankingRow[];
     const seen = new Set<string>();
-    const words = ((data || []) as RankingTrendRow[])
-      .map((item, index) => ({
-        item,
-        index,
-        word: toDisplayKeyword(item),
-      }))
-      .filter(({ word }) => isDisplayableKeyword(word))
-      .filter(({ word }) => {
-        const key = normalizeKey(word);
+
+    const words = ((trendResult.data || []) as TrendRow[])
+      .map((item) => {
+        const word = normalizeSpaces(String(item.word || ""));
+        const target = findTrendTarget(word, rankings);
+
+        return {
+          word,
+          score: Number(item.score || 0),
+          category: item.category || "Googleトレンド由来",
+          target_offer_name: target ? getOfferName(target) : undefined,
+        };
+      })
+      .filter((item) => item.target_offer_name)
+      .filter((item) => item.word && normalizeKey(item.word).length >= 2)
+      .filter((item) => {
+        const key = normalizeKey(item.word);
         if (!key || seen.has(key)) return false;
         seen.add(key);
         return true;
       })
-      .slice(0, TREND_LIMIT)
-      .map(({ item, index, word }) => ({
-        word,
-        score: item.final_score ?? Math.max(100 - index * 2, 10),
-        category: item.category ?? "Google検索由来",
-      }));
+      .slice(0, TREND_LIMIT);
 
     return NextResponse.json({ data: words });
   } catch (error: unknown) {
