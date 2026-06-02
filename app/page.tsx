@@ -113,8 +113,8 @@ function toDisplayKeyword(item: RankingItem, offerName: string) {
   return normalizeSpaces(trendKeyword);
 }
 
-function getReason(_item: RankingItem, offerName: string, keyword: string) {
-  return `${offerName}は、Googleの検索で「${keyword}」も一緒に調べられています。`;
+function getReason(_item: RankingItem, _offerName: string, keyword: string) {
+  return `Googleの検索で「${keyword}」も一緒に調べられています。`;
 }
 
 function formatUpdatedAt(items: DisplayRankingItem[]) {

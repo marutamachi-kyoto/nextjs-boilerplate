@@ -105,7 +105,7 @@ const toDisplayKeyword = (item: RankingItem, offerName: string) => {
 
 const buildReason = (item: RankingItem, offerName: string) => {
   const keyword = toDisplayKeyword(item, offerName);
-  return `${offerName}は、Googleの検索で「${keyword}」も一緒に調べられています。`;
+  return `Googleの検索で「${keyword}」も一緒に調べられています。`;
 };
 
 const formatItem = (item: RankingItem, index: number) => {
