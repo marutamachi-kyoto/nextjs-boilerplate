@@ -150,6 +150,24 @@ const rankingDisplayScript = `
     return words.some((word) => lower.includes(word.toLowerCase()));
   };
 
+  const getSuggestionBaseName = (offerName) => {
+    const text = compactSpaces(offerName);
+    if (/SBI.*証券/i.test(text)) return "SBI証券";
+    if (/SBI.*FX/i.test(text)) return "SBI FXトレード";
+    if (/U-?NEXT/i.test(text)) return "U-NEXT";
+    if (/Amazon\\s*Music/i.test(text)) return "Amazon Music";
+    if (/Amazon\\s*Prime/i.test(text)) return "Amazon Prime Video";
+
+    return compactSpaces(
+      text
+        .split("（")[0]
+        .split("(")[0]
+        .split("【")[0]
+        .split("[")[0]
+        .replace(/[+＋].*$/g, " ")
+    ) || text;
+  };
+
   const getFallbackQueries = (offerName, category) => {
     const text = offerName + " " + category;
     let seeds = ["キャンペーン", "評判", "口コミ", "ポイント", "条件"];
@@ -226,6 +244,23 @@ const rankingDisplayScript = `
     return collectHintsFromQueries(offerName, getFallbackQueries(offerName, category), 2, true);
   };
 
+  const getAdviceFromHints = (hints) => {
+    const text = hints.join(" ").toLowerCase();
+    const advice = [];
+
+    if (containsAny(text, ["料金", "月額", "価格", "費用", "安い", "高い"])) advice.push("料金や月額条件");
+    if (containsAny(text, ["キャンペーン", "特典", "入会", "新規", "クーポン"])) advice.push("キャンペーン内容");
+    if (containsAny(text, ["審査", "発行", "本人確認"])) advice.push("申し込みや審査条件");
+    if (containsAny(text, ["還元", "ポイント", "付与", "反映"])) advice.push("ポイント還元条件");
+    if (containsAny(text, ["評判", "口コミ", "デメリット", "危険", "使えない"])) advice.push("口コミや注意点");
+    if (containsAny(text, ["海外", "手数料", "為替"])) advice.push("海外利用や手数料");
+    if (containsAny(text, ["解約", "退会", "無料", "期間"])) advice.push("無料期間や解約条件");
+    if (containsAny(text, ["乗り換え", "工事", "エリア", "速度"])) advice.push("回線条件や利用エリア");
+    if (containsAny(text, ["口座", "nisa", "取引", "手数料"])) advice.push("口座開設や取引条件");
+
+    return Array.from(new Set(advice)).slice(0, 2);
+  };
+
   const buildTrendReason = (offerName, hints) => {
     if (hints.length === 0) return "";
 
@@ -250,7 +285,7 @@ const rankingDisplayScript = `
     const goodTemplates = [
       escapeHtml(offerName) + "は、Google検索候補で" + quotedHint + "も一緒に調べられています。良い口コミでは、この点を魅力として見ている人がいそうです。",
       quotedHint + "を重視する人にとって、キャンペーン内容やポイント還元条件を比較しやすい案件です。",
-      "検索されている" + quotedHint + "を見ると、申し込み前にメリットを具体的に確認したい人が多い案件と考えられます。",
+      "検索されている" + quotedHint + "を見ると、申し込み前にメリットを兛体的に確認したい人が多い案件と考えられます。",
     ];
     return goodTemplates[index % goodTemplates.length];
   };
@@ -388,7 +423,7 @@ const rankingDisplayScript = `
     if (article.dataset.trendReasonEnhanced === "true") return;
 
     const heading = article.querySelector("h3");
-    const reason = heading?.nextElementSibling;
+    const reason = heading?.parentElement?.nextElementSibling;
     if (!heading || !reason || reason.tagName !== "P") return;
     if (index >= 50) return;
 
@@ -398,7 +433,7 @@ const rankingDisplayScript = `
     article.dataset.trendReasonEnhanced = "true";
 
     const category = compactSpaces(article.querySelector(".inline-flex")?.textContent);
-    const hints = await fetchSuggestionHints(offerName, category);
+    const hints = await fetchSuggestionHints(getSuggestionBaseName(offerName), category);
     const trendReason = buildTrendReason(offerName, hints);
 
     if (trendReason) reason.innerHTML = trendReason;
