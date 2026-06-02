@@ -34,6 +34,34 @@ header h1 + div + div > a[href="/about-poikatsu"] {
   width: fit-content !important;
 }
 
+header h1 + div + div > a[href="/about-poikatsu"] span:last-child {
+  font-size: 1.18rem !important;
+  line-height: 1 !important;
+}
+
+.top-moppy-signup-note,
+main p.mt-4.text-xs.font-bold.text-slate-400 {
+  display: none !important;
+}
+
+.ranking-image-box {
+  width: 150px !important;
+  max-width: 150px !important;
+  aspect-ratio: 1.35 / 1 !important;
+}
+
+main article[id^="ranking-"] a[href*="/reviews/"] {
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+main article[id^="ranking-"] a[href*="/reviews/"]::before {
+  display: inline-block !important;
+  flex: 0 1 auto !important;
+  text-align: center !important;
+}
+
 @media (max-width: 767px) {
   header h1 + div + div {
     flex-wrap: nowrap !important;
@@ -56,8 +84,18 @@ header h1 + div + div > a[href="/about-poikatsu"] {
     white-space: nowrap !important;
   }
 
+  header h1 + div + div > a[href="/about-poikatsu"] span:last-child {
+    font-size: 1.08rem !important;
+    line-height: 1 !important;
+  }
+
   header h1 + div + div > a[href="/about-poikatsu"] span {
     margin-right: 0.3rem !important;
     font-size: 0.9rem !important;
+  }
+
+  main article[id^="ranking-"] a[href*="/reviews/"] {
+    justify-content: center !important;
+    text-align: center !important;
   }
 }
