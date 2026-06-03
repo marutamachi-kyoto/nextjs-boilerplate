@@ -34,6 +34,24 @@ const isMoppyOfferUrl = (url?: string) => {
   }
 };
 
+const getMoppyInviteUrl = (url?: string) => {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== "pc.moppy.jp" || parsed.pathname !== "/ad/detail.php") {
+      return null;
+    }
+
+    const siteId = parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id");
+    if (!siteId) return null;
+
+    return `https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&s_id=${encodeURIComponent(siteId)}`;
+  } catch {
+    return null;
+  }
+};
+
 const isMoppyOutboundUrl = (url?: string) => {
   if (!url) return false;
 
@@ -210,6 +228,13 @@ export default function ClientAdjustments() {
       const freePage = document.querySelector("main.min-h-screen") as HTMLElement | null;
       const isFreePanel = Boolean(freePage?.textContent?.includes("無料でできるポイ活一覧"));
       if (!freePage || !isFreePanel) return;
+
+      freePage
+        .querySelectorAll<HTMLAnchorElement>('section article a[href*="pc.moppy.jp/ad/detail.php"]')
+        .forEach((link) => {
+          const inviteUrl = getMoppyInviteUrl(link.href);
+          if (inviteUrl) link.href = inviteUrl;
+        });
 
       const firstFreeSection = freePage.querySelector("section:first-child");
       firstFreeSection?.querySelectorAll<HTMLElement>(".top-moppy-signup-cta").forEach((cta) => {
