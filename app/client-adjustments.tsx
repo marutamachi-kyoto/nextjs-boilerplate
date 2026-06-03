@@ -34,6 +34,22 @@ const isMoppyOfferUrl = (url?: string) => {
   }
 };
 
+const isMoppyOutboundUrl = (url?: string) => {
+  if (!url) return false;
+
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.hostname === "pc.moppy.jp" &&
+      (parsed.pathname === "/ad/detail.php" ||
+        parsed.pathname === "/entry/invite.php" ||
+        parsed.pathname.startsWith("/search/"))
+    );
+  } catch {
+    return false;
+  }
+};
+
 const getMoppySearchUrl = (offerName: string) => {
   return `https://pc.moppy.jp/search/?word=${encodeURIComponent(offerName)}`;
 };
@@ -69,8 +85,6 @@ const fetchWithTimeout = async (url: string) => {
 };
 
 const resolveMoppyDetailUrl = async (offerName: string, currentUrl?: string) => {
-  if (isMoppyOfferUrl(currentUrl)) return currentUrl!;
-
   try {
     const params = new URLSearchParams({ offer: offerName });
     if (currentUrl) params.set("url", currentUrl);
@@ -78,9 +92,10 @@ const resolveMoppyDetailUrl = async (offerName: string, currentUrl?: string) => 
     const response = await fetchWithTimeout(`/api/moppy-url?${params.toString()}`);
     const json = await response.json();
 
-    if (isMoppyOfferUrl(json.url)) return json.url as string;
+    if (isMoppyOutboundUrl(json.url)) return json.url as string;
   } catch (error) {}
 
+  if (isMoppyOfferUrl(currentUrl)) return currentUrl!;
   return getMoppySearchUrl(offerName) || MOPPY_INVITE_URL;
 };
 
