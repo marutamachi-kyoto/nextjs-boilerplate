@@ -21,6 +21,7 @@ function normalizeKeyword(query: string) {
     .replace(/�/g, "")
     .replace(/[ÃÂâ¢™œžŸ]/g, "")
     .replace(/[^\p{L}\p{N}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー\s]/gu, "")
+    .replace(/(?<=[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー])\s+(?=[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー])/gu, "")
     .trim();
 }
 
