@@ -1,6 +1,91 @@
 const MOPPY_BANNER_URL = "https://img.moppy.jp/pub/pc/friend/300x250-1.jpg";
 const MOPPY_BANNER_ALT =
   "累計会員数1,400万人突破！内職/副業/お小遣い稼ぎするならモッピー！";
+const MOPPY_RESOLVE_TIMEOUT_MS = 3500;
+
+const isMoppyDetailUrl = (url?: string | null) => {
+  if (!url) return false;
+
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === "pc.moppy.jp" && parsed.pathname === "/ad/detail.php";
+  } catch {
+    return false;
+  }
+};
+
+const isMoppyOutboundUrl = (url?: string | null) => {
+  if (!url) return false;
+
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.hostname === "pc.moppy.jp" &&
+      (parsed.pathname === "/ad/detail.php" ||
+        parsed.pathname === "/entry/invite.php" ||
+        parsed.pathname.startsWith("/search/"))
+    );
+  } catch {
+    return false;
+  }
+};
+
+const resolveMoppyUrl = async (detailUrl: string) => {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(
+    () => controller.abort(),
+    MOPPY_RESOLVE_TIMEOUT_MS
+  );
+
+  try {
+    const params = new URLSearchParams({ url: detailUrl });
+    const response = await fetch(`/api/moppy-url?${params.toString()}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    const json = await response.json();
+
+    return isMoppyOutboundUrl(json.url) ? (json.url as string) : detailUrl;
+  } catch {
+    return detailUrl;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+};
+
+const bootMoppyOutboundRewrite = () => {
+  if (typeof window === "undefined") return;
+  if ((window as Window & { __poikatuMoppyOpenPatched?: boolean }).__poikatuMoppyOpenPatched) {
+    return;
+  }
+
+  const patchedWindow = window as Window & {
+    __poikatuMoppyOpenPatched?: boolean;
+  };
+  const originalOpen = window.open.bind(window);
+
+  patchedWindow.__poikatuMoppyOpenPatched = true;
+  window.open = ((url?: string | URL, target?: string, features?: string) => {
+    const urlString = typeof url === "string" ? url : url?.toString();
+    if (!isMoppyDetailUrl(urlString)) {
+      return originalOpen(url as string | URL | undefined, target, features);
+    }
+
+    const openedWindow = originalOpen("", target || "_blank", features);
+    const fallbackUrl = urlString!;
+
+    resolveMoppyUrl(fallbackUrl).then((resolvedUrl) => {
+      if (openedWindow) {
+        openedWindow.opener = null;
+        openedWindow.location.href = resolvedUrl;
+      } else {
+        originalOpen(resolvedUrl, target || "_blank", features);
+      }
+    });
+
+    return openedWindow;
+  }) as typeof window.open;
+};
 
 const bootMoppyCtaAdjustments = () => {
   if (typeof window === "undefined" || typeof document === "undefined") return;
@@ -73,6 +158,7 @@ const bootMoppyCtaAdjustments = () => {
   });
 };
 
+bootMoppyOutboundRewrite();
 bootMoppyCtaAdjustments();
 
 export {};
