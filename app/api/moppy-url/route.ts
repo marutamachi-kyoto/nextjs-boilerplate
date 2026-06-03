@@ -5,6 +5,7 @@ const MOPPY_ORIGIN = "https://pc.moppy.jp";
 const MOPPY_INVITE_CODE = "ut3GA1ce";
 const MOPPY_FETCH_TIMEOUT_MS = 2200;
 const MAX_SEARCH_CANDIDATES = 3;
+const MOPPY_INVITE_UNAVAILABLE_SITE_IDS = new Set(["157738"]);
 
 const isMoppySearchUrl = (url?: string | null) => {
   if (!url) return false;
@@ -36,6 +37,7 @@ const getMoppyInviteUrl = (detailUrl: string) => {
     const siteId =
       parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id");
     if (!siteId) return null;
+    if (MOPPY_INVITE_UNAVAILABLE_SITE_IDS.has(siteId)) return null;
 
     return `${MOPPY_ORIGIN}/entry/invite.php?invite=${MOPPY_INVITE_CODE}&s_id=${encodeURIComponent(siteId)}`;
   } catch {
