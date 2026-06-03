@@ -348,7 +348,7 @@ export async function GET() {
           const sourceWord = formatSearchKeyword(normalizeSpaces(String(item.word || "")));
           const sourceTarget = findTrendTarget(sourceWord, rankings);
           const word = toServiceDisplayWord(sourceWord, sourceTarget);
-          const target = sourceTarget || (word ? findTrendTarget(word, rankings) : null);
+          const target = word ? findTrendTarget(word, rankings) : null;
 
           return {
             word: word || "",
