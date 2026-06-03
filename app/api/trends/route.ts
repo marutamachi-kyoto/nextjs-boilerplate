@@ -153,7 +153,9 @@ const fetchFallbackTrendRows = async (): Promise<TrendRow[]> => {
           )}`,
           { cache: "no-store" }
         );
-        const json = await response.json();
+        const buffer = await response.arrayBuffer();
+        const text = new TextDecoder("shift_jis").decode(buffer);
+        const json = JSON.parse(text);
         return Array.isArray(json?.[1]) ? (json[1] as string[]) : [];
       } catch {
         return [];
