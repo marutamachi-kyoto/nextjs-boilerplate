@@ -8,6 +8,18 @@ const supabase = createClient(
 
 const TREND_LIMIT = 50;
 const BACKFILL_KEYWORD = "モッピー確認済み案件";
+const MIN_VISIBLE_TRENDS = 8;
+const FALLBACK_TREND_SEEDS = [
+  "ポイ活",
+  "ポイ活 おすすめ",
+  "ポイ活 無料",
+  "ポイ活 paypay",
+  "ポイ活 楽天",
+  "ポイ活 クレカ",
+  "ポイントサイト",
+  "モッピー",
+  "ハピタス",
+];
 
 type TrendRow = {
   word?: string | null;
@@ -22,6 +34,13 @@ type RankingRow = {
   primary_site_name?: string | null;
 };
 
+type VisibleTrend = {
+  word: string;
+  score: number;
+  category: string;
+  target_offer_name?: string;
+};
+
 const normalizeSpaces = (value: string) => value.replace(/\s+/g, " ").trim();
 
 const normalizeKey = (value: string) =>
@@ -34,6 +53,21 @@ const normalizeKey = (value: string) =>
 
 const getOfferName = (item: RankingRow) => {
   return (item.offer_name || item.trend_keyword || item.category || "").trim();
+};
+
+const isLikelyOfferName = (word: string, rankings: RankingRow[]) => {
+  const normalizedWord = normalizeKey(word);
+  if (!normalizedWord) return true;
+
+  if (rankings.some((item) => normalizeKey(getOfferName(item)) === normalizedWord)) {
+    return true;
+  }
+
+  return (
+    /[【】※]/.test(word) ||
+    /\d{1,3}(,\d{3})*P/i.test(word) ||
+    /円以上入金|口座開設後|新規申込専用|無料お試し|会員登録|資料請求/.test(word)
+  );
 };
 
 const getMatchTerms = (item: RankingRow) => {
@@ -113,23 +147,41 @@ const findTrendTarget = (word: string, rankings: RankingRow[]) => {
   return directMatch || findRuleTarget(word, rankings);
 };
 
-const findFallbackTarget = (word: string, rankings: RankingRow[], index: number) => {
-  if (rankings.length === 0) return null;
-
-  const trendKey = normalizeKey(word);
-  const categoryTarget =
-    rankings.find((item) => {
-      const terms = getMatchTerms(item);
-      if (/[信長三国戦剣英雄王国]/.test(word)) {
-        return terms.some((term) => /game|ゲーム|戦|三国|信長|剣|英雄|王国/.test(term));
+const fetchFallbackTrendRows = async (): Promise<TrendRow[]> => {
+  const responses = await Promise.all(
+    FALLBACK_TREND_SEEDS.map(async (seed) => {
+      try {
+        const response = await fetch(
+          `https://suggestqueries.google.com/complete/search?client=firefox&hl=ja&gl=jp&q=${encodeURIComponent(
+            seed
+          )}`,
+          { cache: "no-store" }
+        );
+        const json = await response.json();
+        return Array.isArray(json?.[1]) ? (json[1] as string[]) : [];
+      } catch {
+        return [];
       }
-      if (trendKey.includes("card") || word.includes("カード")) {
-        return terms.some((term) => term.includes("card") || term.includes("カード"));
-      }
-      return false;
-    }) || null;
+    })
+  );
 
-  return categoryTarget || rankings[index % rankings.length];
+  const seen = new Set<string>();
+
+  return responses
+    .flat()
+    .map((word) => normalizeSpaces(String(word || "")))
+    .filter((word) => {
+      const key = normalizeKey(word);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, TREND_LIMIT)
+    .map((word, index) => ({
+      word,
+      score: Math.max(40, 92 - index * 2),
+      category: "Google検索候補",
+    }));
 };
 
 export async function GET() {
@@ -151,30 +203,43 @@ export async function GET() {
     if (rankingResult.error) throw rankingResult.error;
 
     const rankings = (rankingResult.data || []) as RankingRow[];
-    const seen = new Set<string>();
 
-    const words = ((trendResult.data || []) as TrendRow[])
-      .map((item, index) => {
-        const word = normalizeSpaces(String(item.word || ""));
-        const target =
-          findTrendTarget(word, rankings) || findFallbackTarget(word, rankings, index);
+    const buildVisibleWords = (rows: TrendRow[]) => {
+      const seen = new Set<string>();
 
-        return {
-          word,
-          score: Number(item.score || 0),
-          category: item.category || "Googleトレンド由来",
-          target_offer_name: target ? getOfferName(target) : undefined,
-        };
-      })
-      .filter((item) => item.target_offer_name)
-      .filter((item) => item.word && normalizeKey(item.word).length >= 2)
-      .filter((item) => {
-        const key = normalizeKey(item.word);
-        if (!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, TREND_LIMIT);
+      return rows
+        .map((item) => {
+          const word = normalizeSpaces(String(item.word || ""));
+          const target = findTrendTarget(word, rankings);
+
+          return {
+            word,
+            score: Number(item.score || 0),
+            category: item.category || "Googleトレンド由来",
+            target_offer_name: target ? getOfferName(target) : undefined,
+          };
+        })
+        .filter((item) => item.word && normalizeKey(item.word).length >= 2)
+        .filter((item) => !isLikelyOfferName(item.word, rankings))
+        .filter((item) => {
+          const key = normalizeKey(item.word);
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, TREND_LIMIT) as VisibleTrend[];
+    };
+
+    let words = buildVisibleWords((trendResult.data || []) as TrendRow[]);
+
+    if (words.length < MIN_VISIBLE_TRENDS) {
+      const fallbackRows = await fetchFallbackTrendRows();
+      words = buildVisibleWords([
+        ...((trendResult.data || []) as TrendRow[]),
+        ...fallbackRows,
+      ]);
+    }
 
     return NextResponse.json({ data: words });
   } catch (error: unknown) {
