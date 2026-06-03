@@ -84,7 +84,9 @@ async function fetchAutocomplete(query: string): Promise<TrendRow[]> {
     )}`;
 
     const res = await fetch(url, { cache: "no-store" });
-    const json = await res.json();
+    const buffer = await res.arrayBuffer();
+    const text = new TextDecoder("shift_jis").decode(buffer);
+    const json = JSON.parse(text);
 
     const suggestions = Array.isArray(json?.[1]) ? json[1] : [];
 
