@@ -6,6 +6,13 @@ const MOPPY_INVITE_URL =
   "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
 const MOPPY_SIGNUP_BANNER_URL = "https://img.moppy.jp/pub/pc/friend/300x250-1.jpg";
 const MOPPY_RESOLVE_TIMEOUT_MS = 3500;
+const MOPPY_INVITE_UNAVAILABLE_SITE_IDS = new Set(["157738"]);
+const KNOWN_MOPPY_OFFER_URLS = [
+  {
+    keywords: ["povo", "2.0"],
+    url: "https://pc.moppy.jp/ad/detail.php?site_id=157738&track_ref=sea",
+  },
+];
 
 type ScoreItem = {
   category?: string;
@@ -34,6 +41,19 @@ const isMoppyOfferUrl = (url?: string) => {
   }
 };
 
+const getKnownMoppyOfferUrl = (offerName?: string) => {
+  const normalizedOfferName = normalizeText(offerName);
+  if (!normalizedOfferName) return null;
+
+  return (
+    KNOWN_MOPPY_OFFER_URLS.find((offer) =>
+      offer.keywords.every((keyword) =>
+        normalizedOfferName.includes(normalizeText(keyword))
+      )
+    )?.url || null
+  );
+};
+
 const getMoppyInviteUrl = (url?: string) => {
   if (!url) return null;
 
@@ -45,6 +65,7 @@ const getMoppyInviteUrl = (url?: string) => {
 
     const siteId = parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id");
     if (!siteId) return null;
+    if (MOPPY_INVITE_UNAVAILABLE_SITE_IDS.has(siteId)) return null;
 
     return `https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&s_id=${encodeURIComponent(siteId)}`;
   } catch {
@@ -70,6 +91,22 @@ const isMoppyOutboundUrl = (url?: string) => {
 
 const getMoppySearchUrl = (offerName: string) => {
   return `https://pc.moppy.jp/search/?word=${encodeURIComponent(offerName)}`;
+};
+
+const adjustKnownMoppyOfferLinks = (root: ParentNode) => {
+  root.querySelectorAll("article").forEach((article) => {
+    const offerName = article.querySelector("h3")?.textContent?.trim();
+    const knownOfferUrl = getKnownMoppyOfferUrl(offerName);
+    if (!knownOfferUrl) return;
+
+    article
+      .querySelectorAll<HTMLAnchorElement>('a[href*="pc.moppy.jp"]')
+      .forEach((link) => {
+        if ((link.textContent || "").includes("モッピーで")) {
+          link.href = knownOfferUrl;
+        }
+      });
+  });
 };
 
 let scoreItemsPromise: Promise<ScoreItem[]> | null = null;
@@ -103,6 +140,9 @@ const fetchWithTimeout = async (url: string) => {
 };
 
 const resolveMoppyDetailUrl = async (offerName: string, currentUrl?: string) => {
+  const knownOfferUrl = getKnownMoppyOfferUrl(offerName);
+  if (knownOfferUrl && !getMoppyInviteUrl(knownOfferUrl)) return knownOfferUrl;
+
   try {
     const params = new URLSearchParams({ offer: offerName });
     if (currentUrl) params.set("url", currentUrl);
@@ -114,6 +154,7 @@ const resolveMoppyDetailUrl = async (offerName: string, currentUrl?: string) => 
   } catch (error) {}
 
   if (isMoppyOfferUrl(currentUrl)) return currentUrl!;
+  if (knownOfferUrl) return knownOfferUrl;
   return getMoppySearchUrl(offerName) || MOPPY_INVITE_URL;
 };
 
@@ -226,8 +267,12 @@ export default function ClientAdjustments() {
       });
 
       const freePage = document.querySelector("main.min-h-screen") as HTMLElement | null;
+      adjustKnownMoppyOfferLinks(document);
+
       const isFreePanel = Boolean(freePage?.textContent?.includes("無料でできるポイ活一覧"));
       if (!freePage || !isFreePanel) return;
+
+      adjustKnownMoppyOfferLinks(freePage);
 
       freePage
         .querySelectorAll<HTMLAnchorElement>('section article a[href*="pc.moppy.jp/ad/detail.php"]')
