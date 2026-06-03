@@ -109,6 +109,27 @@ const adjustKnownMoppyOfferLinks = (root: ParentNode) => {
   });
 };
 
+const resolveAndAdjustMoppyOfferLinks = (root: ParentNode) => {
+  root.querySelectorAll("article").forEach((article) => {
+    const offerName = article.querySelector("h3")?.textContent?.trim();
+    if (!offerName) return;
+
+    article
+      .querySelectorAll<HTMLAnchorElement>('a[href*="pc.moppy.jp"]')
+      .forEach((link) => {
+        if (!(link.textContent || "").includes("モッピーで")) return;
+        if (link.dataset.moppyResolvedFor === offerName) return;
+
+        link.dataset.moppyResolvedFor = offerName;
+        resolveMoppyDetailUrl(offerName, link.href).then((resolvedUrl) => {
+          if (isMoppyOutboundUrl(resolvedUrl)) {
+            link.href = resolvedUrl;
+          }
+        });
+      });
+  });
+};
+
 let scoreItemsPromise: Promise<ScoreItem[]> | null = null;
 
 const getScoreItems = () => {
@@ -268,11 +289,13 @@ export default function ClientAdjustments() {
 
       const freePage = document.querySelector("main.min-h-screen") as HTMLElement | null;
       adjustKnownMoppyOfferLinks(document);
+      resolveAndAdjustMoppyOfferLinks(document);
 
       const isFreePanel = Boolean(freePage?.textContent?.includes("無料でできるポイ活一覧"));
       if (!freePage || !isFreePanel) return;
 
       adjustKnownMoppyOfferLinks(freePage);
+      resolveAndAdjustMoppyOfferLinks(freePage);
 
       freePage
         .querySelectorAll<HTMLAnchorElement>('section article a[href*="pc.moppy.jp/ad/detail.php"]')
@@ -362,10 +385,16 @@ export default function ClientAdjustments() {
         window.setTimeout(applyAdjustments, 1200);
       }
 
-      const button = target.closest("button");
-      if (!button || !(button.textContent || "").includes("モッピーで探す")) return;
+      const trigger = target.closest("button, a") as HTMLElement | null;
+      if (!trigger || !(trigger.textContent || "").includes("モッピーで")) return;
+      if (
+        trigger instanceof HTMLAnchorElement &&
+        !trigger.href.includes("pc.moppy.jp")
+      ) {
+        return;
+      }
 
-      const article = button.closest("article");
+      const article = trigger.closest("article");
       const offerName = article?.querySelector("h3")?.textContent?.trim();
       if (!article || !offerName) return;
 
@@ -378,7 +407,8 @@ export default function ClientAdjustments() {
       const matchedItem = findMatchedScoreItem(items, offerName);
       const url = await resolveMoppyDetailUrl(
         offerName,
-        matchedItem?.primary_site_url
+        matchedItem?.primary_site_url ||
+          (trigger instanceof HTMLAnchorElement ? trigger.href : undefined)
       );
 
       try {
