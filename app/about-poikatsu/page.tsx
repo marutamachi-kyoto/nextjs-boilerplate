@@ -2,16 +2,112 @@ import Link from "next/link";
 
 const MOPPY_URL =
   "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
+const BASE_URL = "https://poikatu-ai.vercel.app";
 
 export const metadata = {
   title: "ポイ活とは？初心者向けに仕組みをわかりやすく解説｜ポイ活AI判定",
   description:
     "ポイ活とは何かを初心者向けに解説。ポイントサイトの仕組み、ポイントの貯め方、現金やPayPayなどへの交換方法、モッピーの始め方をわかりやすく紹介します。",
+  alternates: {
+    canonical: "https://poikatu-ai.vercel.app/about-poikatsu",
+  },
+  openGraph: {
+    title: "ポイ活とは？初心者向けに仕組みをわかりやすく解説｜ポイ活AI判定",
+    description:
+      "ポイントサイトの仕組み、ポイントの貯め方、交換方法、モッピーの始め方を初心者向けに解説します。",
+    url: "https://poikatu-ai.vercel.app/about-poikatsu",
+    siteName: "ポイ活AI判定",
+    type: "article",
+    locale: "ja_JP",
+    images: [
+      {
+        url: "/hero.png.png",
+        width: 1200,
+        height: 630,
+        alt: "ポイ活AI判定",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ポイ活とは？初心者向けに仕組みを解説｜ポイ活AI判定",
+    description:
+      "ポイントサイトの仕組み、ポイントの貯め方、交換方法、モッピーの始め方を初心者向けに解説します。",
+    images: ["/hero.png.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function AboutPoikatsuPage() {
+  const pageUrl = `${BASE_URL}/about-poikatsu`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": `${BASE_URL}/#website`,
+        name: "ポイ活AI判定",
+        url: BASE_URL,
+        inLanguage: "ja-JP",
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${pageUrl}#breadcrumb`,
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "ポイ活AI判定",
+            item: BASE_URL,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "ポイ活とは",
+            item: pageUrl,
+          },
+        ],
+      },
+      {
+        "@type": "Article",
+        "@id": `${pageUrl}#article`,
+        headline: "ポイ活とは？初心者向けに仕組みをわかりやすく解説",
+        description:
+          "ポイ活とは何か、ポイントサイトの仕組み、ポイントの貯め方、交換方法、モッピーの始め方を初心者向けに解説します。",
+        url: pageUrl,
+        image: `${BASE_URL}/hero.png.png`,
+        inLanguage: "ja-JP",
+        author: {
+          "@type": "Organization",
+          name: "ポイ活AI判定",
+          url: BASE_URL,
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "ポイ活AI判定",
+          url: BASE_URL,
+          logo: {
+            "@type": "ImageObject",
+            url: `${BASE_URL}/favicon.png`,
+          },
+        },
+        articleSection: "ポイ活初心者ガイド",
+        about: ["ポイ活", "ポイントサイト", "モッピー", "ポイント交換"],
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-[#fff8fb] px-4 py-6 text-slate-900 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd),
+        }}
+      />
       <div className="mx-auto max-w-6xl">
         <Link
           href="/"
@@ -116,9 +212,6 @@ export default function AboutPoikatsuPage() {
             <span className="ml-3 text-4xl leading-none">›</span>
           </a>
 
-          <p className="mt-4 text-xs font-bold text-slate-400 lg:text-sm">
-            ※このページには広告・紹介リンクを含みます。
-          </p>
         </section>
       </div>
     </main>

@@ -23,6 +23,39 @@ const reviewPaths = [
   "TikTok%20Lite",
 ];
 
+const offerSlugs = [
+  "rakuten-mobile",
+  "nobunaga-hadou",
+  "smbc-card-nl",
+  "paypay-card",
+  "tiktok-lite",
+  "rakuten-sec",
+  "rakuten-market",
+  "sbi-sumishin-bank",
+  "amazon-prime",
+  "merge-mansion",
+  "u-next",
+  "d-card-gold",
+  "saison-card-international",
+  "au-kabucom-sec",
+  "ponta-pass",
+  "mercari",
+  "line-manga",
+  "epos-card",
+  "monex-sec",
+  "aeon-card-waon",
+  "ahamo",
+  "youtube-premium",
+  "mynapoint-support",
+  "dbarai",
+  "yahoo-card",
+  "sony-bank",
+  "nanatsu-grand-cross",
+  "bluelock-pwc",
+  "trima",
+  "visa-line-pay-card",
+];
+
 const buildUrl = (path = "") => `${siteUrl}${path}`;
 
 const escapeXml = (value: string) =>
@@ -45,7 +78,9 @@ export function GET() {
   const urls = [
     urlEntry(buildUrl("/"), "daily", 1),
     urlEntry(buildUrl("/about-poikatsu"), "monthly", 0.8),
-    urlEntry(buildUrl("/free-poikatsu"), "daily", 0.9),
+    ...offerSlugs.map((slug) =>
+      urlEntry(buildUrl(`/offers/${slug}`), "weekly", 0.7)
+    ),
     ...reviewPaths.map((path) =>
       urlEntry(buildUrl(`/reviews/${path}`), "weekly", 0.7)
     ),

@@ -20,6 +20,39 @@ type SitemapPage = {
   priority: number;
 };
 
+const OFFER_SLUGS = [
+  "rakuten-mobile",
+  "nobunaga-hadou",
+  "smbc-card-nl",
+  "paypay-card",
+  "tiktok-lite",
+  "rakuten-sec",
+  "rakuten-market",
+  "sbi-sumishin-bank",
+  "amazon-prime",
+  "merge-mansion",
+  "u-next",
+  "d-card-gold",
+  "saison-card-international",
+  "au-kabucom-sec",
+  "ponta-pass",
+  "mercari",
+  "line-manga",
+  "epos-card",
+  "monex-sec",
+  "aeon-card-waon",
+  "ahamo",
+  "youtube-premium",
+  "mynapoint-support",
+  "dbarai",
+  "yahoo-card",
+  "sony-bank",
+  "nanatsu-grand-cross",
+  "bluelock-pwc",
+  "trima",
+  "visa-line-pay-card",
+];
+
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -58,17 +91,17 @@ function getStaticPages(now: Date): SitemapPage[] {
       priority: 1,
     },
     {
-      url: `${BASE_URL}/free-poikatsu`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
       url: `${BASE_URL}/about-poikatsu`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.8,
     },
+    ...OFFER_SLUGS.map((slug) => ({
+      url: `${BASE_URL}/offers/${slug}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
   ];
 }
 

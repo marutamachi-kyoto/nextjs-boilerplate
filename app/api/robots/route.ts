@@ -3,8 +3,12 @@ const siteUrl = "https://poikatu-ai.vercel.app";
 export const revalidate = 86400;
 
 export function GET() {
-  const body = `User-agent: *
+const body = `User-agent: *
 Allow: /
+Disallow: /api/click
+Disallow: /api/likes
+Disallow: /api/update-rankings
+Disallow: /api/update-trends
 
 Sitemap: ${siteUrl}/sitemap.xml
 `;

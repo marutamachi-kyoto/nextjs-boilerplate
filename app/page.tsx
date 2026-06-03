@@ -51,14 +51,24 @@ type TrendItem = {
 };
 
 export const metadata: Metadata = {
-  title: "ポイ活おすすめランキング｜モッピー案件をAI判定",
+  title: "ポイ活おすすめランキング｜モッピー案件をAI判定【毎日更新】",
   description:
-    "Google検索やトレンドで注目されているポイ活関連ワードをもとに、モッピーで確認できる案件をAIが毎日ランキング化します。",
+    "Google検索で注目されているポイ活関連ワードをもとに、モッピーで確認できる案件や無料ポイ活案件をAIが毎日ランキング化します。",
+  keywords: [
+    "ポイ活",
+    "ポイ活 おすすめ",
+    "ポイ活 ランキング",
+    "無料ポイ活",
+    "モッピー",
+    "ポイントサイト",
+    "ポイ活 案件",
+    "Google検索",
+  ],
   alternates: { canonical: BASE_URL },
   openGraph: {
-    title: "ポイ活おすすめランキング｜モッピー案件をAI判定",
+    title: "ポイ活おすすめランキング｜モッピー案件をAI判定【毎日更新】",
     description:
-      "Google検索やトレンドで注目されているポイ活関連ワードをもとに、モッピーで確認できる案件をAIが毎日ランキング化します。",
+      "Google検索で注目されているポイ活関連ワードをもとに、モッピーで確認できる案件や無料ポイ活案件をAIが毎日ランキング化します。",
     url: BASE_URL,
     siteName: "ポイ活AI判定",
     type: "website",
@@ -74,10 +84,20 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ポイ活おすすめランキング｜モッピー案件をAI判定",
+    title: "ポイ活おすすめランキング｜モッピー案件をAI判定【毎日更新】",
     description:
-      "Google検索やトレンドで注目されているポイ活関連ワードをもとに、モッピーで確認できる案件をAIが毎日ランキング化します。",
+      "Google検索で注目されているポイ活関連ワードをもとに、モッピーで確認できる案件や無料ポイ活案件をAIが毎日ランキング化します。",
     images: ["/hero.png.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
@@ -297,17 +317,56 @@ async function getTrendItems(rankings: DisplayRankingItem[]) {
 }
 
 function buildStructuredData(rankings: DisplayRankingItem[]) {
-  return [
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
     {
-      "@context": "https://schema.org",
       "@type": "WebSite",
+      "@id": `${BASE_URL}/#website`,
       name: "ポイ活AI判定",
       url: BASE_URL,
       inLanguage: "ja-JP",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${BASE_URL}/reviews/{search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
     },
     {
-      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": `${BASE_URL}/#organization`,
+      name: "ポイ活AI判定",
+      url: BASE_URL,
+      logo: `${BASE_URL}/favicon.png`,
+    },
+    {
+      "@type": "WebPage",
+      "@id": `${BASE_URL}/#webpage`,
+      url: BASE_URL,
+      name: "ポイ活おすすめランキング",
+      description:
+        "Google検索で注目されているポイ活関連ワードをもとに、モッピーで確認できる案件や無料ポイ活案件をAIが毎日ランキング化します。",
+      isPartOf: {
+        "@id": `${BASE_URL}/#website`,
+      },
+      about: ["ポイ活", "モッピー", "ポイントサイト", "無料ポイ活"],
+      inLanguage: "ja-JP",
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${BASE_URL}/#breadcrumb`,
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "ポイ活AI判定",
+          item: BASE_URL,
+        },
+      ],
+    },
+    {
       "@type": "ItemList",
+      "@id": `${BASE_URL}/#ranking-itemlist`,
       name: "ポイ活おすすめランキング",
       itemListOrder: "https://schema.org/ItemListOrderAscending",
       numberOfItems: rankings.length,
@@ -315,9 +374,13 @@ function buildStructuredData(rankings: DisplayRankingItem[]) {
         "@type": "ListItem",
         position: index + 1,
         name: item.offer_name || item.trend_keyword || item.category,
+        url: `${BASE_URL}/reviews/${encodeURIComponent(
+          item.offer_name || item.trend_keyword || item.category
+        )}`,
       })),
     },
-  ];
+    ],
+  };
 }
 
 export default async function Page() {
