@@ -101,6 +101,106 @@ const getMatchTerms = (item: RankingRow) => {
   );
 };
 
+const SERVICE_DISPLAY_RULES = [
+  { wordKeys: ["paypayカード", "ペイペイカード"], display: "PayPayカード" },
+  { wordKeys: ["paypay銀行", "ペイペイ銀行"], display: "PayPay銀行" },
+  { wordKeys: ["paypay証券", "ペイペイ証券"], display: "PayPay証券" },
+  { wordKeys: ["paypayポイント", "ペイペイポイント"], display: "PayPayポイント" },
+  { wordKeys: ["paypayマネーライト", "ペイペイマネーライト"], display: "PayPayマネーライト" },
+  { wordKeys: ["paypay", "ペイペイ"], display: "PayPay" },
+  { wordKeys: ["sbi証券", "sbi"], display: "SBI証券" },
+  { wordKeys: ["amazon music", "アマゾンミュージック"], display: "Amazon Music" },
+  { wordKeys: ["amazon", "アマゾン"], display: "Amazon" },
+  { wordKeys: ["u-next", "unext"], display: "U-NEXT" },
+  { wordKeys: ["楽天銀行"], display: "楽天銀行" },
+  { wordKeys: ["楽天カード"], display: "楽天カード" },
+  { wordKeys: ["楽天証券"], display: "楽天証券" },
+  { wordKeys: ["楽天モバイル"], display: "楽天モバイル" },
+  { wordKeys: ["楽天市場"], display: "楽天市場" },
+  { wordKeys: ["楽天キャッシュ"], display: "楽天キャッシュ" },
+  { wordKeys: ["楽天ペイ"], display: "楽天ペイ" },
+  { wordKeys: ["楽天ポイント"], display: "楽天ポイント" },
+  { wordKeys: ["楽天"], display: "楽天" },
+  { wordKeys: ["モッピー", "moppy"], display: "モッピー" },
+  { wordKeys: ["ハピタス"], display: "ハピタス" },
+  { wordKeys: ["ポイントインカム"], display: "ポイントインカム" },
+  { wordKeys: ["メルカリ", "mercari"], display: "メルカリ" },
+  { wordKeys: ["メルカード"], display: "メルカード" },
+  { wordKeys: ["jcb"], display: "JCBカード" },
+  { wordKeys: ["american express", "アメリカンエキスプレス", "アメックス"], display: "アメリカン・エキスプレス" },
+  { wordKeys: ["olive"], display: "Olive" },
+  { wordKeys: ["三井住友"], display: "三井住友カード" },
+  { wordKeys: ["cointrade", "コイントレード"], display: "CoinTrade" },
+  { wordKeys: ["gfs"], display: "GFS" },
+  { wordKeys: ["アイフル"], display: "アイフル" },
+  { wordKeys: ["dmm"], display: "DMM" },
+  { wordKeys: ["ahamo"], display: "ahamo" },
+  { wordKeys: ["povo"], display: "povo" },
+  { wordKeys: ["chocozap", "チョコザップ"], display: "chocoZAP" },
+  { wordKeys: ["wifi", "wi-fi", "wimax"], display: "WiFi" },
+  { wordKeys: ["fx"], display: "FX" },
+  { wordKeys: ["nisa"], display: "NISA" },
+];
+
+const GENERIC_DISPLAY_WORDS = new Set([
+  "ポイ活",
+  "ポイントサイト",
+  "おすすめ",
+  "無料",
+  "アプリ",
+  "ゲーム",
+  "クレカ",
+  "案件",
+  "登録",
+  "交換",
+  "ランキング",
+  "初心者",
+  "安全",
+  "人気",
+  "歩く",
+  "解約",
+  "とは",
+  "max",
+  "アメリカ",
+  "倶楽部",
+]);
+
+const toServiceDisplayWord = (word: string, target?: RankingRow | null) => {
+  const wordKey = normalizeKey(word);
+
+  const rule = SERVICE_DISPLAY_RULES.find((item) =>
+    item.wordKeys.some((key) => wordKey.includes(normalizeKey(key)))
+  );
+  if (rule) return rule.display;
+
+  if (target) {
+    const offerName = getOfferName(target)
+      .replace(/【[^】]*】/g, " ")
+      .replace(/\[[^\]]*\]/g, " ")
+      .replace(/（[^）]*）/g, " ")
+      .replace(/\([^)]*\)/g, " ");
+
+    const token = normalizeSpaces(offerName.split(/[|｜／/、。!！?？\s]+/)[0] || "");
+    if (token && !GENERIC_DISPLAY_WORDS.has(token) && normalizeKey(token).length >= 2) {
+      return token;
+    }
+  }
+
+  const cleaned = normalizeSpaces(
+    word
+      .replace(/[　\s]+/g, " ")
+      .replace(/ポイ活|ポイントサイト|おすすめ|無料|案件|ランキング|登録|交換|とは|max/gi, " ")
+      .replace(/[「」『』【】\[\]（）()]/g, " ")
+  );
+  const tokens = cleaned
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token && !GENERIC_DISPLAY_WORDS.has(token));
+
+  const candidate = tokens.find((token) => /[A-Za-z0-9]/.test(token) || /[\p{Script=Katakana}\p{Script=Han}]/u.test(token));
+  return candidate && normalizeKey(candidate).length >= 2 ? candidate : null;
+};
+
 const TREND_TARGET_RULES = [
   { wordKeys: ["sbi", "nisa"], targetKeys: ["sbi"] },
   { wordKeys: ["amazon"], targetKeys: ["amazon"] },
@@ -214,18 +314,19 @@ export async function GET() {
 
       return rows
         .map((item) => {
-          const word = formatSearchKeyword(normalizeSpaces(String(item.word || "")));
-          const target = findTrendTarget(word, rankings);
+          const sourceWord = formatSearchKeyword(normalizeSpaces(String(item.word || "")));
+          const sourceTarget = findTrendTarget(sourceWord, rankings);
+          const word = toServiceDisplayWord(sourceWord, sourceTarget);
+          const target = sourceTarget || (word ? findTrendTarget(word, rankings) : null);
 
           return {
-            word,
+            word: word || "",
             score: Number(item.score || 0),
             category: item.category || "Googleトレンド由来",
             target_offer_name: target ? getOfferName(target) : undefined,
           };
         })
         .filter((item) => item.word && normalizeKey(item.word).length >= 2)
-        .filter((item) => !isLikelyOfferName(item.word, rankings))
         .filter((item) => {
           const key = normalizeKey(item.word);
           if (!key || seen.has(key)) return false;
