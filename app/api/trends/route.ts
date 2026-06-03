@@ -72,11 +72,7 @@ const isLikelyOfferName = (word: string, rankings: RankingRow[]) => {
 
 const getMatchTerms = (item: RankingRow) => {
   const offerName = getOfferName(item);
-  const trendKeyword =
-    item.trend_keyword && item.trend_keyword !== BACKFILL_KEYWORD
-      ? item.trend_keyword
-      : "";
-  const text = [offerName, trendKeyword, item.category, item.primary_site_name]
+  const text = [offerName, item.category, item.primary_site_name]
     .filter(Boolean)
     .join(" ");
 
@@ -91,7 +87,7 @@ const getMatchTerms = (item: RankingRow) => {
 
   return Array.from(
     new Set(
-      [offerName, trendKeyword, item.category, cleaned, ...cleaned.split(/[|｜／/、。!！?？\s]+/)]
+      [offerName, item.category, cleaned, ...cleaned.split(/[|｜／/、。!！?？\s]+/)]
         .map((value) => normalizeKey(value || ""))
         .filter((value) => value.length >= 2)
     )
