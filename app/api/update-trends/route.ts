@@ -16,13 +16,11 @@ type TrendRow = {
 
 function normalizeKeyword(query: string) {
   return query
-    .replace(/ポイ\s*活/g, "")
-    .replace(/ポイ活/g, "")
-    .replace(/\s+/g, "")
-    .replace(/[　]/g, "")
+    .replace(/[　]/g, " ")
+    .replace(/\s+/g, " ")
     .replace(/�/g, "")
     .replace(/[ÃÂâ¢™œžŸ]/g, "")
-    .replace(/[^\p{L}\p{N}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー]/gu, "")
+    .replace(/[^\p{L}\p{N}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー\s]/gu, "")
     .trim();
 }
 
