@@ -214,7 +214,7 @@ export async function GET() {
 
       return rows
         .map((item) => {
-          const word = normalizeSpaces(String(item.word || ""));
+          const word = formatSearchKeyword(normalizeSpaces(String(item.word || "")));
           const target = findTrendTarget(word, rankings);
 
           return {
