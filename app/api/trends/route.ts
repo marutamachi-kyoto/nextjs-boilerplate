@@ -43,6 +43,13 @@ type VisibleTrend = {
 
 const normalizeSpaces = (value: string) => value.replace(/\s+/g, " ").trim();
 
+const formatSearchKeyword = (value: string) =>
+  value
+    .replace(/([^ 　])ポイ活/g, "$1　ポイ活")
+    .replace(/ポイ活([^ 　])/g, "ポイ活　$1")
+    .replace(/[ 　]+/g, "　")
+    .trim();
+
 const normalizeKey = (value: string) =>
   normalizeSpaces(value)
     .toLowerCase()
@@ -167,7 +174,7 @@ const fetchFallbackTrendRows = async (): Promise<TrendRow[]> => {
 
   return responses
     .flat()
-    .map((word) => normalizeSpaces(String(word || "")))
+    .map((word) => formatSearchKeyword(normalizeSpaces(String(word || ""))))
     .filter((word) => {
       const key = normalizeKey(word);
       if (!key || seen.has(key)) return false;
