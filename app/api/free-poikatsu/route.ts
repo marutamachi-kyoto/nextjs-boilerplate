@@ -92,13 +92,24 @@ const isFreeOffer = (text: string) => {
     "無料",
     "無料会員登録",
     "無料登録",
+    "会員登録",
+    "新規登録",
     "資料請求",
+    "無料資料請求",
+    "一括見積",
+    "見積もり",
+    "見積り",
+    "無料相談",
+    "相談",
+    "モニター",
     "アプリ",
     "インストール",
+    "動画視聴",
     "LINE友達追加",
     "アンケート",
     "無料トライアル",
-    "無料相談",
+    "無料体験",
+    "無料お試し",
   ];
 
   const excludeWords = [
@@ -116,6 +127,8 @@ const isFreeOffer = (text: string) => {
     "取引完了",
     "証券",
     "FX",
+    "クレジットカード",
+    "カード発行",
     "カード利用",
     "ショッピング",
     "来店",
@@ -123,7 +136,6 @@ const isFreeOffer = (text: string) => {
   ];
 
   return (
-    text.includes("無料") &&
     includeWords.some((word) => text.includes(word)) &&
     !excludeWords.some((word) => text.includes(word))
   );
