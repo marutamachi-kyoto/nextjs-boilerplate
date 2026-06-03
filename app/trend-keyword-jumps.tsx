@@ -57,6 +57,13 @@ export default function TrendKeywordJumps() {
 
       tagContainer.replaceChildren(
         ...tags.map((tag) => {
+          if (!tag.target_offer_name) {
+            const span = document.createElement("span");
+            span.className = PILL_CLASS;
+            span.textContent = tag.word;
+            return span;
+          }
+
           const button = document.createElement("button");
           button.type = "button";
           button.className = PILL_CLASS;
