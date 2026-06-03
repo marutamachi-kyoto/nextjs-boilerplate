@@ -25,6 +25,7 @@ type TrendTag = {
   word: string;
   score: number;
   category?: string;
+  target_offer_name?: string;
 };
 
 type FreeOffer = {
@@ -115,6 +116,7 @@ export default function Page({
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [likeDate, setLikeDate] = useState("");
   const [likedOffers, setLikedOffers] = useState<Record<string, boolean>>({});
+  const [relatedReasons, setRelatedReasons] = useState<Record<string, string[]>>({});
   const [freeOffers, setFreeOffers] = useState<FreeOffer[]>([]);
   const [isLoadingFreeOffers, setIsLoadingFreeOffers] = useState(false);
   const [hasLoadedFreeOffers, setHasLoadedFreeOffers] = useState(false);
@@ -212,6 +214,58 @@ export default function Page({
     };
   }, [items.length]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchRelatedReasons = async () => {
+      const targets = items.slice(0, 50).filter((item) => {
+        const offerName = getOfferName(item);
+        return offerName && !relatedReasons[offerName];
+      });
+      if (targets.length === 0) return;
+
+      const nextReasons: Record<string, string[]> = {};
+      const concurrency = 4;
+      let nextIndex = 0;
+
+      await Promise.all(
+        Array.from({ length: concurrency }, async () => {
+          while (!cancelled && nextIndex < targets.length) {
+            const item = targets[nextIndex];
+            nextIndex += 1;
+
+            const offerName = getOfferName(item);
+            try {
+              const params = new URLSearchParams({ offer: offerName });
+              const response = await fetch(`/api/related-search-words?${params.toString()}`, {
+                cache: "no-store",
+              });
+              if (!response.ok) continue;
+
+              const json = await response.json();
+              const words = Array.isArray(json.words)
+                ? json.words.filter((word: unknown): word is string => typeof word === "string")
+                : [];
+              if (words.length > 0) {
+                nextReasons[offerName] = words.slice(0, 2);
+              }
+            } catch {}
+          }
+        })
+      );
+
+      if (!cancelled && Object.keys(nextReasons).length > 0) {
+        setRelatedReasons((current) => ({ ...current, ...nextReasons }));
+      }
+    };
+
+    fetchRelatedReasons();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [items, relatedReasons]);
+
   const getOfferName = (item: CategoryScore) => {
     return item.offer_name || item.trend_keyword || item.category;
   };
@@ -224,8 +278,9 @@ export default function Page({
     return `ranking-${index + 1}-${normalizeText(getOfferName(item))}`;
   };
 
-  const findMatchedRanking = (tagWord: string) => {
+  const findMatchedRanking = (tagWord: string, targetOfferName?: string) => {
     const normalizedTagWord = normalizeText(tagWord);
+    const normalizedTargetOfferName = normalizeText(targetOfferName);
 
     return items.find((item) => {
       const candidates = [getOfferName(item), item.trend_keyword, item.category]
@@ -234,6 +289,7 @@ export default function Page({
 
       return candidates.some(
         (candidate) =>
+          (normalizedTargetOfferName && candidate === normalizedTargetOfferName) ||
           candidate === normalizedTagWord ||
           (candidate.length >= 3 &&
             normalizedTagWord.length >= 3 &&
@@ -333,6 +389,34 @@ export default function Page({
     return "検索需要と案件内容の分かりやすさをもとに評価しています。";
   };
 
+  const renderDynamicReason = (item: CategoryScore, offerName: string) => {
+    const words = relatedReasons[offerName] || [];
+
+    if (words.length >= 2) {
+      return (
+        <>
+          Googleの検索で
+          <span className="trend-reason-keyword">「{words[0]}」</span>
+          や
+          <span className="trend-reason-keyword">「{words[1]}」</span>
+          が一緒に調べられています。
+        </>
+      );
+    }
+
+    if (words.length === 1) {
+      return (
+        <>
+          Googleの検索で
+          <span className="trend-reason-keyword">「{words[0]}」</span>
+          が一緒に調べられています。
+        </>
+      );
+    }
+
+    return getDynamicReason(item);
+  };
+
   const visibleTrendTags = useMemo(() => {
     const seen = new Set<string>();
 
@@ -384,13 +468,13 @@ export default function Page({
         </div>
 
         <div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="ranking-title-row">
             <h3 className="text-2xl font-black text-slate-900">{offerName}</h3>
-            <span className="inline-flex">{renderLikeButton(offerName)}</span>
+            <span className="ranking-like-inline">{renderLikeButton(offerName)}</span>
           </div>
 
-          <p className="mt-2 text-sm font-bold leading-7 text-slate-600">
-            {getDynamicReason(item)}
+          <p className="ranking-related-reason mt-2 text-sm font-bold leading-7 text-slate-600">
+            {renderDynamicReason(item, offerName)}
           </p>
         </div>
 
@@ -423,7 +507,7 @@ export default function Page({
             href={getReviewPath(offerName)}
             className="flex h-11 w-full max-w-[190px] items-center justify-center rounded-xl border-2 border-pink-200 bg-white px-3 text-[11px] font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50"
           >
-            もっと検索ワードを見る
+            もっと検索ワードをみる
             <span className="ml-2 text-base leading-none">›</span>
           </Link>
         </div>
@@ -447,35 +531,32 @@ export default function Page({
               無料でできるポイ活をまとめます。
             </p>
 
-            <div className="mt-10 rounded-[2rem] border border-pink-100 bg-white/95 px-6 py-8 text-center shadow-xl shadow-pink-100/70 lg:px-12 lg:py-10">
-              <div className="inline-flex items-center rounded-full bg-pink-500 px-6 py-2 text-sm font-black text-white shadow-md shadow-pink-200/70 lg:text-base">
+            <div className="top-moppy-signup-cta">
+              <div className="top-moppy-signup-badge">
                 ポイ活サイト最大手！
               </div>
-              <h2 className="mt-5 text-4xl font-black leading-tight tracking-tight text-slate-950 lg:text-5xl">
+              <h2 className="top-moppy-signup-title">
                 モッピーでポイ活を始める
               </h2>
-              <p className="mx-auto mt-5 max-w-[840px] text-base font-bold leading-8 text-slate-700 lg:text-lg lg:leading-9">
+              <p className="top-moppy-signup-copy">
                 はじめての人は、モッピーの
-                <span className="text-pink-600">会員登録（無料）</span>
+                <strong>会員登録（無料）</strong>
                 からスタート
               </p>
               <a
                 href={MOPPY_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mx-auto mt-7 flex min-h-[64px] w-full max-w-[620px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-8 text-lg font-black text-white shadow-xl shadow-pink-200/70 transition hover:scale-105 lg:text-xl"
+                className="top-moppy-signup-button"
               >
                 モッピーでポイ活を始める ›
               </a>
-              <p className="mt-4 text-xs font-bold leading-6 text-slate-400 lg:text-sm">
-                ※このページには広告・紹介リンクを含みます。
-              </p>
             </div>
           </div>
         </section>
 
         <section className="mx-auto max-w-[1120px] px-5 py-10">
-          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="mb-6 flex flex-col items-start gap-3">
             <h2 className="text-4xl font-black leading-tight text-slate-950 lg:text-5xl">
               <span className="text-orange-400">🔥</span> 無料でできるポイ活一覧
             </h2>
@@ -572,11 +653,6 @@ export default function Page({
       <header className="overflow-hidden bg-gradient-to-r from-[#FFF2F7] via-[#FFF8FA] to-[#FFF4F7]">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-10 px-6 py-10 lg:flex-row lg:items-center lg:justify-between lg:px-12 lg:py-12">
           <div className="w-full lg:w-[680px]">
-            <div className="inline-flex items-center gap-3 rounded-full border-2 border-pink-300 bg-white px-6 py-3 text-base font-black text-pink-600 shadow-[0_10px_30px_rgba(236,72,153,0.18)] lg:text-xl">
-              <span>🤖</span>
-              <span>AIが毎日自動で判定中！</span>
-            </div>
-
             <h1 className="mt-8 text-[54px] font-black leading-[0.95] tracking-[-0.05em] text-pink-600 lg:text-[96px]">
               ポイ活
               <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
@@ -602,7 +678,7 @@ export default function Page({
 
               <Link
                 href="/about-poikatsu"
-                className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-green-600 shadow-lg ring-2 ring-green-200 transition hover:scale-105 hover:bg-green-50 lg:text-base"
+                className="inline-flex items-center rounded-full bg-white px-6 py-3 text-base font-black text-green-600 shadow-lg ring-2 ring-green-200 transition hover:scale-105 hover:bg-green-50 lg:text-lg"
               >
                 <span className="mr-2 text-xl">🔰</span>
                 ポイ活とは？
@@ -662,7 +738,7 @@ export default function Page({
           >
             <div className="mb-6">
               <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-                🔍 いまGoogle検索されているポイ活関連ワード
+                🔍 Googleトレンド由来のポイ活関連ワード
               </h2>
 
               <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
@@ -676,7 +752,10 @@ export default function Page({
             <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
               <div className="flex flex-wrap items-center gap-3">
                 {visibleTrendTags.map((tag) => {
-                  const matchedRanking = findMatchedRanking(tag.word);
+                  const matchedRanking = findMatchedRanking(
+                    tag.word,
+                    tag.target_offer_name
+                  );
                   const pillClass =
                     "rounded-full bg-pink-100 px-5 py-3 text-base font-black text-pink-600 underline decoration-2 underline-offset-4 transition hover:scale-105 hover:bg-pink-200 active:scale-95";
 
@@ -738,7 +817,7 @@ export default function Page({
           <p className="mt-8 text-center text-xs font-bold text-slate-400 lg:text-sm">
             ※ 本ランキングはAIによる分析結果をもとに作成しています。実際の成果やポイント獲得を保証するものではありません。
           </p>
-        </main>
+      </main>
 
       {activeTab === "free" && renderFreePanel()}
 
