@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 const MOPPY_INVITE_URL =
   "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
+const MOPPY_SIGNUP_BANNER_URL = "https://img.moppy.jp/pub/pc/friend/300x250-1.jpg";
 const MOPPY_RESOLVE_TIMEOUT_MS = 3500;
 
 type ScoreItem = {
@@ -196,7 +197,36 @@ export default function ClientAdjustments() {
       if (!freePage || !isFreePanel) return;
 
       const firstFreeSection = freePage.querySelector("section:first-child");
+      firstFreeSection?.querySelectorAll<HTMLElement>(".top-moppy-signup-cta").forEach((cta) => {
+        if (cta.querySelector(".top-moppy-signup-banner")) return;
+
+        const bannerLink = document.createElement("a");
+        bannerLink.className = "top-moppy-signup-banner";
+        bannerLink.href = MOPPY_INVITE_URL;
+        bannerLink.target = "_blank";
+        bannerLink.rel = "noopener noreferrer";
+        bannerLink.style.display = "block";
+        bannerLink.style.width = "min(100%, 300px)";
+        bannerLink.style.margin = "0 auto 1.5rem";
+        bannerLink.style.borderRadius = "0.9rem";
+        bannerLink.style.overflow = "hidden";
+        bannerLink.style.boxShadow = "0 16px 30px rgba(236,72,153,0.18)";
+        bannerLink.style.lineHeight = "0";
+
+        const bannerImage = document.createElement("img");
+        bannerImage.src = MOPPY_SIGNUP_BANNER_URL;
+        bannerImage.alt = "モッピー紹介バナー";
+        bannerImage.loading = "lazy";
+        bannerImage.style.display = "block";
+        bannerImage.style.width = "100%";
+        bannerImage.style.height = "auto";
+
+        bannerLink.appendChild(bannerImage);
+        cta.insertBefore(bannerLink, cta.firstChild);
+      });
+
       firstFreeSection?.querySelectorAll("img, picture").forEach((element) => {
+        if (element.closest(".top-moppy-signup-banner")) return;
         hideReactOwnedElement(element);
       });
 
