@@ -52,6 +52,7 @@ main p.mt-4.text-xs.font-bold.text-slate-400 {
 
 main article[id^="ranking-"] a[href*="/reviews/"] {
   align-items: center !important;
+  display: flex !important;
   justify-content: center !important;
   text-align: center !important;
 }
@@ -59,7 +60,22 @@ main article[id^="ranking-"] a[href*="/reviews/"] {
 main article[id^="ranking-"] a[href*="/reviews/"]::before {
   display: inline-block !important;
   flex: 0 1 auto !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
   text-align: center !important;
+}
+
+main article[id^="ranking-"] a[href*="/reviews/"]::after {
+  flex: 0 0 auto !important;
+  margin-left: 0.5rem !important;
+  margin-right: auto !important;
+}
+
+main article[id^="ranking-"] .top-moppy-signup-banner,
+main article[id^="ranking-"] .moppy-official-banner,
+main article[id^="ranking-"] a:has(img[src*="/pub/pc/friend/"]),
+main article[id^="ranking-"] a:has(img[src*="300x250-1.jpg"]) {
+  display: none !important;
 }
 
 @media (max-width: 767px) {
@@ -105,12 +121,5 @@ main article[id^="ranking-"] a[href*="/reviews/"]::before {
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
-  }
-
-  main article[id^="ranking-"] .top-moppy-signup-banner,
-  main article[id^="ranking-"] .moppy-official-banner,
-  main article[id^="ranking-"] a:has(img[src*="/pub/pc/friend/"]),
-  main article[id^="ranking-"] a:has(img[src*="300x250-1.jpg"]) {
-    display: none !important;
   }
 }
