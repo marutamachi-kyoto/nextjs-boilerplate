@@ -200,16 +200,6 @@ export default function ClientAdjustments() {
         hideReactOwnedElement(element);
       });
 
-      firstFreeSection?.querySelectorAll("div").forEach((element) => {
-        const text = compactText(element);
-        if (
-          text.includes("モッピーでポイ活を始める") &&
-          text.includes("広告・紹介リンク")
-        ) {
-          hideReactOwnedElement(element);
-        }
-      });
-
       freePage.querySelectorAll("div, span").forEach((element) => {
         const text = (element.textContent || "").trim();
         if (text === "ポイ活サイト最大手！" || text === "最大手！" || text === "最大手") {
