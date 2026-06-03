@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const MOPPY_ORIGIN = "https://pc.moppy.jp";
+const MOPPY_INVITE_CODE = "ut3GA1ce";
 const MOPPY_FETCH_TIMEOUT_MS = 2200;
 const MAX_SEARCH_CANDIDATES = 3;
 
@@ -26,6 +27,19 @@ const isMoppyDetailUrl = (url?: string | null) => {
     );
   } catch {
     return false;
+  }
+};
+
+const getMoppyInviteUrl = (detailUrl: string) => {
+  try {
+    const parsed = new URL(detailUrl);
+    const siteId =
+      parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id");
+    if (!siteId) return null;
+
+    return `${MOPPY_ORIGIN}/entry/invite.php?invite=${MOPPY_INVITE_CODE}&s_id=${encodeURIComponent(siteId)}`;
+  } catch {
+    return null;
   }
 };
 
@@ -120,14 +134,44 @@ async function resolveDetailUrl(searchUrl: string) {
   }
 }
 
+async function resolveInviteUrl(detailUrl: string) {
+  const inviteUrl = getMoppyInviteUrl(detailUrl);
+  if (!inviteUrl) return detailUrl;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), MOPPY_FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(detailUrl, {
+      cache: "no-store",
+      signal: controller.signal,
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36",
+        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    });
+
+    if (!response.ok) return detailUrl;
+
+    const html = await response.text();
+    return html.includes("シェア") ? inviteUrl : detailUrl;
+  } catch {
+    return detailUrl;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const offerName = (searchParams.get("offer") || "").trim();
   const providedUrl = (searchParams.get("url") || "").trim();
 
   if (isMoppyDetailUrl(providedUrl)) {
+    const url = await resolveInviteUrl(providedUrl);
     return Response.json(
-      { url: providedUrl, resolved: true },
+      { url, resolved: true, originalUrl: providedUrl },
       { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
     );
   }
@@ -159,8 +203,14 @@ export async function GET(request: Request) {
   const resolved = results.find((result) => result.detailUrl);
 
   if (resolved?.detailUrl) {
+    const url = await resolveInviteUrl(resolved.detailUrl);
     return Response.json(
-      { url: resolved.detailUrl, resolved: true, searchUrl: resolved.searchUrl },
+      {
+        url,
+        resolved: true,
+        searchUrl: resolved.searchUrl,
+        originalUrl: resolved.detailUrl,
+      },
       { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
     );
   }
