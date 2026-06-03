@@ -14,8 +14,16 @@ type TrendRow = {
   category?: string;
 };
 
+function formatSearchKeyword(value: string) {
+  return value
+    .replace(/([^ 　])ポイ活/g, "$1　ポイ活")
+    .replace(/ポイ活([^ 　])/g, "ポイ活　$1")
+    .replace(/[ 　]+/g, "　")
+    .trim();
+}
+
 function normalizeKeyword(query: string) {
-  return query
+  const cleaned = query
     .replace(/[　]/g, " ")
     .replace(/\s+/g, " ")
     .replace(/�/g, "")
@@ -23,6 +31,8 @@ function normalizeKeyword(query: string) {
     .replace(/[^\p{L}\p{N}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー\s]/gu, "")
     .replace(/(?<=[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー])\s+(?=[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー])/gu, "")
     .trim();
+
+  return formatSearchKeyword(cleaned);
 }
 
 function classifyKeyword(word: string) {
