@@ -33,8 +33,10 @@ const findRankingArticle = (targetOfferName: string) => {
   );
 };
 
-const PILL_CLASS =
-  "rounded-full bg-pink-100 px-5 py-3 text-base font-black text-pink-600 underline decoration-2 underline-offset-4 transition hover:scale-105 hover:bg-pink-200 active:scale-95";
+const PILL_BASE_CLASS =
+  "rounded-full bg-pink-100 px-5 py-3 text-base font-black text-pink-600 transition";
+const PILL_JUMP_CLASS =
+  `${PILL_BASE_CLASS} underline decoration-2 underline-offset-4 hover:scale-105 hover:bg-pink-200 active:scale-95`;
 
 export default function TrendKeywordJumps() {
   useEffect(() => {
@@ -59,14 +61,14 @@ export default function TrendKeywordJumps() {
         ...tags.map((tag) => {
           if (!tag.target_offer_name) {
             const span = document.createElement("span");
-            span.className = PILL_CLASS;
+            span.className = PILL_BASE_CLASS;
             span.textContent = tag.word;
             return span;
           }
 
           const button = document.createElement("button");
           button.type = "button";
-          button.className = PILL_CLASS;
+          button.className = PILL_JUMP_CLASS;
           button.textContent = tag.word;
           return button;
         })
