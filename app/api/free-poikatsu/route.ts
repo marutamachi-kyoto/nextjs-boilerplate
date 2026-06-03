@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 
+const CATEGORY_IDS = Array.from({ length: 20 }, (_, index) => 1001 + index);
+
 const SOURCE_URLS = [
   "https://pc.moppy.jp/service/?order=1",
+  "https://pc.moppy.jp/ad/?c_id=1083",
   "https://pc.moppy.jp/ad/?c_id=1011",
   "https://pc.moppy.jp/ad/?c_id=1010",
+  ...CATEGORY_IDS.map((categoryId) => `https://pc.moppy.jp/ad/?c_id=${categoryId}`),
 ];
 
-const MAX_OFFERS = 20;
+const MAX_OFFERS = 50;
 
 type FreeOffer = {
   title: string;
