@@ -102,6 +102,16 @@ const getMatchTerms = (item: RankingRow) => {
 };
 
 const SERVICE_DISPLAY_RULES = [
+  { wordKeys: ["au pay カード", "aupayカード", "aupay"], display: "au PAYカード" },
+  { wordKeys: ["softbank光", "ソフトバンク光"], display: "SoftBank光" },
+  { wordKeys: ["momentia", "モーメンティア"], display: "Momentia" },
+  { wordKeys: ["itトレンド"], display: "ITトレンド" },
+  { wordKeys: ["oh!ya", "オーヤ"], display: "Oh!Ya" },
+  { wordKeys: ["三菱ufj", "三菱ｕｆｊ", "三菱ＵＦＪ"], display: "三菱UFJ銀行" },
+  { wordKeys: ["tson"], display: "TSON FUNDING" },
+  { wordKeys: ["外為どっとコム"], display: "外為どっとコム" },
+  { wordKeys: ["探す フランチャイズ", "フランチャイズ"], display: "探す フランチャイズ" },
+  { wordKeys: ["ふるさと納税アンケート"], display: "ふるさと納税アンケート" },
   { wordKeys: ["paypayカード", "ペイペイカード"], display: "PayPayカード" },
   { wordKeys: ["paypay銀行", "ペイペイ銀行"], display: "PayPay銀行" },
   { wordKeys: ["paypay証券", "ペイペイ証券"], display: "PayPay証券" },
@@ -163,6 +173,11 @@ const GENERIC_DISPLAY_WORDS = new Set([
   "max",
   "アメリカ",
   "倶楽部",
+  "高還元中",
+  "超高還元",
+  "リピートOK",
+  "即P",
+  "探す",
 ]);
 
 const toServiceDisplayWord = (word: string, target?: RankingRow | null) => {
@@ -175,13 +190,25 @@ const toServiceDisplayWord = (word: string, target?: RankingRow | null) => {
 
   if (target) {
     const offerName = getOfferName(target)
+      .replace(/※[^※]*※/g, " ")
       .replace(/【[^】]*】/g, " ")
       .replace(/\[[^\]]*\]/g, " ")
       .replace(/（[^）]*）/g, " ")
-      .replace(/\([^)]*\)/g, " ");
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/高還元中|超高還元|リピートOK|即P/g, " ");
+
+    const offerRule = SERVICE_DISPLAY_RULES.find((item) =>
+      item.wordKeys.some((key) => normalizeKey(offerName).includes(normalizeKey(key)))
+    );
+    if (offerRule) return offerRule.display;
 
     const token = normalizeSpaces(offerName.split(/[|｜／/、。!！?？\s]+/)[0] || "");
-    if (token && !GENERIC_DISPLAY_WORDS.has(token) && normalizeKey(token).length >= 2) {
+    if (
+      token &&
+      !GENERIC_DISPLAY_WORDS.has(token) &&
+      !/^[※\d,円相当P\s]+$/i.test(token) &&
+      normalizeKey(token).length >= 2
+    ) {
       return token;
     }
   }
