@@ -11,9 +11,9 @@ const normalizeText = (value?: string | null) => {
   return (value || "")
     .toLowerCase()
     .replace(/\s+/g, "")
-    .replace(/[・･]/g, "")
-    .replace(/[ーｰ−]/g, "-")
-    .replace(/[\[\]【】!！?？。、"'「」『』()（）]/g, "")
+    .replace(/[\u30fb\uff65]/g, "")
+    .replace(/[\u30fc\uff70\u2212]/g, "-")
+    .replace(/[\[\]\u3010\u3011!\uff01?\uff1f\u3002\u3001"' \u300c\u300d\u300e\u300f()\uff08\uff09]/g, "")
     .trim();
 };
 
@@ -43,7 +43,8 @@ export default function TrendKeywordJumps() {
 
     const heading = section.querySelector("h2");
     if (heading) {
-      heading.textContent = "🔍 Googleトレンド由来のポイ活関連ワード";
+      heading.textContent =
+        "\ud83d\udd0d \u3044\u307eGoogle\u691c\u7d22\u3055\u308c\u3066\u3044\u308b\u30dd\u30a4\u6d3b\u95a2\u9023\u30ef\u30fc\u30c9";
     }
 
     let tags: TrendTag[] = [];
