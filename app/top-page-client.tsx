@@ -66,6 +66,32 @@ const isDirectMoppyUrl = (url?: string) => {
   );
 };
 
+const getMoppyInviteUrl = (url?: string) => {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== "pc.moppy.jp" || parsed.pathname !== "/ad/detail.php") {
+      return null;
+    }
+
+    const siteId = parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id");
+    if (!siteId) return null;
+
+    return `https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&s_id=${encodeURIComponent(siteId)}`;
+  } catch {
+    return null;
+  }
+};
+
+const getMoppyLinkUrl = (item: CategoryScore) => {
+  const inviteUrl = getMoppyInviteUrl(item.primary_site_url);
+  if (inviteUrl) return inviteUrl;
+
+  if (isDirectMoppyUrl(item.primary_site_url)) return item.primary_site_url!;
+  return MOPPY_URL;
+};
+
 const getRankStyle = (index: number) => {
   const pastelCards = [
     "from-pink-50 via-white to-rose-50",
@@ -319,10 +345,6 @@ export default function Page({
   };
 
   const trackMoppyClick = async (item: CategoryScore) => {
-    const url = isDirectMoppyUrl(item.primary_site_url)
-      ? item.primary_site_url!
-      : MOPPY_URL;
-
     try {
       await fetch("/api/click", {
         method: "POST",
@@ -331,10 +353,9 @@ export default function Page({
           category: item.category,
           site_name: "モッピー",
         }),
+        keepalive: true,
       });
     } catch (e) {}
-
-    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const toggleLike = async (offerName: string) => {
@@ -494,14 +515,16 @@ export default function Page({
         </div>
 
         <div className="flex flex-col items-center gap-2 lg:items-end">
-          <button
-            type="button"
+          <a
+            href={getMoppyLinkUrl(item)}
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={() => trackMoppyClick(item)}
             className="flex h-14 w-full max-w-[230px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 text-base font-black text-white shadow-md transition hover:scale-105"
           >
             モッピーで探す
             <span className="ml-2 text-xl leading-none">›</span>
-          </button>
+          </a>
 
           <Link
             href={getReviewPath(offerName)}
