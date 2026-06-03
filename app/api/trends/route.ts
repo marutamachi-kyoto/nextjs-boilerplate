@@ -97,6 +97,7 @@ const getMatchTerms = (item: RankingRow) => {
       [offerName, item.category, cleaned, ...cleaned.split(/[|｜／/、。!！?？\s]+/)]
         .map((value) => normalizeKey(value || ""))
         .filter((value) => value.length >= 2)
+        .filter((value) => !["カード", "口座", "銀行", "証券", "無料", "会員登録"].includes(value))
     )
   );
 };
@@ -269,12 +270,15 @@ const findTrendTarget = (word: string, rankings: RankingRow[]) => {
   const trendKey = normalizeKey(word);
   if (trendKey.length < 2) return null;
 
+  const ruleMatch = findRuleTarget(word, rankings);
+  if (ruleMatch) return ruleMatch;
+
   const directMatch =
     rankings.find((item) =>
       getMatchTerms(item).some((term) => trendKey.includes(term) || term.includes(trendKey))
     ) || null;
 
-  return directMatch || findRuleTarget(word, rankings);
+  return directMatch;
 };
 
 const fetchFallbackTrendRows = async (): Promise<TrendRow[]> => {
