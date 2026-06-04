@@ -279,41 +279,22 @@ async function getRankings() {
   return (data as RankingItem[]).map(formatRankingItem);
 }
 
-async function getTrendItems(rankings: DisplayRankingItem[]) {
-  const seen = new Set<string>();
+async function getTrendItems(_rankings: DisplayRankingItem[]) {
+  try {
+    const response = await fetch(`${BASE_URL}/api/trends`, {
+      cache: "no-store",
+    });
 
-  const { data, error } = await getSupabase()
-    .from("trends")
-    .select("word, score, category")
-    .order("score", { ascending: false })
-    .limit(100);
+    if (!response.ok) return [];
 
-  if (error || !Array.isArray(data)) {
-    if (error) console.error(error);
+    const json = await response.json();
+    if (!Array.isArray(json.data)) return [];
+
+    return json.data.slice(0, 50) as TrendItem[];
+  } catch (error) {
+    console.error(error);
     return [];
   }
-
-  return data
-    .map((item) => {
-      const word = normalizeSpaces(String(item.word || ""));
-      const target = findTrendTarget(word, rankings);
-
-      return {
-        word,
-        score: Number(item.score || 0),
-        category: String(item.category || "Googleトレンド由来"),
-        target_offer_name: target?.offer_name,
-      };
-    })
-    .filter((item) => item.target_offer_name)
-    .filter((item) => item.word && normalizeKey(item.word).length >= 2)
-    .filter((item) => {
-      const key = normalizeKey(item.word);
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, 50) as TrendItem[];
 }
 
 function buildStructuredData(rankings: DisplayRankingItem[]) {
