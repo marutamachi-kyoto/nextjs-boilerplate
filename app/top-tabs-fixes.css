@@ -71,6 +71,26 @@ main article[id^="ranking-"] a[href*="/reviews/"]::after {
   margin-right: auto !important;
 }
 
+main article[id^="ranking-"] a[href*="/reviews/"] .review-label-text {
+  display: block !important;
+  flex: 0 1 auto !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  max-width: calc(100% - 1.8rem) !important;
+  text-align: center !important;
+}
+
+main article[id^="ranking-"] a[href*="/reviews/"] .review-label-text span {
+  display: block !important;
+  text-align: center !important;
+}
+
+main article[id^="ranking-"] a[href*="/reviews/"] .review-label-arrow {
+  flex: 0 0 auto !important;
+  margin-left: 0.5rem !important;
+  margin-right: auto !important;
+}
+
 main article[id^="ranking-"] .top-moppy-signup-banner,
 main article[id^="ranking-"] .moppy-official-banner,
 main article[id^="ranking-"] a:has(img[src*="/pub/pc/friend/"]),
@@ -120,6 +140,31 @@ main article[id^="ranking-"] a:has(img[src*="300x250-1.jpg"]) {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    position: relative !important;
+    color: transparent !important;
+    font-size: 0 !important;
     text-align: center !important;
   }
+
+  main article[id^="ranking-"] a[href*="/reviews/"] > * {
+    display: none !important;
+  }
+
+  main article[id^="ranking-"] a[href*="/reviews/"]::before {
+    content: "もっと検索ワードをみる  ›" !important;
+    display: block !important;
+    width: 100% !important;
+    color: #db2777 !important;
+    flex: none !important;
+    margin: 0 !important;
+    font-size: 0.85rem !important;
+    line-height: 1.25 !important;
+    text-align: center !important;
+  }
+
+  main article[id^="ranking-"] a[href*="/reviews/"]::after {
+    display: none !important;
+    content: none !important;
+  }
+
 }
