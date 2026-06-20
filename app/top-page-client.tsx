@@ -1,72 +1,44 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import FreeOfferLikeButton from "./free-poikatsu-likes";
 
-const MOPPY_URL =
+const MOPPY_INVITE_URL =
   "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
+const MOPPY_BANNER_URL = "https://img.moppy.jp/pub/pc/friend/300x250-1.jpg";
+const MOPPY_INVITE_UNAVAILABLE_SITE_IDS = new Set(["157738"]);
 
-type CategoryScore = {
+type RankingItem = {
   category: string;
   rank: number;
-  trend_keyword: string;
-  offer_name?: string;
+  offer_name: string;
   reward?: number | null;
-  reason?: string;
-  image_url?: string;
-  primary_site_name?: string;
-  primary_site_url?: string;
-  updated_at?: string;
+  image_url?: string | null;
+  primary_site_url?: string | null;
+  updated_at?: string | null;
 };
 
-type TrendTag = {
-  word: string;
-  score: number;
-  category?: string;
-  target_offer_name?: string;
-};
-
-type FreeOffer = {
-  title: string;
-  description: string;
-  reward: number;
-  rewardText: string;
-  imageUrl?: string;
-  url: string;
-};
+type TabKey = "all" | "easy" | "free" | "high";
 
 type TopPageClientProps = {
-  initialItems?: CategoryScore[];
-  initialTrendTags?: TrendTag[];
+  initialItems?: RankingItem[];
   initialUpdatedAt?: string;
 };
 
-const normalizeText = (text?: string) => {
-  return (text || "")
-    .toLowerCase()
-    .replace(/\u3000/g, "")
-    .replace(/\s+/g, "")
-    .replace(/\uff08/g, "(")
-    .replace(/\uff09/g, ")")
-    .replace(/[\u30fb\uff65]/g, "")
-    .replace(/[\u30fc\uff70\u2212]/g, "-")
-    .replace(/[\[\]\u3010\u3011!\uff01?\uff1f\u3002\u3001\u300c\u300d\u300e\u300f()\uff08\uff09]/g, "")
-    .trim();
+const getTodayJst = () => {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  return formatter.format(new Date());
 };
 
-const getStorageKey = (offerName: string, likeDate?: string) => {
-  return `poikatu-liked:${likeDate || "today"}:${offerName}`;
-};
+const getLikeStorageKey = (offerName: string, likeDate: string) =>
+  `moppy-analysis-liked:${likeDate}:${offerName}`;
 
-const isDirectMoppyUrl = (url?: string) => {
-  return Boolean(
-    url && url.includes("pc.moppy.jp/") && !url.includes("/entry/invite.php")
-  );
-};
-
-const getMoppyInviteUrl = (url?: string) => {
+const getMoppyInviteUrl = (url?: string | null) => {
   if (!url) return null;
 
   try {
@@ -76,7 +48,7 @@ const getMoppyInviteUrl = (url?: string) => {
     }
 
     const siteId = parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id");
-    if (!siteId) return null;
+    if (!siteId || MOPPY_INVITE_UNAVAILABLE_SITE_IDS.has(siteId)) return null;
 
     return `https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&s_id=${encodeURIComponent(siteId)}`;
   } catch {
@@ -84,775 +56,345 @@ const getMoppyInviteUrl = (url?: string) => {
   }
 };
 
-const getMoppyLinkUrl = (item: CategoryScore) => {
-  const inviteUrl = getMoppyInviteUrl(item.primary_site_url);
+const getMoppyLinkUrl = (url?: string | null) => {
+  const inviteUrl = getMoppyInviteUrl(url);
   if (inviteUrl) return inviteUrl;
-
-  if (isDirectMoppyUrl(item.primary_site_url)) return item.primary_site_url!;
-  return MOPPY_URL;
+  if (url && url.includes("pc.moppy.jp/")) return url;
+  return MOPPY_INVITE_URL;
 };
 
-const getRankStyle = (index: number) => {
-  const pastelCards = [
-    "from-pink-50 via-white to-rose-50",
-    "from-emerald-50 via-white to-teal-50",
-    "from-violet-50 via-white to-fuchsia-50",
-    "from-amber-50 via-white to-yellow-50",
-    "from-cyan-50 via-white to-sky-50",
-    "from-orange-50 via-white to-pink-50",
-  ];
+const formatReward = (reward?: number | null) => {
+  if (!reward || reward <= 0) return "確認中";
+  return `${reward.toLocaleString("ja-JP")}P`;
+};
 
-  const pastelBadges = [
-    "from-pink-300 to-rose-400",
-    "from-emerald-300 to-teal-400",
-    "from-violet-300 to-fuchsia-400",
-    "from-amber-300 to-orange-400",
-    "from-cyan-300 to-sky-400",
-    "from-orange-300 to-pink-400",
-  ];
+const getReasonLabels = (item: RankingItem) => {
+  const title = `${item.offer_name} ${item.category}`.toLowerCase();
+  const labels: Array<"申し込むだけでOK" | "無料でできる" | "高額報酬"> = [];
 
-  const colorIndex = index % pastelCards.length;
+  if (
+    title.includes("無料") ||
+    title.includes("トライアル") ||
+    title.includes("資料請求") ||
+    title.includes("会員登録") ||
+    title.includes("アプリ") ||
+    title.includes("インストール") ||
+    title.includes("povo")
+  ) {
+    labels.push("無料でできる");
+  }
 
-  return {
-    badge: pastelBadges[colorIndex],
-    card: pastelCards[colorIndex],
-  };
+  if (
+    title.includes("口座") ||
+    title.includes("カード") ||
+    title.includes("証券") ||
+    title.includes("申込") ||
+    title.includes("新規") ||
+    title.includes("登録")
+  ) {
+    labels.push("申し込むだけでOK");
+  }
+
+  if ((item.reward || 0) >= 3000) {
+    labels.push("高額報酬");
+  }
+
+  if (labels.length === 0) labels.push("申し込むだけでOK");
+  return Array.from(new Set(labels));
+};
+
+const tabMatches = (item: RankingItem, activeTab: TabKey) => {
+  if (activeTab === "all") return true;
+
+  const labels = getReasonLabels(item);
+  if (activeTab === "easy") return labels.includes("申し込むだけでOK");
+  if (activeTab === "free") return labels.includes("無料でできる");
+  return labels.includes("高額報酬");
+};
+
+const LikeButton = ({
+  offerName,
+  count,
+  liked,
+  onLike,
+}: {
+  offerName: string;
+  count: number;
+  liked: boolean;
+  onLike: (offerName: string) => void;
+}) => {
+  return (
+    <button
+      type="button"
+      disabled={liked}
+      onClick={() => onLike(offerName)}
+      aria-pressed={liked}
+      className="flex min-h-[42px] w-full max-w-[190px] items-center justify-center rounded-[14px] border-2 border-[#f7c8d8] bg-white px-4 text-sm font-black text-[#d91f68] shadow-[0_8px_18px_rgba(217,31,104,0.12)] transition enabled:hover:scale-105 disabled:cursor-default disabled:opacity-60"
+    >
+      ♡ いいね！ {count}
+    </button>
+  );
 };
 
 function FallbackImage() {
   return (
-    <div className="relative aspect-[1.35/1] overflow-hidden border-b border-slate-100 bg-gradient-to-br from-[#fffefe] to-[#fff8fb]">
-      <div className="absolute left-[15%] right-[15%] top-1/2 h-[54px] -translate-y-1/2 rounded-[14px] border-2 border-[#f4b5cf] bg-white/70" />
-      <div className="absolute left-[27%] right-[27%] top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-[#f3a7c6] to-transparent" />
-      <div className="absolute left-[30%] right-[30%] top-[calc(50%-12px)] h-px bg-[#fff2f8]" />
-      <div className="absolute left-[30%] right-[30%] top-[calc(50%+12px)] h-px bg-[#fff2f8]" />
+    <div className="flex aspect-[1.35/1] w-full items-center justify-center rounded-[18px] border border-[#dbe3ed] bg-gradient-to-br from-white to-slate-100">
+      <span className="rounded-full border border-slate-300 bg-white/90 px-4 py-2 text-xs font-black text-slate-500">
+        画像確認中
+      </span>
     </div>
   );
 }
 
-export default function Page({
+export default function TopPageClient({
   initialItems = [],
-  initialTrendTags = [],
   initialUpdatedAt = "-",
 }: TopPageClientProps) {
-  const [activeTab, setActiveTab] = useState<"ranking" | "free">("ranking");
-  const [items, setItems] = useState<CategoryScore[]>(initialItems);
+  const [items, setItems] = useState(initialItems);
   const [updatedAt, setUpdatedAt] = useState(initialUpdatedAt);
-  const [trendTags, setTrendTags] = useState<TrendTag[]>(initialTrendTags);
+  const [activeTab, setActiveTab] = useState<TabKey>("all");
+  const [likeDate, setLikeDate] = useState(getTodayJst());
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
-  const [likeDate, setLikeDate] = useState("");
   const [likedOffers, setLikedOffers] = useState<Record<string, boolean>>({});
-  const [relatedReasons, setRelatedReasons] = useState<Record<string, string[]>>({});
-  const [freeOffers, setFreeOffers] = useState<FreeOffer[]>([]);
-  const [isLoadingFreeOffers, setIsLoadingFreeOffers] = useState(false);
-  const [hasLoadedFreeOffers, setHasLoadedFreeOffers] = useState(false);
 
   useEffect(() => {
-    if (initialTrendTags.length === 0) {
-      fetch("/api/trends", { cache: "no-store" })
-        .then((res) => res.json())
-        .then((json) => setTrendTags(json.data || []))
-        .catch(() => {});
-    }
+    if (initialItems.length > 0) return;
 
-    if (initialItems.length === 0) {
-      fetch("/api/score", { cache: "no-store" })
-        .then((res) => res.json())
-        .then((json) => {
-          const data = json.data || [];
-          setItems(data.slice(0, 50));
-
-          const latestUpdatedAt = data
-            .map((item: CategoryScore) => item.updated_at)
-            .filter(Boolean)
-            .sort()
-            .reverse()[0];
-
-          if (latestUpdatedAt) {
-            setUpdatedAt(
-              new Date(latestUpdatedAt).toLocaleString("ja-JP", {
-                year: "numeric",
-                month: "numeric",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            );
-          }
-        })
-        .catch(() => {});
-    }
-
-    fetch("/api/likes", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : { counts: {}, likeDate: "" }))
+    fetch("/api/rankings", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : { data: [] }))
       .then((json) => {
-        setLikeCounts(json.counts || {});
-        setLikeDate(json.likeDate || "");
+        const nextItems = Array.isArray(json.data) ? json.data.slice(0, 50) : [];
+        setItems(nextItems);
+
+        const latestUpdatedAt = nextItems
+          .map((item: RankingItem) => item.updated_at)
+          .filter(Boolean)
+          .sort()
+          .reverse()[0];
+
+        if (latestUpdatedAt) {
+          setUpdatedAt(
+            new Date(latestUpdatedAt).toLocaleString("ja-JP", {
+              timeZone: "Asia/Tokyo",
+              year: "numeric",
+              month: "numeric",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          );
+        }
       })
       .catch(() => {});
-  }, [initialItems.length, initialTrendTags.length]);
+  }, [initialItems.length]);
 
   useEffect(() => {
-    if (activeTab !== "free" || hasLoadedFreeOffers || isLoadingFreeOffers) return;
-
-    setIsLoadingFreeOffers(true);
-    fetch("/api/free-poikatsu", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : { data: [] }))
+    fetch("/api/likes", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : { counts: {}, likeDate: getTodayJst() }))
       .then((json) => {
-        setFreeOffers(Array.isArray(json.data) ? json.data : []);
-        setHasLoadedFreeOffers(true);
+        const nextDate = json.likeDate || getTodayJst();
+        setLikeDate(nextDate);
+        setLikeCounts(json.counts || {});
       })
-      .catch(() => setHasLoadedFreeOffers(true))
-      .finally(() => setIsLoadingFreeOffers(false));
-  }, [activeTab, hasLoadedFreeOffers, isLoadingFreeOffers]);
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || items.length === 0) return;
+    if (typeof window === "undefined") return;
 
     const nextLiked: Record<string, boolean> = {};
     items.forEach((item) => {
-      const offerName = getOfferName(item);
-      nextLiked[offerName] =
-        window.localStorage.getItem(getStorageKey(offerName, likeDate)) === "1";
+      nextLiked[item.offer_name] =
+        window.localStorage.getItem(getLikeStorageKey(item.offer_name, likeDate)) === "1";
     });
     setLikedOffers(nextLiked);
   }, [items, likeDate]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.location.hash !== "#ranking-section") return;
+  const visibleItems = useMemo(
+    () => items.filter((item) => tabMatches(item, activeTab)).slice(0, 50),
+    [items, activeTab]
+  );
 
-    const scrollToRankingSection = () => {
-      document.getElementById("ranking-section")?.scrollIntoView({
-        behavior: "auto",
-        block: "start",
-      });
-    };
+  const onLike = async (offerName: string) => {
+    if (likedOffers[offerName]) return;
 
-    scrollToRankingSection();
-
-    const timer1 = window.setTimeout(scrollToRankingSection, 300);
-    const timer2 = window.setTimeout(scrollToRankingSection, 800);
-
-    return () => {
-      window.clearTimeout(timer1);
-      window.clearTimeout(timer2);
-    };
-  }, [items.length]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchRelatedReasons = async () => {
-      const targets = items.slice(0, 50).filter((item) => {
-        const offerName = getOfferName(item);
-        return offerName && !relatedReasons[offerName];
-      });
-      if (targets.length === 0) return;
-
-      const nextReasons: Record<string, string[]> = {};
-      const concurrency = 4;
-      let nextIndex = 0;
-
-      await Promise.all(
-        Array.from({ length: concurrency }, async () => {
-          while (!cancelled && nextIndex < targets.length) {
-            const item = targets[nextIndex];
-            nextIndex += 1;
-
-            const offerName = getOfferName(item);
-            try {
-              const params = new URLSearchParams({ offer: offerName });
-              const response = await fetch(`/api/related-search-words?${params.toString()}`, {
-                cache: "no-store",
-              });
-              if (!response.ok) continue;
-
-              const json = await response.json();
-              const words = Array.isArray(json.words)
-                ? json.words.filter((word: unknown): word is string => typeof word === "string")
-                : [];
-              if (words.length > 0) {
-                nextReasons[offerName] = words.slice(0, 2);
-              }
-            } catch {}
-          }
-        })
-      );
-
-      if (!cancelled && Object.keys(nextReasons).length > 0) {
-        setRelatedReasons((current) => ({ ...current, ...nextReasons }));
-      }
-    };
-
-    fetchRelatedReasons();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [items, relatedReasons]);
-
-  const getOfferName = (item: CategoryScore) => {
-    return item.offer_name || item.trend_keyword || item.category;
-  };
-
-  const getReviewPath = (offerName: string) => {
-    return `/reviews/${encodeURIComponent(offerName)}`;
-  };
-
-  const getRankingId = (item: CategoryScore, index: number) => {
-    return `ranking-${index + 1}-${normalizeText(getOfferName(item))}`;
-  };
-
-  const findMatchedRanking = (tagWord: string, targetOfferName?: string) => {
-    const normalizedTagWord = normalizeText(tagWord);
-    const normalizedTargetOfferName = normalizeText(targetOfferName);
-
-    return items.find((item) => {
-      const candidates = [getOfferName(item), item.trend_keyword, item.category]
-        .map((value) => normalizeText(value))
-        .filter(Boolean);
-
-      return candidates.some(
-        (candidate) =>
-          (normalizedTargetOfferName && candidate === normalizedTargetOfferName) ||
-          candidate === normalizedTagWord ||
-          (candidate.length >= 3 &&
-            normalizedTagWord.length >= 3 &&
-            (candidate.includes(normalizedTagWord) ||
-              normalizedTagWord.includes(candidate)))
-      );
-    });
-  };
-
-  const scrollToRanking = (item: CategoryScore) => {
-    const index = items.findIndex((rankingItem) => rankingItem === item);
-    const targetId = getRankingId(item, index);
-    document.getElementById(targetId)?.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
-  };
-
-  const scrollToTrendKeywords = () => {
-    setActiveTab("ranking");
-    window.setTimeout(() => {
-      document.getElementById("trend-keywords")?.scrollIntoView({
-        behavior: "auto",
-        block: "start",
-      });
-    }, 0);
-  };
-
-  const trackMoppyClick = async (item: CategoryScore) => {
-    try {
-      await fetch("/api/click", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category: item.category,
-          site_name: "モッピー",
-        }),
-        keepalive: true,
-      });
-    } catch (e) {}
-  };
-
-  const toggleLike = async (offerName: string) => {
-    const isLiked = Boolean(likedOffers[offerName]);
-    const nextLiked = !isLiked;
     const currentCount = Number(likeCounts[offerName] || 0);
-    const nextCount = nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
-
-    setLikedOffers((current) => ({ ...current, [offerName]: nextLiked }));
-    setLikeCounts((current) => ({ ...current, [offerName]: nextCount }));
+    setLikedOffers((current) => ({ ...current, [offerName]: true }));
+    setLikeCounts((current) => ({ ...current, [offerName]: currentCount + 1 }));
 
     try {
-      if (nextLiked) {
-        window.localStorage.setItem(getStorageKey(offerName, likeDate), "1");
-      } else {
-        window.localStorage.removeItem(getStorageKey(offerName, likeDate));
-      }
-    } catch (e) {}
+      window.localStorage.setItem(getLikeStorageKey(offerName, likeDate), "1");
+    } catch {}
 
     try {
       const response = await fetch("/api/likes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          offer_name: offerName,
-          action: nextLiked ? "like" : "unlike",
-        }),
+        body: JSON.stringify({ offer_name: offerName }),
       });
       const json = await response.json();
 
       if (json.likeDate) setLikeDate(json.likeDate);
       if (Number.isFinite(Number(json.count))) {
-        setLikeCounts((current) => ({
-          ...current,
-          [offerName]: Number(json.count),
-        }));
+        setLikeCounts((current) => ({ ...current, [offerName]: Number(json.count) }));
       }
-    } catch (e) {}
+    } catch {}
   };
 
-  const isRewardMissing = (reward?: number | null) => {
-    return !reward || reward <= 0;
+  const trackMoppyClick = async (item: RankingItem) => {
+    try {
+      await fetch("/api/click", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: item.offer_name, site_name: "モッピー" }),
+        keepalive: true,
+      });
+    } catch {}
   };
 
-  const formatReward = (reward?: number | null) => {
-    if (isRewardMissing(reward)) return "データが取れませんでした";
-    return `${reward!.toLocaleString("ja-JP")}P`;
-  };
+  const tabs: Array<{ key: TabKey; label: string }> = [
+    { key: "all", label: "総合ランキング" },
+    { key: "easy", label: "申し込むだけでOK" },
+    { key: "free", label: "無料でできる" },
+    { key: "high", label: "高額報酬" },
+  ];
 
-  const getDynamicReason = (item: CategoryScore) => {
-    if (item.reason) return item.reason;
-    return "検索需要と案件内容の分かりやすさをもとに評価しています。";
-  };
-
-  const renderDynamicReason = (item: CategoryScore, offerName: string) => {
-    const words = relatedReasons[offerName] || [];
-
-    if (words.length >= 2) {
-      return (
-        <>
-          Googleの検索で
-          <span className="trend-reason-keyword">「{words[0]}」</span>
-          や
-          <span className="trend-reason-keyword">「{words[1]}」</span>
-          が一緒に調べられています。
-        </>
-      );
-    }
-
-    if (words.length === 1) {
-      return (
-        <>
-          Googleの検索で
-          <span className="trend-reason-keyword">「{words[0]}」</span>
-          が一緒に調べられています。
-        </>
-      );
-    }
-
-    return getDynamicReason(item);
-  };
-
-  const visibleTrendTags = useMemo(() => {
-    const seen = new Set<string>();
-
-    return trendTags.filter((tag) => {
-      const key = normalizeText(tag.word);
-      if (!key || seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [trendTags]);
-
-  const renderLikeButton = (offerName: string) => {
-    const isLiked = Boolean(likedOffers[offerName]);
-
-    return (
-      <button
-        type="button"
-        onClick={() => toggleLike(offerName)}
-        aria-pressed={isLiked}
-        className={`inline-flex min-h-8 items-center gap-2 rounded-full border-2 px-3 py-1 text-xs font-black shadow-sm transition hover:scale-105 ${
-          isLiked
-            ? "border-transparent bg-gradient-to-r from-pink-500 to-rose-400 text-white"
-            : "border-pink-200 bg-white text-pink-600 hover:bg-pink-50"
-        }`}
-      >
-        <span>{isLiked ? "♥" : "♡"}</span>
-        <span>{isLiked ? "いいね済み" : "いいね！"}</span>
-        <span>{likeCounts[offerName] || 0}</span>
-      </button>
-    );
-  };
-
-  const renderRankingRow = (item: CategoryScore, index: number) => {
-    const offerName = getOfferName(item);
-    const rankStyle = getRankStyle(index);
-
-    return (
-      <article
-        key={`${item.rank}-${item.offer_name}-${index}`}
-        id={getRankingId(item, index)}
-        className={`scroll-mt-8 grid gap-4 bg-gradient-to-r ${rankStyle.card} p-5 transition hover:scale-[1.01] xl:grid-cols-[58px_1.3fr_220px_210px] xl:items-center xl:gap-5`}
-      >
-        <div className="flex items-center gap-3 lg:justify-center">
-          <div
-            className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${rankStyle.badge} text-lg font-black text-white shadow-lg`}
-          >
-            {index + 1}
-          </div>
-        </div>
-
-        <div>
-          <div className="ranking-title-row">
-            <h3 className="text-2xl font-black text-slate-900">{offerName}</h3>
-            <span className="ranking-like-inline">{renderLikeButton(offerName)}</span>
-          </div>
-
-          <p className="ranking-related-reason mt-2 text-sm font-bold leading-7 text-slate-600">
-            {renderDynamicReason(item, offerName)}
-          </p>
-        </div>
-
-        <div className="rounded-2xl bg-white/90 px-4 py-4 text-center shadow-sm ring-1 ring-pink-100">
-          <div className="text-sm font-black text-slate-600 lg:text-base">
-            報酬ポイントの目安
-          </div>
-          <div
-            className={
-              isRewardMissing(item.reward)
-                ? "mt-1 text-xs font-black leading-5 text-pink-500 lg:text-sm"
-                : "mt-1 text-xl font-black text-pink-500 lg:text-2xl"
-            }
-          >
-            {formatReward(item.reward)}
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center gap-2 lg:items-end">
-          <a
-            href={getMoppyLinkUrl(item)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => trackMoppyClick(item)}
-            className="flex h-14 w-full max-w-[230px] items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 px-5 text-base font-black text-white shadow-md transition hover:scale-105"
-          >
-            モッピーで探す
-            <span className="ml-2 text-xl leading-none">›</span>
-          </a>
-
-          <Link
-            href={getReviewPath(offerName)}
-            className="flex h-11 w-full max-w-[190px] items-center justify-center rounded-xl border-2 border-pink-200 bg-white px-3 text-[11px] font-black text-pink-600 shadow-sm transition hover:scale-105 hover:bg-pink-50"
-          >
-            もっと検索ワードをみる
-            <span className="ml-2 text-base leading-none">›</span>
-          </Link>
-        </div>
-      </article>
-    );
-  };
-
-  const renderFreePanel = () => {
-    return (
-      <main className="min-h-screen bg-[#fff8fb]">
-        <section className="border-b border-pink-100 bg-gradient-to-r from-pink-50 via-white to-orange-50">
-          <div className="mx-auto max-w-[1120px] px-5 py-10 lg:py-14">
-            <h1 className="mt-0 text-5xl font-black leading-tight tracking-tight text-slate-950 lg:text-7xl">
-              <span className="text-pink-600">無料でできる</span>
-              <br />
-              ポイ活特集
-            </h1>
-
-            <p className="mt-6 max-w-[1040px] text-lg font-bold leading-9 text-slate-900 lg:text-xl lg:leading-10">
-              <span className="text-pink-600">商品購入や有料サービスの申し込みではない、</span>
-              無料でできるポイ活をまとめます。
-            </p>
-
-            <div className="top-moppy-signup-cta">
-              <div className="top-moppy-signup-badge">
-                ポイ活サイト最大手！
-              </div>
-              <h2 className="top-moppy-signup-title">
-                モッピーでポイ活を始める
-              </h2>
-              <p className="top-moppy-signup-copy">
-                はじめての人は、モッピーの
-                <strong>会員登録（無料）</strong>
-                からスタート
-              </p>
-              <a
-                href={MOPPY_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="top-moppy-signup-button"
-              >
-                モッピーでポイ活を始める ›
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-[1120px] px-5 py-10">
-          <div className="mb-6 flex flex-col items-start gap-3">
-            <h2 className="text-4xl font-black leading-tight text-slate-950 lg:text-5xl">
-              <span className="text-orange-400">🔥</span> 無料でできるポイ活一覧
-            </h2>
-            <div className="w-fit rounded-full bg-white px-5 py-3 text-sm font-black text-slate-600 shadow-lg ring-1 ring-slate-100">
+  return (
+    <main className="min-h-screen bg-[linear-gradient(180deg,#edfffc_0,#fffaf0_390px,#fff_780px)] text-[#111827]">
+      <section className="border-b border-[#c8f2ee]">
+        <div className="mx-auto grid w-[min(1120px,calc(100%-32px))] grid-cols-1 items-center gap-8 py-8 lg:grid-cols-[minmax(0,1.04fr)_minmax(280px,0.96fr)] lg:gap-5 lg:py-11">
+          <div>
+            <div className="inline-flex min-h-[38px] items-center justify-center rounded-full bg-white px-5 py-2 text-sm font-black text-[#173256] shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
               最終更新：{updatedAt}
             </div>
+
+            <h1 className="mt-5 whitespace-nowrap text-[clamp(31px,10vw,44px)] font-black leading-none tracking-normal lg:text-[clamp(36px,6.2vw,76px)]">
+              <span className="text-[#28bdb3]">モッピー</span>案件分析
+            </h1>
+
+            <p className="mt-5 max-w-[760px] text-[17px] font-black leading-[1.78] text-[#1f2937] lg:text-[22px] lg:leading-[1.85]">
+              ポイ活サイト
+              <strong className="text-[#28bdb3]">「モッピー」</strong>
+              のたくさんの案件の中から
+              <strong className="text-[#f59a1b]">「お得」</strong>
+              な案件がわかる。AIが分析して、毎日更新しています（0:00～1:00頃）
+            </p>
           </div>
 
-          {isLoadingFreeOffers && freeOffers.length === 0 ? (
-            <div className="rounded-[2rem] bg-white p-8 text-center shadow-lg ring-1 ring-pink-100">
-              <p className="text-xl font-black leading-9 text-slate-800">
-                無料ポイ活案件を読み込んでいます。
-              </p>
-            </div>
-          ) : freeOffers.length > 0 ? (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {freeOffers.map((offer) => (
-                <article
-                  key={offer.title}
-                  className="flex min-h-full flex-col overflow-hidden rounded-[1.25rem] bg-white shadow-lg ring-1 ring-pink-100"
-                >
-                  {offer.imageUrl ? (
+          <div className="justify-self-center overflow-hidden rounded-[22px] border border-[#bdeee9] bg-[linear-gradient(135deg,#f2fffd,#fff_52%,#fff8ed)] p-3.5 shadow-[0_22px_50px_rgba(40,189,179,0.14)]">
+            <img
+              src={MOPPY_BANNER_URL}
+              alt="モッピー公式バナー"
+              className="block w-[min(100%,300px)] rounded-[14px] shadow-[0_18px_34px_rgba(15,23,42,0.12)]"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto w-[min(1120px,calc(100%-32px))] py-6 lg:py-8">
+        <div className="grid overflow-hidden rounded-[20px] border border-[#bdeee9] bg-white shadow-[0_12px_28px_rgba(40,189,179,0.08)] sm:grid-cols-4">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`min-h-[58px] border-b-4 px-3 py-3 text-sm font-black transition lg:text-base ${
+                activeTab === tab.key
+                  ? "border-[#28bdb3] text-[#111827]"
+                  : "border-transparent text-[#334155] hover:bg-[#f6fffd]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-8 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <h2 className="text-[clamp(28px,4.2vw,44px)] font-black leading-tight">
+            <span className="text-[#f59a1b]">お得</span>なモッピー案件ランキング
+          </h2>
+          <div className="w-fit rounded-full bg-white px-5 py-3 text-sm font-black text-[#173256] shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+            最終更新：{updatedAt}
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-4">
+          {visibleItems.map((item, index) => {
+            const labels = getReasonLabels(item);
+
+            return (
+              <article
+                key={`${item.rank}-${item.offer_name}-${index}`}
+                className="grid min-h-[142px] items-center gap-4 rounded-[24px] border border-[#c8f2ee] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] lg:grid-cols-[58px_150px_minmax(0,1fr)_190px_210px] lg:gap-[18px] lg:p-[18px]"
+              >
+                <div className="grid h-[50px] w-[50px] place-items-center rounded-[16px] bg-[linear-gradient(135deg,#e8fbf8,#fff8ed)] text-[26px] font-black text-[#07968f]">
+                  {index + 1}
+                </div>
+
+                <div className="w-[min(100%,260px)] justify-self-center overflow-hidden rounded-[18px] border border-[#dbe3ed] bg-white lg:w-[150px]">
+                  {item.image_url ? (
                     <img
-                      src={offer.imageUrl}
-                      alt={offer.title}
-                      className="aspect-[1.35/1] w-full object-cover"
+                      src={item.image_url}
+                      alt={item.offer_name}
                       loading="lazy"
+                      className="aspect-[1.35/1] w-full object-cover"
                     />
                   ) : (
                     <FallbackImage />
                   )}
-
-                  <div className="flex flex-1 flex-col p-5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-xl font-black leading-snug text-slate-950">
-                        {offer.title}
-                      </h3>
-                      <FreeOfferLikeButton offerName={offer.title} compact />
-                    </div>
-
-                    <p className="mt-3 text-sm font-bold leading-7 text-slate-600">
-                      {offer.description}
-                    </p>
-
-                    <div className="mt-auto pt-5">
-                      <div className="text-sm font-black text-slate-600">
-                        報酬ポイントの目安
-                      </div>
-                      <div className="mt-1 text-3xl font-black text-pink-500">
-                        {offer.rewardText}
-                      </div>
-                    </div>
-
-                    <a
-                      href={offer.url || MOPPY_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 flex min-h-[52px] items-center justify-center rounded-2xl bg-gradient-to-r from-pink-500 to-orange-500 px-4 text-center text-base font-black text-white shadow-lg transition hover:scale-105"
-                    >
-                      モッピーで確認
-                    </a>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-[2rem] bg-white p-8 text-center shadow-lg ring-1 ring-pink-100">
-              <p className="text-xl font-black leading-9 text-slate-800">
-                現在、モッピーの無料案件情報を取得できませんでした。
-                時間をおいて再度確認するか、モッピー公式ページで無料案件を探してください。
-              </p>
-              <a
-                href={MOPPY_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-6 inline-flex min-h-[56px] items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-8 text-base font-black text-white shadow-lg transition hover:scale-105"
-              >
-                モッピーで探す
-              </a>
-            </div>
-          )}
-
-          <p className="mt-6 text-center text-xs font-bold leading-6 text-slate-400 lg:text-sm">
-            ※ モッピー上で確認できる情報をもとに表示しています。ポイント数や条件は変わることがあります。
-            申し込み前に必ずモッピーの案件詳細ページで最新条件を確認してください。
-          </p>
-        </section>
-      </main>
-    );
-  };
-
-  return (
-    <div className="min-h-screen bg-[#fff8fb]">
-      <header className="overflow-hidden bg-gradient-to-r from-[#FFF2F7] via-[#FFF8FA] to-[#FFF4F7]">
-        <div className="mx-auto flex max-w-[1500px] flex-col gap-10 px-6 py-10 lg:flex-row lg:items-center lg:justify-between lg:px-12 lg:py-12">
-          <div className="w-full lg:w-[680px]">
-            <h1 className="mt-8 text-[54px] font-black leading-[0.95] tracking-[-0.05em] text-pink-600 lg:text-[96px]">
-              ポイ活
-              <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
-                AI
-              </span>
-              判定
-            </h1>
-
-            <div className="mt-8 text-[20px] font-black leading-[1.9] text-[#27313f] lg:text-[28px]">
-              <p>
-                <span className="text-pink-600">「Google検索」</span>
-                のデータをもとに、いま世間で注目されているポイ活をAIが判定し、
-                <span className="text-pink-600">毎日（0:00～1:00頃）</span>
-                ランキングに反映しています。
-              </p>
-            </div>
-
-            <div className="mt-8 flex flex-wrap items-center gap-6">
-              <div className="inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
-                最終更新：
-                <span className="ml-2 text-base text-slate-600">{updatedAt}</span>
-              </div>
-
-              <Link
-                href="/about-poikatsu"
-                className="inline-flex items-center rounded-full bg-white px-6 py-3 text-base font-black text-green-600 shadow-lg ring-2 ring-green-200 transition hover:scale-105 hover:bg-green-50 lg:text-lg"
-              >
-                <span className="mr-2 text-xl">🔰</span>
-                ポイ活とは？
-              </Link>
-            </div>
-          </div>
-
-          <div className="w-full lg:w-[720px]">
-            <Image
-              src="/hero.png.png"
-              alt="ポイ活AI判定"
-              width={1200}
-              height={900}
-              className="h-auto w-full rounded-[2rem] shadow-[0_35px_80px_rgba(31,41,55,0.18)]"
-              priority
-            />
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-[1500px] px-4 pt-6 lg:px-8">
-        <div className="grid gap-2 rounded-[1.35rem] border border-pink-100 bg-white p-2 shadow-lg shadow-pink-100/60 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab("ranking")}
-            className={`min-h-[58px] rounded-2xl px-4 text-base font-black transition lg:text-lg ${
-              activeTab === "ranking"
-                ? "bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg shadow-pink-100"
-                : "bg-white text-pink-600 hover:bg-pink-50"
-            }`}
-          >
-            注目ポイ活ランキング
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("free")}
-            className={`min-h-[58px] rounded-2xl px-4 text-base font-black transition lg:text-lg ${
-              activeTab === "free"
-                ? "bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg shadow-pink-100"
-                : "bg-white text-pink-600 hover:bg-pink-50"
-            }`}
-          >
-            無料ポイ活特集
-          </button>
-        </div>
-      </div>
-
-      <main
-        className={`mx-auto max-w-[1500px] px-4 py-8 lg:px-8 lg:py-10 ${
-          activeTab === "ranking" ? "" : "hidden"
-        }`}
-        aria-hidden={activeTab !== "ranking"}
-      >
-          <section
-            id="trend-keywords"
-            className="scroll-mt-6 mb-10 rounded-[2rem] bg-white p-5 shadow-lg ring-1 ring-pink-100 lg:p-8"
-          >
-            <div className="mb-6">
-              <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-                🔍 Googleトレンド由来のポイ活関連ワード
-              </h2>
-
-              <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
-                <div className="inline-flex w-fit items-center rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
-                  最終更新：
-                  <span className="ml-2 text-slate-700">{updatedAt}</span>
                 </div>
-              </div>
-            </div>
 
-            <div className="rounded-[1.5rem] bg-gradient-to-br from-pink-50 via-white to-orange-50 p-5 lg:p-7">
-              <div className="flex flex-wrap items-center gap-3">
-                {visibleTrendTags.map((tag) => {
-                  const matchedRanking = findMatchedRanking(
-                    tag.word,
-                    tag.target_offer_name
-                  );
-                  const pillClass =
-                    "rounded-full bg-pink-100 px-5 py-3 text-base font-black text-pink-600 underline decoration-2 underline-offset-4 transition hover:scale-105 hover:bg-pink-200 active:scale-95";
-
-                  if (matchedRanking) {
-                    return (
-                      <button
-                        key={tag.word}
-                        type="button"
-                        onClick={() => scrollToRanking(matchedRanking)}
-                        className={pillClass}
-                        title="ランキング内の該当案件へ移動"
+                <div>
+                  <h3 className="[overflow-wrap:anywhere] text-[21px] font-black leading-snug lg:text-[23px]">
+                    {item.offer_name}
+                  </h3>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {labels.map((label) => (
+                      <span
+                        key={label}
+                        className={`inline-flex min-h-[30px] items-center rounded-full px-3 py-1.5 text-[13px] font-black ${
+                          label === "無料でできる"
+                            ? "bg-[#ecfdf5] text-[#047857]"
+                            : label === "高額報酬"
+                              ? "bg-[#eff6ff] text-[#1d4ed8]"
+                              : "bg-[#fff7ed] text-[#b45309]"
+                        }`}
                       >
-                        {tag.word}
-                      </button>
-                    );
-                  }
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
 
-                  return (
-                    <Link
-                      key={tag.word}
-                      href={getReviewPath(tag.word)}
-                      className={pillClass}
-                      title="関連ワード詳細ページを見る"
-                    >
-                      {tag.word}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
+                <div className="text-left lg:text-center">
+                  <small className="block text-xs font-black text-[#64748b]">獲得ポイント</small>
+                  <strong className="mt-1 block text-[30px] font-black leading-none text-[#07968f]">
+                    {formatReward(item.reward)}
+                  </strong>
+                </div>
 
-          <div id="ranking-section" className="mt-12 mb-6 scroll-mt-6">
-            <div className="flex items-center gap-3">
-              <span className="text-4xl">🔥</span>
-              <h2 className="text-3xl font-black text-slate-900 lg:text-5xl">
-                【
-                <span className="bg-gradient-to-b from-yellow-300 to-orange-500 bg-clip-text text-transparent">
-                  AI
-                </span>
-                判定】いま注目されているポイ活ランキング
-              </h2>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
-              <div className="inline-flex w-fit items-center rounded-full bg-white px-5 py-3 text-sm font-black text-slate-500 shadow-lg ring-1 ring-slate-100">
-                最終更新：
-                <span className="ml-2 text-slate-700">{updatedAt}</span>
-              </div>
-            </div>
-          </div>
-
-          <section className="mt-6 overflow-hidden rounded-[2rem] bg-white shadow-lg ring-1 ring-pink-100">
-            <div className="divide-y divide-pink-100">
-              {items.slice(0, 50).map((item, index) => renderRankingRow(item, index))}
-            </div>
-          </section>
-
-          <p className="mt-8 text-center text-xs font-bold text-slate-400 lg:text-sm">
-            ※ 本ランキングはAIによる分析結果をもとに作成しています。実際の成果やポイント獲得を保証するものではありません。
-          </p>
-      </main>
-
-      {activeTab === "free" && renderFreePanel()}
-
-      {activeTab === "ranking" && (
-        <button
-          type="button"
-          onClick={scrollToTrendKeywords}
-          className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 px-5 py-4 text-sm font-black text-white shadow-2xl transition hover:scale-105 active:scale-95 lg:bottom-8 lg:right-8 lg:px-6 lg:text-base"
-        >
-          🔍 話題キーワードへ
-        </button>
-      )}
-    </div>
+                <div className="flex flex-col items-center gap-3">
+                  <a
+                    href={getMoppyLinkUrl(item.primary_site_url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackMoppyClick(item)}
+                    className="flex min-h-[52px] w-full max-w-[210px] items-center justify-center rounded-[14px] bg-[linear-gradient(90deg,#28bdb3,#07968f)] px-4 text-base font-black text-white shadow-[0_14px_26px_rgba(40,189,179,0.22)] transition hover:scale-105"
+                  >
+                    モッピーで探す ›
+                  </a>
+                  <LikeButton
+                    offerName={item.offer_name}
+                    count={likeCounts[item.offer_name] || 0}
+                    liked={Boolean(likedOffers[item.offer_name])}
+                    onLike={onLike}
+                  />
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    </main>
   );
 }
