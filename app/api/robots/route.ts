@@ -8,7 +8,6 @@ Allow: /
 Disallow: /api/click
 Disallow: /api/likes
 Disallow: /api/update-rankings
-Disallow: /api/update-trends
 
 Sitemap: ${siteUrl}/sitemap.xml
 `;
