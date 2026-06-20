@@ -24,6 +24,14 @@ type TopPageClientProps = {
   initialUpdatedAt?: string;
 };
 
+const normalizeText = (text?: string | null) =>
+  (text || "")
+    .toLowerCase()
+    .replace(/\u3000/g, "")
+    .replace(/\s+/g, "")
+    .replace(/[【】\[\]（）()・･ーｰ]/g, "")
+    .trim();
+
 const getTodayJst = () => {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Tokyo",
@@ -135,16 +143,6 @@ const LikeButton = ({
     </button>
   );
 };
-
-function FallbackImage() {
-  return (
-    <div className="flex aspect-[1.35/1] w-full items-center justify-center rounded-[18px] border border-[#dbe3ed] bg-gradient-to-br from-white to-slate-100">
-      <span className="rounded-full border border-slate-300 bg-white/90 px-4 py-2 text-xs font-black text-slate-500">
-        画像確認中
-      </span>
-    </div>
-  );
-}
 
 export default function TopPageClient({
   initialItems = [],
@@ -325,23 +323,10 @@ export default function TopPageClient({
             return (
               <article
                 key={`${item.rank}-${item.offer_name}-${index}`}
-                className="grid min-h-[142px] items-center gap-4 rounded-[24px] border border-[#c8f2ee] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] lg:grid-cols-[58px_150px_minmax(0,1fr)_190px_210px] lg:gap-[18px] lg:p-[18px]"
+                className="grid min-h-[142px] items-center gap-4 rounded-[24px] border border-[#c8f2ee] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] lg:grid-cols-[58px_minmax(0,1fr)_170px_210px] lg:gap-[18px] lg:p-[18px]"
               >
                 <div className="grid h-[50px] w-[50px] place-items-center rounded-[16px] bg-[linear-gradient(135deg,#e8fbf8,#fff8ed)] text-[26px] font-black text-[#07968f]">
                   {index + 1}
-                </div>
-
-                <div className="w-[min(100%,260px)] justify-self-center overflow-hidden rounded-[18px] border border-[#dbe3ed] bg-white lg:w-[150px]">
-                  {item.image_url ? (
-                    <img
-                      src={item.image_url}
-                      alt={item.offer_name}
-                      loading="lazy"
-                      className="aspect-[1.35/1] w-full object-cover"
-                    />
-                  ) : (
-                    <FallbackImage />
-                  )}
                 </div>
 
                 <div>
