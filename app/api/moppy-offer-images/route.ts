@@ -141,6 +141,8 @@ const isUsableImageUrl = (url?: string) => {
     "blank",
     "favicon",
     "logo",
+    "/common/",
+    "/hamburger-menu/",
     "/pub/pc/friend/",
     "/pub/sp/friend/",
     "/pub/gl/",
@@ -345,7 +347,7 @@ const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
   const title = getDetailTitle(html);
   const mainHtml = getPrimaryDetailHtml(html);
   const imageUrl =
-    getTitleMatchedDetailImageUrl(mainHtml, sourceUrl, title) ||
+    getTitleMatchedDetailImageUrl(html, sourceUrl, title) ||
     getImageUrl(mainHtml, sourceUrl, { includeOgImage: false });
   const reward =
     getRewardOverride(sourceUrl) ||
