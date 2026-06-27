@@ -20,6 +20,7 @@ type RankingRow = {
   trend_keyword: string;
   offer_name: string;
   reward: number;
+  image_url: string | null;
   final_score: number;
   reason: string;
   primary_site_name: string;
@@ -132,6 +133,7 @@ function buildRows(offers: MoppyOffer[]): RankingRow[] {
       trend_keyword: getReason(offer),
       offer_name: offer.title,
       reward: offer.reward,
+      image_url: offer.imageUrl || null,
       final_score: score,
       reason: getReason(offer),
       primary_site_name: "モッピー",
