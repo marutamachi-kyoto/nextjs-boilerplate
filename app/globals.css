@@ -61,6 +61,8 @@ body > main .font-black {
   display: block;
 }
 
-.moppy-analysis-top .moppy-ranking-card:first-child .moppy-offer-banner-wrap {
+.moppy-analysis-top article:first-of-type .moppy-offer-banner-wrap,
+.moppy-analysis-top article:first-of-type img {
   display: none !important;
+  visibility: hidden !important;
 }
