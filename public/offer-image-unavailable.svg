@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="220" viewBox="0 0 300 220" role="img" aria-labelledby="title desc">
+  <title id="title">画像が取得できませんでした</title>
+  <desc id="desc">モッピー案件画像が取得できなかった場合に表示する代替画像</desc>
+  <rect width="300" height="220" rx="18" fill="#f7fffd"/>
+  <rect x="1" y="1" width="298" height="218" rx="17" fill="none" stroke="#bdeee9" stroke-width="2"/>
+  <circle cx="150" cy="78" r="34" fill="#e8fbf8" stroke="#28bdb3" stroke-width="3"/>
+  <path d="M132 86l14-16 13 13 8-8 15 18h-64l14-7z" fill="#28bdb3" opacity="0.85"/>
+  <circle cx="162" cy="68" r="5" fill="#f59a1b"/>
+  <text x="150" y="136" text-anchor="middle" font-family="BIZ UDPGothic, Yu Gothic, Meiryo, sans-serif" font-size="18" font-weight="700" fill="#173256">画像が取得できませんでした</text>
+  <text x="150" y="163" text-anchor="middle" font-family="BIZ UDPGothic, Yu Gothic, Meiryo, sans-serif" font-size="12" font-weight="700" fill="#07968f">モッピー詳細ページを確認中</text>
+</svg>
