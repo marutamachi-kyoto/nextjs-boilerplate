@@ -124,18 +124,38 @@ const isUsableImageUrl = (url?: string) => {
     "blank",
     "favicon",
     "logo",
+    "/pub/pc/friend/",
+    "/pub/sp/friend/",
+    "/pub/gl/",
   ];
 
   return !trackingImagePatterns.some((pattern) => lowerUrl.includes(pattern));
 };
 
-const getImageUrl = (html: string, baseUrl: string) => {
-  const candidates: string[] = [];
-  const ogImage = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i);
-  const ogImageReversed = html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["'][^>]*>/i);
+const getImageScore = (url: string) => {
+  const lowerUrl = url.toLowerCase();
+  let score = 0;
 
-  if (ogImage?.[1]) candidates.push(ogImage[1]);
-  if (ogImageReversed?.[1]) candidates.push(ogImageReversed[1]);
+  if (/banner|bnr|\/ad\/|\/ads\/|creative|campaign/.test(lowerUrl)) score += 40;
+  if (/trafficgate|accesstrade|valuecommerce|a8\.net|linkshare|af-/.test(lowerUrl)) score += 30;
+  if (/300x250|336x280|728x90|640x|468x60/.test(lowerUrl)) score += 20;
+  if (lowerUrl.includes("img.moppy.jp")) score += 5;
+  if (/icon|ico|logo|btn|button|common|sprite/.test(lowerUrl)) score -= 30;
+
+  return score;
+};
+
+const getImageUrl = (html: string, baseUrl: string, options: { includeOgImage?: boolean } = {}) => {
+  const candidates: string[] = [];
+  const includeOgImage = options.includeOgImage ?? true;
+
+  if (includeOgImage) {
+    const ogImage = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+    const ogImageReversed = html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["'][^>]*>/i);
+
+    if (ogImage?.[1]) candidates.push(ogImage[1]);
+    if (ogImageReversed?.[1]) candidates.push(ogImageReversed[1]);
+  }
 
   const imagePattern = /<img\b[^>]*(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/gi;
   let imageMatch = imagePattern.exec(html);
@@ -149,7 +169,7 @@ const getImageUrl = (html: string, baseUrl: string) => {
     .map((candidate) => toAbsoluteUrl(candidate, baseUrl))
     .filter(isUsableImageUrl);
 
-  return imageUrls.find((url) => url.includes("img.moppy.jp")) || imageUrls[0];
+  return imageUrls.sort((a, b) => getImageScore(b) - getImageScore(a))[0];
 };
 
 const getTitle = (html: string) => {
@@ -250,7 +270,7 @@ const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
 
   return [sanitizeOffer({
     title,
-    imageUrl: getImageUrl(mainHtml, sourceUrl),
+    imageUrl: getImageUrl(mainHtml, sourceUrl, { includeOgImage: false }),
     url: sourceUrl,
     reward,
     source: "detail" as const,
@@ -259,18 +279,6 @@ const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
 
 const fetchMoppyDetailOffer = async (url: string) => {
   const overrideReward = getRewardOverride(url);
-  if (overrideReward) {
-    return [sanitizeOffer({
-      title: getMoppySiteId(url) === "154516"
-        ? "【超還元】DMM TV"
-        : getMoppySiteId(url) === "155068"
-          ? "SBI証券【FX】"
-          : "Moppy verified offer",
-      url,
-      reward: overrideReward,
-      source: "detail" as const,
-    })];
-  }
 
   try {
     const response = await fetch(url, {
@@ -282,11 +290,24 @@ const fetchMoppyDetailOffer = async (url: string) => {
     });
 
     if (!response.ok) return [];
-    return parseMoppyDetailOffer(await response.text(), url);
+    const detailOffer = parseMoppyDetailOffer(await response.text(), url);
+    if (detailOffer.length > 0) return detailOffer;
   } catch (error) {
     console.error(error);
-    return [];
   }
+
+  return overrideReward
+    ? [sanitizeOffer({
+        title: getMoppySiteId(url) === "154516"
+          ? "【超還元】DMM TV"
+          : getMoppySiteId(url) === "155068"
+            ? "SBI証券【FX】"
+            : "Moppy verified offer",
+        url,
+        reward: overrideReward,
+        source: "detail" as const,
+      })]
+    : [];
 };
 
 const pickBetterOffer = (current: MoppyOfferImage, next: MoppyOfferImage) => {
