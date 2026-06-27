@@ -24,20 +24,6 @@ type TopPageClientProps = {
   initialUpdatedAt?: string;
 };
 
-type MoppyOfferImage = {
-  title: string;
-  imageUrl?: string | null;
-  url?: string | null;
-};
-
-const normalizeText = (text?: string | null) =>
-  (text || "")
-    .toLowerCase()
-    .replace(/\u3000/g, "")
-    .replace(/\s+/g, "")
-    .replace(/[【】\[\]（）()・･ーｰ]/g, "")
-    .trim();
-
 const getTodayJst = () => {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Tokyo",
@@ -51,17 +37,6 @@ const getTodayJst = () => {
 
 const getLikeStorageKey = (offerName: string, likeDate: string) =>
   `moppy-analysis-liked:${likeDate}:${offerName}`;
-
-const getMoppySiteId = (url?: string | null) => {
-  if (!url) return "";
-
-  try {
-    const parsed = new URL(url);
-    return parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id") || "";
-  } catch {
-    return "";
-  }
-};
 
 const getMoppyInviteUrl = (url?: string | null) => {
   if (!url) return null;
@@ -215,49 +190,6 @@ export default function TopPageClient({
   }, []);
 
   useEffect(() => {
-    if (items.length === 0) return;
-
-    let cancelled = false;
-
-    fetch("/api/moppy-offer-images", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : { data: [] }))
-      .then((json) => {
-        if (cancelled || !Array.isArray(json.data)) return;
-
-        const offers = (json.data as MoppyOfferImage[]).filter(
-          (offer) => offer.title && offer.imageUrl
-        );
-        const offersByTitle = new Map(
-          offers.map((offer) => [normalizeText(offer.title), offer])
-        );
-        const offersBySiteId = new Map(
-          offers
-            .map((offer) => [getMoppySiteId(offer.url), offer] as const)
-            .filter(([siteId]) => Boolean(siteId))
-        );
-
-        setItems((currentItems) =>
-          currentItems.map((item) => {
-            const itemSiteId = getMoppySiteId(item.primary_site_url);
-            const itemTitleKey = normalizeText(item.offer_name);
-            const matchedOffer =
-              (itemSiteId && offersBySiteId.get(itemSiteId)) ||
-              offersByTitle.get(itemTitleKey);
-
-            return matchedOffer?.imageUrl
-              ? { ...item, image_url: matchedOffer.imageUrl }
-              : item;
-          })
-        );
-      })
-      .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [items.length]);
-
-  useEffect(() => {
     if (typeof window === "undefined") return;
 
     const nextLiked: Record<string, boolean> = {};
@@ -379,6 +311,7 @@ export default function TopPageClient({
         <div className="mt-5 grid gap-4">
           {visibleItems.map((item, index) => {
             const labels = getReasonLabels(item);
+            const shouldShowOfferImage = item.rank !== 1 && Boolean(item.image_url);
 
             return (
               <article
@@ -389,10 +322,10 @@ export default function TopPageClient({
                   {index + 1}
                 </div>
 
-                {item.image_url ? (
+                {shouldShowOfferImage ? (
                   <div className="moppy-offer-banner-wrap w-[min(100%,260px)] justify-self-center overflow-hidden rounded-[14px] border border-[#dbe3ed] bg-white lg:w-[150px]">
                     <img
-                      src={item.image_url}
+                      src={item.image_url || ""}
                       alt={`${item.offer_name}のモッピーバナー`}
                       loading="lazy"
                       className="moppy-offer-banner aspect-[1.35/1] w-full object-cover"
