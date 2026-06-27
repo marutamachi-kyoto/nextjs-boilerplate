@@ -55,7 +55,11 @@ async function attachOfferImages(rankings: RankingItem[]) {
     const response = await fetch(`${MOPPY_OFFER_IMAGES_URL}?match=${Date.now()}`, {
       cache: "no-store",
     });
-    if (!response.ok) return rankings;
+    if (!response.ok) {
+      return rankings.map((item, index) =>
+        index === 0 || Number(item.rank) === 1 ? { ...item, image_url: null } : item
+      );
+    }
 
     const json = await response.json();
     const offers = (Array.isArray(json.data) ? json.data : []).filter(
@@ -71,7 +75,11 @@ async function attachOfferImages(rankings: RankingItem[]) {
         .filter(([siteId]) => Boolean(siteId))
     );
 
-    return rankings.map((item) => {
+    return rankings.map((item, index) => {
+      if (index === 0 || Number(item.rank) === 1) {
+        return { ...item, image_url: null };
+      }
+
       const itemSiteId = getMoppySiteId(item.primary_site_url);
       const matchedOffer =
         (itemSiteId && offersBySiteId.get(itemSiteId)) ||
@@ -83,7 +91,9 @@ async function attachOfferImages(rankings: RankingItem[]) {
     });
   } catch (error) {
     console.error(error);
-    return rankings;
+    return rankings.map((item, index) =>
+      index === 0 || Number(item.rank) === 1 ? { ...item, image_url: null } : item
+    );
   }
 }
 
