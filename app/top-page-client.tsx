@@ -311,7 +311,7 @@ export default function TopPageClient({
         <div className="mt-5 grid gap-4">
           {visibleItems.map((item, index) => {
             const labels = getReasonLabels(item);
-            const shouldShowOfferImage = item.rank !== 1 && Boolean(item.image_url);
+            const shouldShowOfferImage = index !== 0 && Number(item.rank) !== 1 && Boolean(item.image_url);
 
             return (
               <article
