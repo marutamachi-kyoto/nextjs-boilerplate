@@ -399,9 +399,20 @@ const fetchMoppyDetailOffer = async (url: string) => {
     : [];
 };
 
+const withPreferredReward = (offer: MoppyOfferImage, preferredReward?: number) => {
+  const rewardOverride = getRewardOverride(offer.url);
+  const reward = rewardOverride || preferredReward || offer.reward;
+  return { ...offer, reward };
+};
+
 const pickBetterOffer = (current: MoppyOfferImage, next: MoppyOfferImage) => {
-  if (next.source === "detail" && current.source !== "detail") return next;
-  if (current.source === "detail" && next.source !== "detail") return current;
+  if (next.source === "detail" && current.source !== "detail") {
+    return withPreferredReward(next, current.reward);
+  }
+
+  if (current.source === "detail" && next.source !== "detail") {
+    return withPreferredReward(current, next.reward);
+  }
 
   const currentScore = (current.imageUrl ? 1000000 : 0) + Number(current.reward || 0);
   const nextScore = (next.imageUrl ? 1000000 : 0) + Number(next.reward || 0);
