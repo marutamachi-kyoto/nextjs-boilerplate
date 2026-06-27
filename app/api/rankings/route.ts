@@ -15,7 +15,7 @@ export async function GET() {
   try {
     const { data, error } = await getSupabase()
       .from("rankings")
-      .select("category, rank, offer_name, reward, primary_site_url, updated_at")
+      .select("category, rank, offer_name, reward, image_url, primary_site_url, updated_at")
       .order("rank", { ascending: true })
       .limit(50);
 
