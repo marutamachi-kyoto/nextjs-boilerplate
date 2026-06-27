@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const BASE_URL = "https://poikatu-ai.vercel.app";
+const MOPPY_OFFER_IMAGES_URL = `${BASE_URL}/api/moppy-offer-images`;
 
 type RankingRow = {
   category?: string | null;
@@ -26,6 +27,12 @@ type DisplayRankingItem = {
   image_url?: string | null;
   primary_site_url?: string | null;
   updated_at?: string | null;
+};
+
+type MoppyOfferImage = {
+  title?: string | null;
+  imageUrl?: string | null;
+  url?: string | null;
 };
 
 const FALLBACK_RANKINGS: DisplayRankingItem[] = [
@@ -111,6 +118,26 @@ function getSupabase() {
   );
 }
 
+function normalizeText(text?: string | null) {
+  return (text || "")
+    .toLowerCase()
+    .replace(/\u3000/g, "")
+    .replace(/\s+/g, "")
+    .replace(/[【】\[\]（）()・･ーｰ]/g, "")
+    .trim();
+}
+
+function getMoppySiteId(url?: string | null) {
+  if (!url) return "";
+
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id") || "";
+  } catch {
+    return "";
+  }
+}
+
 function getOfferName(item: RankingRow) {
   return (
     item.offer_name ||
@@ -133,11 +160,48 @@ function formatRankingItem(item: RankingRow, index: number): DisplayRankingItem 
   };
 }
 
+async function attachOfferImages(rankings: DisplayRankingItem[]) {
+  try {
+    const response = await fetch(`${MOPPY_OFFER_IMAGES_URL}?match=${Date.now()}`, {
+      cache: "no-store",
+    });
+    if (!response.ok) return rankings;
+
+    const json = await response.json();
+    const offers = (Array.isArray(json.data) ? json.data : []).filter(
+      (offer: MoppyOfferImage) => offer.title && offer.imageUrl
+    ) as MoppyOfferImage[];
+
+    const offersByTitle = new Map(
+      offers.map((offer) => [normalizeText(offer.title), offer])
+    );
+    const offersBySiteId = new Map(
+      offers
+        .map((offer) => [getMoppySiteId(offer.url), offer] as const)
+        .filter(([siteId]) => Boolean(siteId))
+    );
+
+    return rankings.map((item) => {
+      const matchedOffer =
+        (getMoppySiteId(item.primary_site_url) &&
+          offersBySiteId.get(getMoppySiteId(item.primary_site_url))) ||
+        offersByTitle.get(normalizeText(item.offer_name));
+
+      return matchedOffer?.imageUrl
+        ? { ...item, image_url: matchedOffer.imageUrl }
+        : item;
+    });
+  } catch (error) {
+    console.error(error);
+    return rankings;
+  }
+}
+
 async function getRankings() {
   try {
     const { data, error } = await getSupabase()
       .from("rankings")
-      .select("category, rank, offer_name, reward, image_url, primary_site_url, updated_at")
+      .select("category, rank, offer_name, reward, primary_site_url, updated_at")
       .order("rank", { ascending: true })
       .limit(50);
 
@@ -147,7 +211,7 @@ async function getRankings() {
     }
 
     const rankings = (data as RankingRow[]).map(formatRankingItem);
-    return rankings.length > 0 ? rankings : FALLBACK_RANKINGS;
+    return rankings.length > 0 ? attachOfferImages(rankings) : FALLBACK_RANKINGS;
   } catch (error) {
     console.error(error);
     return FALLBACK_RANKINGS;
