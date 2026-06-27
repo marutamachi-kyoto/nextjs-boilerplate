@@ -6,6 +6,7 @@ export const revalidate = 0;
 
 const MOPPY_OFFERS_URL = "https://poikatu-ai.vercel.app/api/moppy-offer-images";
 const RANKING_LIMIT = 50;
+const HIGH_REWARD_THRESHOLD = 10000;
 
 type MoppyOffer = {
   title: string;
@@ -45,16 +46,7 @@ function normalizeText(value?: string | null) {
 }
 
 function isFreeOffer(title: string) {
-  const text = title.toLowerCase();
-  return (
-    text.includes("無料") ||
-    text.includes("トライアル") ||
-    text.includes("資料請求") ||
-    text.includes("会員登録") ||
-    text.includes("アプリ") ||
-    text.includes("インストール") ||
-    text.includes("povo")
-  );
+  return title.toLowerCase().includes("無料");
 }
 
 function isEasyOffer(title: string) {
@@ -70,8 +62,12 @@ function isEasyOffer(title: string) {
   );
 }
 
+function isHighRewardOffer(offer: MoppyOffer) {
+  return offer.reward >= HIGH_REWARD_THRESHOLD;
+}
+
 function getCategory(offer: MoppyOffer) {
-  if (offer.reward >= 3000) return "高額報酬";
+  if (isHighRewardOffer(offer)) return "高額報酬";
   if (isFreeOffer(offer.title)) return "無料でできる";
   if (isEasyOffer(offer.title)) return "申し込むだけでOK";
   return "申し込むだけでOK";
@@ -81,7 +77,7 @@ function getReason(offer: MoppyOffer) {
   const labels = [
     isEasyOffer(offer.title) ? "申し込むだけでOK" : "",
     isFreeOffer(offer.title) ? "無料でできる" : "",
-    offer.reward >= 3000 ? "高額報酬" : "",
+    isHighRewardOffer(offer) ? "高額報酬" : "",
   ].filter(Boolean);
 
   return labels.length > 0 ? labels.join(" / ") : "申し込むだけでOK";
@@ -165,6 +161,8 @@ export async function GET() {
       message: "rankings updated from moppy offers",
       count: rows.length,
       google_trends_removed: true,
+      high_reward_threshold: HIGH_REWARD_THRESHOLD,
+      free_rule: "offer title includes 無料",
       criteria: ["申し込むだけでOK", "無料でできる", "高額報酬"],
     });
   } catch (error: any) {
