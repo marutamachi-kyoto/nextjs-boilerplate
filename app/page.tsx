@@ -181,10 +181,14 @@ async function attachOfferImages(rankings: DisplayRankingItem[]) {
         .filter(([siteId]) => Boolean(siteId))
     );
 
-    return rankings.map((item) => {
+    return rankings.map((item, index) => {
+      if (index === 0 || Number(item.rank) === 1) {
+        return { ...item, image_url: null };
+      }
+
+      const itemSiteId = getMoppySiteId(item.primary_site_url);
       const matchedOffer =
-        (getMoppySiteId(item.primary_site_url) &&
-          offersBySiteId.get(getMoppySiteId(item.primary_site_url))) ||
+        (itemSiteId && offersBySiteId.get(itemSiteId)) ||
         offersByTitle.get(normalizeText(item.offer_name));
 
       return matchedOffer?.imageUrl
