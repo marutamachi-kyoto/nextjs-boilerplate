@@ -344,17 +344,22 @@ const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
 const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
   const title = getDetailTitle(html);
   const mainHtml = getPrimaryDetailHtml(html);
-  const reward = getRewardOverride(sourceUrl) || getPrimaryDetailReward(html);
+  const imageUrl =
+    getTitleMatchedDetailImageUrl(mainHtml, sourceUrl, title) ||
+    getImageUrl(mainHtml, sourceUrl, { includeOgImage: false });
+  const reward =
+    getRewardOverride(sourceUrl) ||
+    getPrimaryDetailReward(html) ||
+    getReward(stripTags(mainHtml)) ||
+    getReward(stripTags(html));
 
-  if (!title || reward <= 0) return [];
+  if (!title || (!imageUrl && reward <= 0)) return [];
 
   return [sanitizeOffer({
     title,
-    imageUrl:
-      getTitleMatchedDetailImageUrl(mainHtml, sourceUrl, title) ||
-      getImageUrl(mainHtml, sourceUrl, { includeOgImage: false }),
+    imageUrl,
     url: sourceUrl,
-    reward,
+    reward: reward || 1,
     source: "detail" as const,
   })];
 };
