@@ -60,3 +60,7 @@ body > main .font-black {
 .moppy-analysis-top .moppy-offer-banner {
   display: block;
 }
+
+.moppy-analysis-top .moppy-ranking-card:first-child .moppy-offer-banner-wrap {
+  display: none !important;
+}
