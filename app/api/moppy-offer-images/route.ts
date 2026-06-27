@@ -16,6 +16,7 @@ const DETAIL_SOURCE_URLS = [
   "https://pc.moppy.jp/ad/detail.php?site_id=155068&track_ref=ts",
   "https://pc.moppy.jp/ad/detail.php?site_id=154516&track_ref=ts",
   "https://pc.moppy.jp/ad/detail.php?site_id=160472",
+  "https://pc.moppy.jp/ad/detail.php?site_id=157597&track_ref=ts",
 ];
 
 const REWARD_OVERRIDES_BY_SITE_ID: Record<string, number> = {
