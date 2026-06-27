@@ -8,6 +8,7 @@ export const revalidate = 0;
 
 const BASE_URL = "https://poikatu-ai.vercel.app";
 const MOPPY_OFFER_IMAGES_URL = `${BASE_URL}/api/moppy-offer-images`;
+const OFFER_IMAGE_UNAVAILABLE_URL = "/offer-image-unavailable.svg";
 
 type RankingRow = {
   category?: string | null;
@@ -41,7 +42,7 @@ const FALLBACK_RANKINGS: DisplayRankingItem[] = [
     rank: 1,
     offer_name: "【超還元】SBI証券(新規総合口座開設+NISA口座開設)",
     reward: 17000,
-    image_url: "/hero.png.png",
+    image_url: OFFER_IMAGE_UNAVAILABLE_URL,
     primary_site_url: "https://pc.moppy.jp/",
   },
   {
@@ -49,7 +50,7 @@ const FALLBACK_RANKINGS: DisplayRankingItem[] = [
     rank: 2,
     offer_name: "U-NEXT 無料トライアル",
     reward: 2500,
-    image_url: "/hero.png.png",
+    image_url: OFFER_IMAGE_UNAVAILABLE_URL,
     primary_site_url: "https://pc.moppy.jp/",
   },
   {
@@ -57,7 +58,7 @@ const FALLBACK_RANKINGS: DisplayRankingItem[] = [
     rank: 3,
     offer_name: "povo2.0 新規契約",
     reward: 650,
-    image_url: "/hero.png.png",
+    image_url: OFFER_IMAGE_UNAVAILABLE_URL,
     primary_site_url: "https://pc.moppy.jp/",
   },
 ];
@@ -160,12 +161,19 @@ function formatRankingItem(item: RankingRow, index: number): DisplayRankingItem 
   };
 }
 
+function withUnavailableImages(rankings: DisplayRankingItem[]) {
+  return rankings.map((item) => ({
+    ...item,
+    image_url: item.image_url || OFFER_IMAGE_UNAVAILABLE_URL,
+  }));
+}
+
 async function attachOfferImages(rankings: DisplayRankingItem[]) {
   try {
     const response = await fetch(`${MOPPY_OFFER_IMAGES_URL}?match=${Date.now()}`, {
       cache: "no-store",
     });
-    if (!response.ok) return rankings;
+    if (!response.ok) return withUnavailableImages(rankings);
 
     const json = await response.json();
     const offers = (Array.isArray(json.data) ? json.data : []).filter(
@@ -181,23 +189,20 @@ async function attachOfferImages(rankings: DisplayRankingItem[]) {
         .filter(([siteId]) => Boolean(siteId))
     );
 
-    return rankings.map((item, index) => {
-      if (index === 0 || Number(item.rank) === 1) {
-        return { ...item, image_url: null };
-      }
-
+    return rankings.map((item) => {
       const itemSiteId = getMoppySiteId(item.primary_site_url);
       const matchedOffer =
         (itemSiteId && offersBySiteId.get(itemSiteId)) ||
         offersByTitle.get(normalizeText(item.offer_name));
 
-      return matchedOffer?.imageUrl
-        ? { ...item, image_url: matchedOffer.imageUrl }
-        : item;
+      return {
+        ...item,
+        image_url: matchedOffer?.imageUrl || item.image_url || OFFER_IMAGE_UNAVAILABLE_URL,
+      };
     });
   } catch (error) {
     console.error(error);
-    return rankings;
+    return withUnavailableImages(rankings);
   }
 }
 
