@@ -33,6 +33,12 @@ type MoppyOfferImage = {
   source?: "list" | "detail";
 };
 
+type ImageCandidate = {
+  url: string;
+  alt: string;
+  tag: string;
+};
+
 const getMoppySiteId = (url?: string | null) => {
   if (!url) return "";
 
@@ -56,6 +62,7 @@ const normalizeTitle = (title: string) => {
     .replace(/\s+/g, "")
     .replace(/[\u30fb\uff65]/g, "")
     .replace(/[\u30fc\uff70\u2212]/g, "-")
+    .replace(/[【】\[\]（）()®]/g, "")
     .trim();
 };
 
@@ -89,6 +96,15 @@ const sanitizeOffer = (offer: MoppyOfferImage): MoppyOfferImage => {
   };
 };
 
+const decodeHtmlValue = (value: string) => {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+};
+
 const stripTags = (html: string) => {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -104,9 +120,9 @@ const stripTags = (html: string) => {
 
 const toAbsoluteUrl = (url: string, baseUrl: string) => {
   try {
-    return new URL(url, baseUrl).toString();
+    return new URL(decodeHtmlValue(url), baseUrl).toString();
   } catch {
-    return url;
+    return decodeHtmlValue(url);
   }
 };
 
@@ -132,17 +148,70 @@ const isUsableImageUrl = (url?: string) => {
   return !trackingImagePatterns.some((pattern) => lowerUrl.includes(pattern));
 };
 
+const isGenericDetailImageUrl = (url?: string) => {
+  if (!url) return true;
+
+  const lowerUrl = url.toLowerCase();
+  const genericPatterns = [
+    "doubleclick",
+    "pixel",
+    "1x1",
+    "spacer",
+    "blank",
+    "favicon",
+    "logo",
+    "qr.php",
+    "/common/",
+    "/cashback/logo/",
+    "/pc/friend/",
+    "/sp/friend/",
+    "/hamburger-menu/",
+    "/aboutmoppy/",
+    "/lp/common/",
+    "/category/",
+    "icon_square",
+    "app-store-badge",
+    "google-play-badge",
+  ];
+
+  return genericPatterns.some((pattern) => lowerUrl.includes(pattern));
+};
+
 const getImageScore = (url: string) => {
   const lowerUrl = url.toLowerCase();
   let score = 0;
 
   if (/banner|bnr|\/ad\/|\/ads\/|creative|campaign/.test(lowerUrl)) score += 40;
-  if (/trafficgate|accesstrade|valuecommerce|a8\.net|linkshare|af-/.test(lowerUrl)) score += 30;
+  if (/trafficgate|accesstrade|valuecommerce|a8\.net|linkshare|af-|ad-track/.test(lowerUrl)) score += 30;
   if (/300x250|336x280|728x90|640x|468x60/.test(lowerUrl)) score += 20;
   if (lowerUrl.includes("img.moppy.jp")) score += 5;
   if (/icon|ico|logo|btn|button|common|sprite/.test(lowerUrl)) score -= 30;
 
   return score;
+};
+
+const getImageCandidates = (html: string, baseUrl: string): ImageCandidate[] => {
+  const candidates: ImageCandidate[] = [];
+  const imagePattern = /<img\b[^>]*(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/gi;
+  let imageMatch = imagePattern.exec(html);
+
+  while (imageMatch) {
+    const tag = imageMatch[0];
+    const rawUrl = imageMatch[1];
+    const alt = decodeHtmlValue(tag.match(/alt=["']([^"']*)["']/i)?.[1] || "").trim();
+
+    if (rawUrl) {
+      candidates.push({
+        url: toAbsoluteUrl(rawUrl, baseUrl),
+        alt,
+        tag,
+      });
+    }
+
+    imageMatch = imagePattern.exec(html);
+  }
+
+  return candidates;
 };
 
 const getImageUrl = (html: string, baseUrl: string, options: { includeOgImage?: boolean } = {}) => {
@@ -157,13 +226,7 @@ const getImageUrl = (html: string, baseUrl: string, options: { includeOgImage?: 
     if (ogImageReversed?.[1]) candidates.push(ogImageReversed[1]);
   }
 
-  const imagePattern = /<img\b[^>]*(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/gi;
-  let imageMatch = imagePattern.exec(html);
-
-  while (imageMatch) {
-    if (imageMatch[1]) candidates.push(imageMatch[1]);
-    imageMatch = imagePattern.exec(html);
-  }
+  getImageCandidates(html, baseUrl).forEach((candidate) => candidates.push(candidate.url));
 
   const imageUrls = candidates
     .map((candidate) => toAbsoluteUrl(candidate, baseUrl))
@@ -172,12 +235,28 @@ const getImageUrl = (html: string, baseUrl: string, options: { includeOgImage?: 
   return imageUrls.sort((a, b) => getImageScore(b) - getImageScore(a))[0];
 };
 
+const getTitleMatchedDetailImageUrl = (html: string, baseUrl: string, title: string) => {
+  const normalizedTitle = normalizeTitle(title);
+  if (!normalizedTitle) return undefined;
+
+  const candidates = getImageCandidates(html, baseUrl).filter((candidate) => {
+    if (!candidate.alt || isGenericDetailImageUrl(candidate.url)) return false;
+    const normalizedAlt = normalizeTitle(candidate.alt);
+    return Boolean(
+      normalizedAlt &&
+        (normalizedAlt.includes(normalizedTitle) || normalizedTitle.includes(normalizedAlt))
+    );
+  });
+
+  return candidates.sort((a, b) => getImageScore(b.url) - getImageScore(a.url))[0]?.url;
+};
+
 const getTitle = (html: string) => {
   const alt = html.match(/<img[^>]+alt=["']([^"']+)["'][^>]*>/i)?.[1]?.trim();
-  if (alt && alt.length >= 3) return alt.slice(0, 100);
+  if (alt && alt.length >= 3) return decodeHtmlValue(alt).slice(0, 100);
 
   const titleAttr = html.match(/title=["']([^"']+)["']/i)?.[1]?.trim();
-  if (titleAttr && titleAttr.length >= 3) return titleAttr.slice(0, 100);
+  if (titleAttr && titleAttr.length >= 3) return decodeHtmlValue(titleAttr).slice(0, 100);
 
   return stripTags(html)
     .replace(/\d{1,3}(,\d{3})*P/g, " ")
@@ -270,7 +349,9 @@ const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
 
   return [sanitizeOffer({
     title,
-    imageUrl: getImageUrl(mainHtml, sourceUrl, { includeOgImage: false }),
+    imageUrl:
+      getTitleMatchedDetailImageUrl(mainHtml, sourceUrl, title) ||
+      getImageUrl(mainHtml, sourceUrl, { includeOgImage: false }),
     url: sourceUrl,
     reward,
     source: "detail" as const,
