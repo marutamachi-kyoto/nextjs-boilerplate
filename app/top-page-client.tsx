@@ -24,6 +24,12 @@ type TopPageClientProps = {
   initialUpdatedAt?: string;
 };
 
+type MoppyOfferImage = {
+  title: string;
+  imageUrl?: string | null;
+  url?: string | null;
+};
+
 const normalizeText = (text?: string | null) =>
   (text || "")
     .toLowerCase()
@@ -45,6 +51,17 @@ const getTodayJst = () => {
 
 const getLikeStorageKey = (offerName: string, likeDate: string) =>
   `moppy-analysis-liked:${likeDate}:${offerName}`;
+
+const getMoppySiteId = (url?: string | null) => {
+  if (!url) return "";
+
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get("site_id") || parsed.searchParams.get("s_id") || "";
+  } catch {
+    return "";
+  }
+};
 
 const getMoppyInviteUrl = (url?: string | null) => {
   if (!url) return null;
@@ -198,6 +215,60 @@ export default function TopPageClient({
   }, []);
 
   useEffect(() => {
+    if (items.length === 0) return;
+
+    let cancelled = false;
+
+    fetch("/api/moppy-offer-images", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : { data: [] }))
+      .then((json) => {
+        if (cancelled || !Array.isArray(json.data)) return;
+
+        const offers = (json.data as MoppyOfferImage[]).filter(
+          (offer) => offer.title && offer.imageUrl
+        );
+        const offersByTitle = new Map(
+          offers.map((offer) => [normalizeText(offer.title), offer])
+        );
+        const offersBySiteId = new Map(
+          offers
+            .map((offer) => [getMoppySiteId(offer.url), offer] as const)
+            .filter(([siteId]) => Boolean(siteId))
+        );
+
+        setItems((currentItems) =>
+          currentItems.map((item) => {
+            if (item.image_url) return item;
+
+            const itemSiteId = getMoppySiteId(item.primary_site_url);
+            const itemTitleKey = normalizeText(item.offer_name);
+            const matchedOffer =
+              (itemSiteId && offersBySiteId.get(itemSiteId)) ||
+              offersByTitle.get(itemTitleKey) ||
+              offers.find((offer) => {
+                const offerTitleKey = normalizeText(offer.title);
+                return (
+                  itemTitleKey.length >= 5 &&
+                  offerTitleKey.length >= 5 &&
+                  (itemTitleKey.includes(offerTitleKey) ||
+                    offerTitleKey.includes(itemTitleKey))
+                );
+              });
+
+            return matchedOffer?.imageUrl
+              ? { ...item, image_url: matchedOffer.imageUrl }
+              : item;
+          })
+        );
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [items.length]);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
 
     const nextLiked: Record<string, boolean> = {};
@@ -258,19 +329,19 @@ export default function TopPageClient({
   ];
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#edfffc_0,#fffaf0_390px,#fff_780px)] text-[#111827]">
+    <main className="moppy-analysis-top min-h-screen bg-[linear-gradient(180deg,#edfffc_0,#fffaf0_390px,#fff_780px)] text-[#111827]">
       <section className="border-b border-[#c8f2ee]">
         <div className="mx-auto grid w-[min(1120px,calc(100%-32px))] grid-cols-1 items-center gap-8 py-8 lg:grid-cols-[minmax(0,1.04fr)_minmax(280px,0.96fr)] lg:gap-5 lg:py-11">
           <div>
-            <div className="inline-flex min-h-[38px] items-center justify-center rounded-full bg-white px-5 py-2 text-sm font-black text-[#173256] shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+            <div className="inline-flex min-h-[38px] items-center justify-center rounded-full bg-white px-5 py-2 text-sm font-bold text-[#173256] shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
               最終更新：{updatedAt}
             </div>
 
-            <h1 className="mt-5 whitespace-nowrap text-[clamp(31px,10vw,44px)] font-black leading-none tracking-normal lg:text-[clamp(36px,6.2vw,76px)]">
+            <h1 className="mt-5 whitespace-nowrap text-[clamp(31px,10vw,44px)] font-bold leading-none tracking-normal lg:text-[clamp(36px,6.2vw,76px)]">
               <span className="text-[#28bdb3]">モッピー</span>案件分析
             </h1>
 
-            <p className="mt-5 max-w-[760px] text-[17px] font-black leading-[1.78] text-[#1f2937] lg:text-[22px] lg:leading-[1.85]">
+            <p className="mt-5 max-w-[760px] text-[17px] font-bold leading-[1.78] text-[#1f2937] lg:text-[22px] lg:leading-[1.85]">
               ポイ活サイト
               <strong className="text-[#28bdb3]">「モッピー」</strong>
               のたくさんの案件の中から
@@ -296,7 +367,7 @@ export default function TopPageClient({
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`min-h-[58px] border-b-4 px-3 py-3 text-sm font-black transition lg:text-base ${
+                className={`min-h-[58px] border-b-4 px-3 py-3 text-sm font-bold transition lg:text-base ${
                 activeTab === tab.key
                   ? "border-[#28bdb3] text-[#111827]"
                   : "border-transparent text-[#334155] hover:bg-[#f6fffd]"
@@ -308,10 +379,10 @@ export default function TopPageClient({
         </div>
 
         <div className="mt-8 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <h2 className="text-[clamp(28px,4.2vw,44px)] font-black leading-tight">
+          <h2 className="text-[clamp(28px,4.2vw,44px)] font-bold leading-tight">
             <span className="text-[#f59a1b]">お得</span>なモッピー案件ランキング
           </h2>
-          <div className="w-fit rounded-full bg-white px-5 py-3 text-sm font-black text-[#173256] shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+          <div className="w-fit rounded-full bg-white px-5 py-3 text-sm font-bold text-[#173256] shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
             最終更新：{updatedAt}
           </div>
         </div>
@@ -323,21 +394,34 @@ export default function TopPageClient({
             return (
               <article
                 key={`${item.rank}-${item.offer_name}-${index}`}
-                className="grid min-h-[142px] items-center gap-4 rounded-[24px] border border-[#c8f2ee] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] lg:grid-cols-[58px_minmax(0,1fr)_170px_210px] lg:gap-[18px] lg:p-[18px]"
+                className="moppy-ranking-card grid min-h-[142px] items-center gap-4 rounded-[24px] border border-[#c8f2ee] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] lg:grid-cols-[58px_150px_minmax(0,1fr)_160px_190px] lg:gap-[18px] lg:p-[18px]"
               >
-                <div className="grid h-[50px] w-[50px] place-items-center rounded-[16px] bg-[linear-gradient(135deg,#e8fbf8,#fff8ed)] text-[26px] font-black text-[#07968f]">
+                <div className="grid h-[50px] w-[50px] place-items-center rounded-[16px] bg-[linear-gradient(135deg,#e8fbf8,#fff8ed)] text-[26px] font-bold text-[#07968f]">
                   {index + 1}
                 </div>
 
+                {item.image_url ? (
+                  <div className="moppy-offer-banner-wrap w-[min(100%,260px)] justify-self-center overflow-hidden rounded-[14px] border border-[#dbe3ed] bg-white lg:w-[150px]">
+                    <img
+                      src={item.image_url}
+                      alt={`${item.offer_name}のモッピーバナー`}
+                      loading="lazy"
+                      className="moppy-offer-banner aspect-[1.35/1] w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="hidden lg:block" aria-hidden="true" />
+                )}
+
                 <div>
-                  <h3 className="[overflow-wrap:anywhere] text-[21px] font-black leading-snug lg:text-[23px]">
+                  <h3 className="[overflow-wrap:anywhere] text-[21px] font-bold leading-snug lg:text-[23px]">
                     {item.offer_name}
                   </h3>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {labels.map((label) => (
                       <span
                         key={label}
-                        className={`inline-flex min-h-[30px] items-center rounded-full px-3 py-1.5 text-[13px] font-black ${
+                        className={`inline-flex min-h-[30px] items-center rounded-full px-3 py-1.5 text-[13px] font-bold ${
                           label === "無料でできる"
                             ? "bg-[#ecfdf5] text-[#047857]"
                             : label === "高額報酬"
@@ -352,8 +436,8 @@ export default function TopPageClient({
                 </div>
 
                 <div className="text-left lg:text-center">
-                  <small className="block text-xs font-black text-[#64748b]">獲得ポイント</small>
-                  <strong className="mt-1 block text-[30px] font-black leading-none text-[#07968f]">
+                  <small className="block text-xs font-bold text-[#64748b]">獲得ポイント</small>
+                  <strong className="mt-1 block text-[30px] font-bold leading-none text-[#07968f]">
                     {formatReward(item.reward)}
                   </strong>
                 </div>
@@ -364,7 +448,7 @@ export default function TopPageClient({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => trackMoppyClick(item)}
-                    className="flex min-h-[52px] w-full max-w-[210px] items-center justify-center rounded-[14px] bg-[linear-gradient(90deg,#28bdb3,#07968f)] px-4 text-base font-black text-white shadow-[0_14px_26px_rgba(40,189,179,0.22)] transition hover:scale-105"
+                    className="flex min-h-[52px] w-full max-w-[210px] items-center justify-center rounded-[14px] bg-[linear-gradient(90deg,#28bdb3,#07968f)] px-4 text-base font-bold text-white shadow-[0_14px_26px_rgba(40,189,179,0.22)] transition hover:scale-105"
                   >
                     モッピーで探す ›
                   </a>

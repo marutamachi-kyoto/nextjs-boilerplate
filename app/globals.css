@@ -35,10 +35,6 @@ select {
   font: inherit;
 }
 
-.moppy-analysis-top .moppy-ranking-card img {
-  display: none !important;
-}
-
 body > main {
   font-family: "BIZ UDPGothic", "BIZ UDGothic", "Yu Gothic UI", "Yu Gothic",
     Meiryo, "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont,
@@ -61,6 +57,6 @@ body > main .font-black {
   font-weight: 700;
 }
 
-body > main > section:nth-of-type(2) article img {
-  display: none !important;
+.moppy-analysis-top .moppy-offer-banner {
+  display: block;
 }
