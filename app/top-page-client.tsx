@@ -6,6 +6,7 @@ const MOPPY_INVITE_URL =
   "https://pc.moppy.jp/entry/invite.php?invite=ut3GA1ce&openExternalBrowser=1";
 const MOPPY_BANNER_URL = "https://img.moppy.jp/pub/pc/friend/300x250-1.jpg";
 const MOPPY_INVITE_UNAVAILABLE_SITE_IDS = new Set(["157738"]);
+const HIGH_REWARD_THRESHOLD = 10000;
 
 type RankingItem = {
   category: string;
@@ -68,34 +69,35 @@ const formatReward = (reward?: number | null) => {
   return `${reward.toLocaleString("ja-JP")}P`;
 };
 
-const getReasonLabels = (item: RankingItem) => {
-  const title = `${item.offer_name} ${item.category}`.toLowerCase();
-  const labels: Array<"申し込むだけでOK" | "無料でできる" | "高額報酬"> = [];
+const isFreeOffer = (offerName: string) => offerName.toLowerCase().includes("無料");
 
-  if (
-    title.includes("無料") ||
-    title.includes("トライアル") ||
-    title.includes("資料請求") ||
-    title.includes("会員登録") ||
-    title.includes("アプリ") ||
-    title.includes("インストール") ||
-    title.includes("povo")
-  ) {
-    labels.push("無料でできる");
-  }
-
-  if (
+const isEasyOffer = (offerName: string) => {
+  const title = offerName.toLowerCase();
+  return (
     title.includes("口座") ||
     title.includes("カード") ||
     title.includes("証券") ||
     title.includes("申込") ||
     title.includes("新規") ||
-    title.includes("登録")
-  ) {
+    title.includes("登録") ||
+    isFreeOffer(offerName)
+  );
+};
+
+const isHighRewardOffer = (item: RankingItem) => (item.reward || 0) >= HIGH_REWARD_THRESHOLD;
+
+const getReasonLabels = (item: RankingItem) => {
+  const labels: Array<"申し込むだけでOK" | "無料でできる" | "高額報酬"> = [];
+
+  if (isFreeOffer(item.offer_name)) {
+    labels.push("無料でできる");
+  }
+
+  if (isEasyOffer(item.offer_name)) {
     labels.push("申し込むだけでOK");
   }
 
-  if ((item.reward || 0) >= 3000) {
+  if (isHighRewardOffer(item)) {
     labels.push("高額報酬");
   }
 
@@ -105,11 +107,14 @@ const getReasonLabels = (item: RankingItem) => {
 
 const tabMatches = (item: RankingItem, activeTab: TabKey) => {
   if (activeTab === "all") return true;
+  if (activeTab === "free") return isFreeOffer(item.offer_name);
+  if (activeTab === "high") return isHighRewardOffer(item);
+  return isEasyOffer(item.offer_name);
+};
 
-  const labels = getReasonLabels(item);
-  if (activeTab === "easy") return labels.includes("申し込むだけでOK");
-  if (activeTab === "free") return labels.includes("無料でできる");
-  return labels.includes("高額報酬");
+const sortVisibleItems = (items: RankingItem[], activeTab: TabKey) => {
+  if (activeTab !== "high") return items;
+  return [...items].sort((a, b) => Number(b.reward || 0) - Number(a.reward || 0));
 };
 
 const LikeButton = ({
@@ -200,10 +205,10 @@ export default function TopPageClient({
     setLikedOffers(nextLiked);
   }, [items, likeDate]);
 
-  const visibleItems = useMemo(
-    () => items.filter((item) => tabMatches(item, activeTab)).slice(0, 50),
-    [items, activeTab]
-  );
+  const visibleItems = useMemo(() => {
+    const filteredItems = items.filter((item) => tabMatches(item, activeTab));
+    return sortVisibleItems(filteredItems, activeTab).slice(0, 50);
+  }, [items, activeTab]);
 
   const onLike = async (offerName: string) => {
     if (likedOffers[offerName]) return;
