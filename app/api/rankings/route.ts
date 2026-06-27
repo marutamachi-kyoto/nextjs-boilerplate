@@ -6,6 +6,7 @@ export const revalidate = 0;
 
 const BASE_URL = "https://poikatu-ai.vercel.app";
 const MOPPY_OFFER_IMAGES_URL = `${BASE_URL}/api/moppy-offer-images`;
+const OFFER_IMAGE_UNAVAILABLE_URL = "/offer-image-unavailable.svg";
 
 type RankingItem = {
   category?: string | null;
@@ -50,16 +51,19 @@ function getMoppySiteId(url?: string | null) {
   }
 }
 
+function withUnavailableImages(rankings: RankingItem[]) {
+  return rankings.map((item) => ({
+    ...item,
+    image_url: item.image_url || OFFER_IMAGE_UNAVAILABLE_URL,
+  }));
+}
+
 async function attachOfferImages(rankings: RankingItem[]) {
   try {
     const response = await fetch(`${MOPPY_OFFER_IMAGES_URL}?match=${Date.now()}`, {
       cache: "no-store",
     });
-    if (!response.ok) {
-      return rankings.map((item, index) =>
-        index === 0 || Number(item.rank) === 1 ? { ...item, image_url: null } : item
-      );
-    }
+    if (!response.ok) return withUnavailableImages(rankings);
 
     const json = await response.json();
     const offers = (Array.isArray(json.data) ? json.data : []).filter(
@@ -75,25 +79,20 @@ async function attachOfferImages(rankings: RankingItem[]) {
         .filter(([siteId]) => Boolean(siteId))
     );
 
-    return rankings.map((item, index) => {
-      if (index === 0 || Number(item.rank) === 1) {
-        return { ...item, image_url: null };
-      }
-
+    return rankings.map((item) => {
       const itemSiteId = getMoppySiteId(item.primary_site_url);
       const matchedOffer =
         (itemSiteId && offersBySiteId.get(itemSiteId)) ||
         offersByTitle.get(normalizeText(item.offer_name));
 
-      return matchedOffer?.imageUrl
-        ? { ...item, image_url: matchedOffer.imageUrl }
-        : item;
+      return {
+        ...item,
+        image_url: matchedOffer?.imageUrl || item.image_url || OFFER_IMAGE_UNAVAILABLE_URL,
+      };
     });
   } catch (error) {
     console.error(error);
-    return rankings.map((item, index) =>
-      index === 0 || Number(item.rank) === 1 ? { ...item, image_url: null } : item
-    );
+    return withUnavailableImages(rankings);
   }
 }
 
