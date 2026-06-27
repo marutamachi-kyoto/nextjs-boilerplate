@@ -238,22 +238,11 @@ export default function TopPageClient({
 
         setItems((currentItems) =>
           currentItems.map((item) => {
-            if (item.image_url) return item;
-
             const itemSiteId = getMoppySiteId(item.primary_site_url);
             const itemTitleKey = normalizeText(item.offer_name);
             const matchedOffer =
               (itemSiteId && offersBySiteId.get(itemSiteId)) ||
-              offersByTitle.get(itemTitleKey) ||
-              offers.find((offer) => {
-                const offerTitleKey = normalizeText(offer.title);
-                return (
-                  itemTitleKey.length >= 5 &&
-                  offerTitleKey.length >= 5 &&
-                  (itemTitleKey.includes(offerTitleKey) ||
-                    offerTitleKey.includes(itemTitleKey))
-                );
-              });
+              offersByTitle.get(itemTitleKey);
 
             return matchedOffer?.imageUrl
               ? { ...item, image_url: matchedOffer.imageUrl }
