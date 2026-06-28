@@ -288,8 +288,18 @@ const getReward = (text: string) => {
   return values.length > 0 ? Math.max(...values) : 0;
 };
 
+const getDetailReward = (html: string) => {
+  const text = stripTags(html);
+  const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
+    .map((match) => Number(match[1].replace(/,/g, "")))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  return values[0] || 0;
+};
+
 const getPrimaryDetailHtml = (html: string) => {
   const cutMarkers = [
+    "簡単1分！モッピー無料会員登録はこちら",
     "ポイ活応援サービス",
     "ポイントの交換先",
     "獲得条件",
@@ -305,14 +315,7 @@ const getPrimaryDetailHtml = (html: string) => {
   }, html);
 };
 
-const getPrimaryDetailReward = (html: string) => {
-  const text = stripTags(getPrimaryDetailHtml(html));
-  const values = [...text.matchAll(/([0-9]{1,3}(?:,[0-9]{3})*|[0-9]+)\s*P/g)]
-    .map((match) => Number(match[1].replace(/,/g, "")))
-    .filter((value) => Number.isFinite(value) && value > 0);
-
-  return values.at(-1) || 0;
-};
+const getPrimaryDetailReward = (html: string) => getDetailReward(getPrimaryDetailHtml(html));
 
 const parseMoppyOfferImages = (html: string, sourceUrl: string) => {
   const offers: MoppyOfferImage[] = [];
@@ -352,8 +355,8 @@ const parseMoppyDetailOffer = (html: string, sourceUrl: string) => {
   const reward =
     getRewardOverride(sourceUrl) ||
     getPrimaryDetailReward(html) ||
-    getReward(stripTags(mainHtml)) ||
-    getReward(stripTags(html));
+    getDetailReward(html) ||
+    getReward(stripTags(mainHtml));
 
   if (!title || (!imageUrl && reward <= 0)) return [];
 
@@ -399,20 +402,9 @@ const fetchMoppyDetailOffer = async (url: string) => {
     : [];
 };
 
-const withPreferredReward = (offer: MoppyOfferImage, preferredReward?: number) => {
-  const rewardOverride = getRewardOverride(offer.url);
-  const reward = rewardOverride || preferredReward || offer.reward;
-  return { ...offer, reward };
-};
-
 const pickBetterOffer = (current: MoppyOfferImage, next: MoppyOfferImage) => {
-  if (next.source === "detail" && current.source !== "detail") {
-    return withPreferredReward(next, current.reward);
-  }
-
-  if (current.source === "detail" && next.source !== "detail") {
-    return withPreferredReward(current, next.reward);
-  }
+  if (next.source === "detail" && current.source !== "detail") return next;
+  if (current.source === "detail" && next.source !== "detail") return current;
 
   const currentScore = (current.imageUrl ? 1000000 : 0) + Number(current.reward || 0);
   const nextScore = (next.imageUrl ? 1000000 : 0) + Number(next.reward || 0);
