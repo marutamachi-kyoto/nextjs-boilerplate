@@ -87,22 +87,14 @@ const isEasyOffer = (offerName: string) => {
 const isHighRewardOffer = (item: RankingItem) => (item.reward || 0) >= HIGH_REWARD_THRESHOLD;
 
 const getReasonLabels = (item: RankingItem) => {
-  const labels: Array<"申し込むだけでOK" | "無料でできる" | "高額報酬"> = [];
-
-  if (isFreeOffer(item.offer_name)) {
-    labels.push("無料でできる");
-  }
-
-  if (isEasyOffer(item.offer_name)) {
-    labels.push("申し込むだけでOK");
-  }
-
-  if (isHighRewardOffer(item)) {
-    labels.push("高額報酬");
-  }
+  const labels = [
+    isEasyOffer(item.offer_name) ? "申し込むだけでOK" : null,
+    isFreeOffer(item.offer_name) ? "無料でできる" : null,
+    isHighRewardOffer(item) ? "高額報酬" : null,
+  ].filter(Boolean) as Array<"申し込むだけでOK" | "無料でできる" | "高額報酬">;
 
   if (labels.length === 0) labels.push("申し込むだけでOK");
-  return Array.from(new Set(labels));
+  return labels;
 };
 
 const tabMatches = (item: RankingItem, activeTab: TabKey) => {
@@ -272,11 +264,15 @@ export default function TopPageClient({
             </div>
 
             <h1 className="mt-5 max-w-[760px] text-[clamp(30px,5.1vw,56px)] font-bold leading-[1.34] tracking-normal text-[#111827]">
-              ポイ活サイト
-              <span className="text-[#28bdb3]">「モッピー」</span>
-              のたくさんの案件の中から
-              <span className="text-[#f59a1b]">「お得」</span>
-              な案件がわかる
+              <span className="block">
+                ポイ活サイト
+                <span className="text-[#28bdb3]">「モッピー」</span>の
+              </span>
+              <span className="block">たくさんの案件の中から</span>
+              <span className="block">
+                <span className="text-[#f59a1b]">「お得」</span>
+                な案件がわかる
+              </span>
             </h1>
 
             <p className="mt-4 max-w-[760px] text-[17px] font-bold leading-[1.78] text-[#1f2937] lg:text-[22px] lg:leading-[1.85]">
@@ -301,7 +297,7 @@ export default function TopPageClient({
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-                className={`min-h-[58px] border-b-4 px-3 py-3 text-sm font-bold transition lg:text-base ${
+              className={`min-h-[58px] border-b-4 px-3 py-3 text-sm font-bold transition lg:text-base ${
                 activeTab === tab.key
                   ? "border-[#28bdb3] text-[#111827]"
                   : "border-transparent text-[#334155] hover:bg-[#f6fffd]"
