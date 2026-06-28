@@ -92,10 +92,12 @@ const bootMoppyCtaAdjustments = () => {
 
   const updateMoppyCtas = () => {
     document.querySelectorAll("section").forEach((section) => {
+      if (section.querySelector(".moppy-ranking-card")) return;
+
       const moppyLink = section.querySelector<HTMLAnchorElement>(
         'a[href*="pc.moppy.jp/entry/invite.php"]'
       );
-      if (!moppyLink) return;
+      if (!moppyLink || moppyLink.closest(".moppy-ranking-card")) return;
 
       const copy = Array.from(section.querySelectorAll("p")).find((element) => {
         const text = element.textContent || "";
