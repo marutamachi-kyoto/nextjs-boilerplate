@@ -234,7 +234,9 @@ function formatUpdatedAt(items: DisplayRankingItem[]) {
     .sort()
     .reverse()[0];
 
-  return new Date(latestUpdatedAt || Date.now()).toLocaleString("ja-JP", {
+  if (!latestUpdatedAt) return "-";
+
+  return new Date(latestUpdatedAt).toLocaleString("ja-JP", {
     timeZone: "Asia/Tokyo",
     year: "numeric",
     month: "numeric",
