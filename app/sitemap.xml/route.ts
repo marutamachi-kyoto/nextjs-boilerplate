@@ -1,6 +1,9 @@
+import { createClient } from "@supabase/supabase-js";
+
 const BASE_URL = "https://poikatu-ai.vercel.app";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 type SitemapPage = {
   url: string;
@@ -9,68 +12,52 @@ type SitemapPage = {
   priority: number;
 };
 
-const OFFER_SLUGS = [
-  "rakuten-mobile",
-  "nobunaga-hadou",
-  "smbc-card-nl",
-  "paypay-card",
-  "tiktok-lite",
-  "rakuten-sec",
-  "rakuten-market",
-  "sbi-sumishin-bank",
-  "amazon-prime",
-  "merge-mansion",
-  "u-next",
-  "d-card-gold",
-  "saison-card-international",
-  "au-kabucom-sec",
-  "ponta-pass",
-  "mercari",
-  "line-manga",
-  "epos-card",
-  "monex-sec",
-  "aeon-card-waon",
-  "ahamo",
-  "youtube-premium",
-  "mynapoint-support",
-  "dbarai",
-  "yahoo-card",
-  "sony-bank",
-  "nanatsu-grand-cross",
-  "bluelock-pwc",
-  "trima",
-  "visa-line-pay-card",
-];
-
 function escapeXml(value: string) {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
 
-function getPages(now: Date): SitemapPage[] {
+async function getLatestRankingUpdatedAt() {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) return new Date();
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const { data, error } = await supabase
+      .from("rankings")
+      .select("updated_at")
+      .not("updated_at", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data?.updated_at) return new Date();
+    return new Date(data.updated_at);
+  } catch {
+    return new Date();
+  }
+}
+
+function getPages(lastModified: Date): SitemapPage[] {
   return [
     {
       url: BASE_URL,
-      lastModified: now,
+      lastModified,
       changeFrequency: "daily",
       priority: 1,
     },
     {
       url: `${BASE_URL}/about-poikatsu`,
-      lastModified: now,
+      lastModified,
       changeFrequency: "monthly",
       priority: 0.8,
     },
-    ...OFFER_SLUGS.map((slug) => ({
-      url: `${BASE_URL}/offers/${slug}`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    })),
   ];
 }
 
@@ -95,7 +82,9 @@ ${urls}
 }
 
 export async function GET() {
-  return new Response(renderSitemapXml(getPages(new Date())), {
+  const lastModified = await getLatestRankingUpdatedAt();
+
+  return new Response(renderSitemapXml(getPages(lastModified)), {
     status: 200,
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
