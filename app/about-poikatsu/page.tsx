@@ -6,7 +6,7 @@ const BASE_URL = "https://poikatu-ai.vercel.app";
 const PAGE_URL = `${BASE_URL}/about-poikatsu`;
 
 export const metadata = {
-  title: "ポイ活とは？初心者向けに仕組みをわかりやすく解説｜モッピー案件分析",
+  title: "ポイ活とは？初心者向けに仕組みをわかりやすく解説",
   description:
     "ポイ活とは何かを初心者向けに解説。ポイントサイトの仕組み、ポイントの貯め方、現金やPayPayなどへの交換方法、モッピーの始め方をわかりやすく紹介します。",
   alternates: {
