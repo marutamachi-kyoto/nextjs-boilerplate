@@ -255,24 +255,32 @@ export default function TopPageClient({
   ];
 
   return (
-    <main className="moppy-analysis-top min-h-screen bg-[linear-gradient(180deg,#edfffc_0,#fffaf0_390px,#fff_780px)] text-[#111827]">
+    <main className="moppy-analysis-top min-h-screen bg-[linear-gradient(180deg,#edfffc_0,#fffaf0_430px,#fff_820px)] text-[#111827]">
+      <header className="border-b border-[#d8f4f0] bg-white/95 shadow-[0_6px_20px_rgba(15,23,42,0.04)]">
+        <div className="mx-auto flex min-h-[72px] w-[min(1120px,calc(100%-32px))] items-center">
+          <div className="text-[22px] font-bold tracking-normal text-[#111827] lg:text-[26px]">
+            <span className="text-[#28bdb3]">モッピー</span>案件分析
+          </div>
+        </div>
+      </header>
+
       <section className="border-b border-[#c8f2ee]">
-        <div className="mx-auto grid w-[min(1120px,calc(100%-32px))] grid-cols-1 items-center gap-8 py-8 lg:grid-cols-[minmax(0,1.04fr)_minmax(280px,0.96fr)] lg:gap-5 lg:py-11">
+        <div className="mx-auto grid w-[min(1120px,calc(100%-32px))] grid-cols-1 items-center gap-8 py-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.92fr)] lg:gap-8 lg:py-10">
           <div>
             <div className="inline-flex min-h-[38px] items-center justify-center rounded-full bg-white px-5 py-2 text-sm font-bold text-[#173256] shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
               最終更新：{updatedAt}
             </div>
 
-            <h1 className="mt-5 whitespace-nowrap text-[clamp(31px,10vw,44px)] font-bold leading-none tracking-normal lg:text-[clamp(36px,6.2vw,76px)]">
-              <span className="text-[#28bdb3]">モッピー</span>案件分析
+            <h1 className="mt-5 max-w-[760px] text-[clamp(30px,5.1vw,56px)] font-bold leading-[1.34] tracking-normal text-[#111827]">
+              ポイ活サイト
+              <span className="text-[#28bdb3]">「モッピー」</span>
+              のたくさんの案件の中から
+              <span className="text-[#f59a1b]">「お得」</span>
+              な案件がわかる
             </h1>
 
-            <p className="mt-5 max-w-[760px] text-[17px] font-bold leading-[1.78] text-[#1f2937] lg:text-[22px] lg:leading-[1.85]">
-              ポイ活サイト
-              <strong className="text-[#28bdb3]">「モッピー」</strong>
-              のたくさんの案件の中から
-              <strong className="text-[#f59a1b]">「お得」</strong>
-              な案件がわかる。AIが分析して、毎日更新しています（0:00～1:00頃）
+            <p className="mt-4 max-w-[760px] text-[17px] font-bold leading-[1.78] text-[#1f2937] lg:text-[22px] lg:leading-[1.85]">
+              AIが分析して、毎日更新しています（0:00～1:00頃）
             </p>
           </div>
 
