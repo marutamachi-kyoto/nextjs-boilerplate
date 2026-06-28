@@ -25,6 +25,7 @@ type RankingRow = {
   reason: string;
   primary_site_name: string;
   primary_site_url: string;
+  updated_at: string;
 };
 
 function getSupabase() {
@@ -109,7 +110,7 @@ async function fetchMoppyOffers() {
     .filter((offer: MoppyOffer) => offer.title && offer.url && offer.reward > 0);
 }
 
-function buildRows(offers: MoppyOffer[]): RankingRow[] {
+function buildRows(offers: MoppyOffer[], updatedAt: string): RankingRow[] {
   const seen = new Set<string>();
 
   return offers
@@ -132,13 +133,15 @@ function buildRows(offers: MoppyOffer[]): RankingRow[] {
       reason: getReason(offer),
       primary_site_name: "モッピー",
       primary_site_url: offer.url,
+      updated_at: updatedAt,
     }));
 }
 
 export async function GET() {
   try {
     const offers = await fetchMoppyOffers();
-    const rows = buildRows(offers);
+    const updatedAt = new Date().toISOString();
+    const rows = buildRows(offers, updatedAt);
 
     if (rows.length === 0) {
       return NextResponse.json(
@@ -163,6 +166,7 @@ export async function GET() {
       google_trends_removed: true,
       high_reward_threshold: HIGH_REWARD_THRESHOLD,
       free_rule: "offer title includes 無料",
+      updated_at: updatedAt,
       criteria: ["申し込むだけでOK", "無料でできる", "高額報酬"],
     });
   } catch (error: any) {
