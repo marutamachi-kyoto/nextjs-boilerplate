@@ -160,65 +160,71 @@ const ShareButtons = () => {
   };
 
   return (
-    <div className="mt-5 flex flex-wrap items-center gap-2.5" aria-label="共有ボタン">
-      <button
-        type="button"
-        onClick={shareNative}
-        className="inline-flex min-h-[42px] min-w-[74px] items-center justify-center rounded-full bg-[#0ea69b] px-5 text-sm font-bold text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
-      >
-        共有
-      </button>
-      <button
-        type="button"
-        onClick={copyUrl}
-        aria-label="URLをコピー"
-        title={copied ? "コピーしました" : "URLをコピー"}
-        className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-full bg-[#1f2329] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M9.5 14.5h-1a4.5 4.5 0 0 1 0-9h3a4.5 4.5 0 0 1 4.23 3"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeWidth="2.2"
-          />
-          <path
-            d="M14.5 9.5h1a4.5 4.5 0 0 1 0 9h-3a4.5 4.5 0 0 1-4.23-3"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeWidth="2.2"
-          />
-          <path
-            d="M9 12h6"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeWidth="2.2"
-          />
-        </svg>
-      </button>
-      <a
-        href={`https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Xで共有"
-        className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-full bg-[#111827] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
-      >
-        <span className="text-[20px] font-black leading-none" style={{ color: "#ffffff" }}>
-          X
-        </span>
-      </a>
-      <a
-        href={`https://social-plugins.line.me/lineit/share?url=${encodedUrl}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="LINEで共有"
-        className="inline-flex h-[42px] w-[50px] items-center justify-center rounded-full bg-[#06c755] text-xs font-bold text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
-      >
-        LINE
-      </a>
+    <div className="mt-5 inline-flex flex-col gap-2.5" aria-label="共有ボタン">
+      <p className="text-sm font-bold text-[#173256]">このページをシェアする</p>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          onClick={shareNative}
+          className="inline-flex min-h-[42px] min-w-[74px] items-center justify-center rounded-full bg-[#0ea69b] px-5 text-sm font-bold text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
+        >
+          共有
+        </button>
+        <button
+          type="button"
+          onClick={copyUrl}
+          aria-label="URLをコピー"
+          title={copied ? "コピーしました" : "URLをコピー"}
+          className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-full bg-[#1f2329] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M9.5 14.5h-1a4.5 4.5 0 0 1 0-9h3a4.5 4.5 0 0 1 4.23 3"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="2.2"
+            />
+            <path
+              d="M14.5 9.5h1a4.5 4.5 0 0 1 0 9h-3a4.5 4.5 0 0 1-4.23-3"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="2.2"
+            />
+            <path
+              d="M9 12h6"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="2.2"
+            />
+          </svg>
+        </button>
+        <a
+          href={`https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Xで共有"
+          className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-full bg-[#111827] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="text-white">
+            <path
+              fill="currentColor"
+              d="M13.64 10.62 20.76 2h-1.69l-6.18 7.49L7.95 2H2.25l7.47 11.32L2.25 22h1.69l6.53-7.59L15.68 22h5.69l-7.73-11.38Zm-2.31 2.68-.76-1.13L4.55 3.33h2.59l4.86 7.14.76 1.13 6.31 9.28h-2.59l-5.15-7.58Z"
+            />
+          </svg>
+        </a>
+        <a
+          href={`https://social-plugins.line.me/lineit/share?url=${encodedUrl}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="LINEで共有"
+          className="inline-flex h-[42px] w-[50px] items-center justify-center rounded-full bg-[#06c755] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
+        >
+          <span className="text-[12px] font-black leading-none tracking-[-0.02em]">LINE</span>
+        </a>
+      </div>
     </div>
   );
 };
