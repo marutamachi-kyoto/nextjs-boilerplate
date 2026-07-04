@@ -208,7 +208,7 @@ const ShareButtons = () => {
           aria-label="Xで共有"
           className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-full bg-[#111827] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" className="text-white">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ color: "#ffffff" }}>
             <path
               fill="currentColor"
               d="M13.64 10.62 20.76 2h-1.69l-6.18 7.49L7.95 2H2.25l7.47 11.32L2.25 22h1.69l6.53-7.59L15.68 22h5.69l-7.73-11.38Zm-2.31 2.68-.76-1.13L4.55 3.33h2.59l4.86 7.14.76 1.13 6.31 9.28h-2.59l-5.15-7.58Z"
@@ -222,7 +222,9 @@ const ShareButtons = () => {
           aria-label="LINEで共有"
           className="inline-flex h-[42px] w-[50px] items-center justify-center rounded-full bg-[#06c755] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
         >
-          <span className="text-[12px] font-black leading-none tracking-[-0.02em]">LINE</span>
+          <span className="text-[12px] font-black leading-none tracking-[-0.02em]" style={{ color: "#ffffff" }}>
+            LINE
+          </span>
         </a>
       </div>
     </div>
