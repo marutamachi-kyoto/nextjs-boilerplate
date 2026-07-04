@@ -3,6 +3,8 @@ import Script from "next/script";
 import "./globals.css";
 
 const GA_MEASUREMENT_ID = "G-H420TPSRD0";
+const SITE_DESCRIPTION =
+  "ポイ活サイト「モッピー」のたくさんの案件の中から「お得」な案件がわかる。報酬の高さや手軽さをもとに、AIが毎日更新（0:00～1:00頃）。";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://poikatu-ai.vercel.app"),
@@ -10,8 +12,7 @@ export const metadata: Metadata = {
     default: "モッピー案件分析｜お得なモッピー案件をAIが毎日更新",
     template: "%s｜モッピー案件分析",
   },
-  description:
-    "ポイ活サイト「モッピー」のたくさんの案件の中から「お得」な案件がわかる。AIが分析して、毎日更新しています（0:00～1:00頃）。",
+  description: SITE_DESCRIPTION,
   icons: {
     icon: "/favicon.png",
     shortcut: "/favicon.png",
@@ -19,8 +20,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "モッピー案件分析",
-    description:
-      "ポイ活サイト「モッピー」のたくさんの案件の中から「お得」な案件がわかる。AIが分析して、毎日更新しています。",
+    description: SITE_DESCRIPTION,
     url: "https://poikatu-ai.vercel.app",
     siteName: "モッピー案件分析",
     locale: "ja_JP",
@@ -37,8 +37,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "モッピー案件分析",
-    description:
-      "ポイ活サイト「モッピー」のたくさんの案件の中から「お得」な案件がわかる。AIが分析して、毎日更新しています。",
+    description: SITE_DESCRIPTION,
     images: ["/hero.png.png"],
   },
   alternates: {
