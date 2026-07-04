@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const BASE_URL = "https://poikatu-ai.vercel.app";
+const SITE_NAME = "モッピー案件分析";
 const MOPPY_OFFER_IMAGES_URL = `${BASE_URL}/api/moppy-offer-images`;
 const OFFER_IMAGE_UNAVAILABLE_URL = "/offer-image-unavailable.svg";
 const PAGE_DESCRIPTION =
@@ -78,10 +79,10 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: BASE_URL },
   openGraph: {
-    title: "モッピー案件分析",
+    title: SITE_NAME,
     description: PAGE_DESCRIPTION,
     url: BASE_URL,
-    siteName: "モッピー案件分析",
+    siteName: SITE_NAME,
     type: "website",
     locale: "ja_JP",
     images: [
@@ -89,13 +90,13 @@ export const metadata: Metadata = {
         url: "/hero.png.png",
         width: 1200,
         height: 630,
-        alt: "モッピー案件分析",
+        alt: SITE_NAME,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "モッピー案件分析",
+    title: SITE_NAME,
     description: PAGE_DESCRIPTION,
     images: ["/hero.png.png"],
   },
@@ -226,12 +227,18 @@ async function getRankings() {
   }
 }
 
-function formatUpdatedAt(items: DisplayRankingItem[]) {
+function getLatestUpdatedAt(items: DisplayRankingItem[]) {
   const latestUpdatedAt = items
     .map((item) => item.updated_at)
     .filter(Boolean)
     .sort()
     .reverse()[0];
+
+  return latestUpdatedAt || null;
+}
+
+function formatUpdatedAt(items: DisplayRankingItem[]) {
+  const latestUpdatedAt = getLatestUpdatedAt(items);
 
   if (!latestUpdatedAt) return "-";
 
@@ -245,46 +252,112 @@ function formatUpdatedAt(items: DisplayRankingItem[]) {
   });
 }
 
+function getAbsoluteImageUrl(imageUrl?: string | null) {
+  if (!imageUrl) return `${BASE_URL}${OFFER_IMAGE_UNAVAILABLE_URL}`;
+  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) return imageUrl;
+  return `${BASE_URL}${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`;
+}
+
 function buildStructuredData(rankings: DisplayRankingItem[]) {
+  const latestUpdatedAt = getLatestUpdatedAt(rankings);
+  const dateModified = latestUpdatedAt ? new Date(latestUpdatedAt).toISOString() : undefined;
+  const rankingItems = rankings.map((item, index) => {
+    const itemUrl = item.primary_site_url || BASE_URL;
+    const reward = Number(item.reward || 0);
+
+    return {
+      "@type": "ListItem",
+      position: index + 1,
+      url: itemUrl,
+      item: {
+        "@type": "Offer",
+        "@id": `${BASE_URL}/#offer-${index + 1}`,
+        name: item.offer_name,
+        url: itemUrl,
+        image: getAbsoluteImageUrl(item.image_url),
+        category: item.category,
+        seller: {
+          "@type": "Organization",
+          name: "モッピー",
+          url: "https://pc.moppy.jp/",
+        },
+        itemOffered: {
+          "@type": "Service",
+          name: item.offer_name,
+        },
+        additionalProperty: [
+          {
+            "@type": "PropertyValue",
+            name: "獲得ポイント",
+            value: reward,
+            unitText: "P",
+          },
+          {
+            "@type": "PropertyValue",
+            name: "お得な理由",
+            value: item.category,
+          },
+        ],
+      },
+    };
+  });
+
   return {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "WebSite",
         "@id": `${BASE_URL}/#website`,
-        name: "モッピー案件分析",
+        name: SITE_NAME,
+        alternateName: ["ポイ活AI判定", "モッピー案件ランキング"],
         url: BASE_URL,
+        description: PAGE_DESCRIPTION,
         inLanguage: "ja-JP",
+        publisher: { "@id": `${BASE_URL}/#organization` },
       },
       {
         "@type": "Organization",
         "@id": `${BASE_URL}/#organization`,
-        name: "モッピー案件分析",
+        name: SITE_NAME,
         url: BASE_URL,
-        logo: `${BASE_URL}/favicon.png`,
+        logo: {
+          "@type": "ImageObject",
+          url: `${BASE_URL}/favicon.png`,
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${BASE_URL}/#breadcrumb`,
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: SITE_NAME,
+            item: BASE_URL,
+          },
+        ],
       },
       {
         "@type": "WebPage",
         "@id": `${BASE_URL}/#webpage`,
         url: BASE_URL,
-        name: "モッピー案件分析",
+        name: SITE_NAME,
         description: PAGE_DESCRIPTION,
         isPartOf: { "@id": `${BASE_URL}/#website` },
-        about: ["モッピー", "ポイ活", "高額報酬", "無料案件"],
+        breadcrumb: { "@id": `${BASE_URL}/#breadcrumb` },
+        mainEntity: { "@id": `${BASE_URL}/#ranking-itemlist` },
+        about: ["モッピー", "ポイ活", "高額報酬", "無料案件", "ポイントサイト"],
         inLanguage: "ja-JP",
+        ...(dateModified ? { dateModified } : {}),
       },
       {
         "@type": "ItemList",
         "@id": `${BASE_URL}/#ranking-itemlist`,
         name: "お得なモッピー案件ランキング",
+        description: "報酬の高さや手軽さをもとにAIが毎日更新するモッピー案件ランキングです。",
         itemListOrder: "https://schema.org/ItemListOrderAscending",
-        numberOfItems: rankings.length,
-        itemListElement: rankings.map((item, index) => ({
-          "@type": "ListItem",
-          position: index + 1,
-          name: item.offer_name,
-          url: BASE_URL,
-        })),
+        numberOfItems: rankingItems.length,
+        itemListElement: rankingItems,
       },
     ],
   };
