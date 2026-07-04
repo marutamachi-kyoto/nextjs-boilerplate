@@ -9,6 +9,8 @@ export const revalidate = 0;
 const BASE_URL = "https://poikatu-ai.vercel.app";
 const MOPPY_OFFER_IMAGES_URL = `${BASE_URL}/api/moppy-offer-images`;
 const OFFER_IMAGE_UNAVAILABLE_URL = "/offer-image-unavailable.svg";
+const PAGE_DESCRIPTION =
+  "ポイ活サイト「モッピー」のたくさんの案件の中から「お得」な案件がわかる。報酬の高さや手軽さをもとに、AIが毎日更新（0:00～1:00頃）。";
 
 type RankingRow = {
   category?: string | null;
@@ -65,8 +67,7 @@ const FALLBACK_RANKINGS: DisplayRankingItem[] = [
 
 export const metadata: Metadata = {
   title: "モッピー案件分析｜お得なモッピー案件をAIが毎日更新",
-  description:
-    "ポイ活サイト「モッピー」のたくさんの案件の中から「お得」な案件がわかる。AIが分析して、毎日更新しています（0:00～1:00頃）。",
+  description: PAGE_DESCRIPTION,
   keywords: [
     "モッピー",
     "モッピー 案件",
@@ -78,8 +79,7 @@ export const metadata: Metadata = {
   alternates: { canonical: BASE_URL },
   openGraph: {
     title: "モッピー案件分析",
-    description:
-      "ポイ活サイト「モッピー」のたくさんの案件の中から「お得」な案件がわかる。AIが分析して、毎日更新しています。",
+    description: PAGE_DESCRIPTION,
     url: BASE_URL,
     siteName: "モッピー案件分析",
     type: "website",
@@ -96,8 +96,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "モッピー案件分析",
-    description:
-      "ポイ活サイト「モッピー」のたくさんの案件の中から「お得」な案件がわかる。AIが分析して、毎日更新しています。",
+    description: PAGE_DESCRIPTION,
     images: ["/hero.png.png"],
   },
   robots: {
@@ -269,8 +268,7 @@ function buildStructuredData(rankings: DisplayRankingItem[]) {
         "@id": `${BASE_URL}/#webpage`,
         url: BASE_URL,
         name: "モッピー案件分析",
-        description:
-          "ポイ活サイト「モッピー」のたくさんの案件の中から「お得」な案件がわかる。AIが分析して、毎日更新しています。",
+        description: PAGE_DESCRIPTION,
         isPartOf: { "@id": `${BASE_URL}/#website` },
         about: ["モッピー", "ポイ活", "高額報酬", "無料案件"],
         inLanguage: "ja-JP",
