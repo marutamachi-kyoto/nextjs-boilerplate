@@ -206,15 +206,7 @@ const ShareButtons = () => {
         aria-label="Xで共有"
         className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-full bg-[#111827] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
       >
-        <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M4 4l16 16M20 4L4 20"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeWidth="2.6"
-          />
-        </svg>
+        <span className="text-[20px] font-black leading-none">X</span>
       </a>
       <a
         href={`https://social-plugins.line.me/lineit/share?url=${encodedUrl}`}
