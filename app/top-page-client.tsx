@@ -374,7 +374,10 @@ export default function TopPageClient({
             </h1>
 
             <p className="mt-3 max-w-[760px] text-[16px] font-bold leading-[1.65] text-[#1f2937] lg:mt-4 lg:text-[21px] lg:leading-[1.75]">
-              AIが分析して、毎日更新しています（0:00～1:00頃）
+              <span className="text-[#f59a1b]">報酬の高さ</span>
+              や
+              <span className="text-[#f59a1b]">手軽さ</span>
+              をもとに、AIが毎日更新（0:00～1:00頃）
             </p>
             <ShareButtons />
           </div>
