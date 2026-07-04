@@ -206,7 +206,9 @@ const ShareButtons = () => {
         aria-label="Xで共有"
         className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-full bg-[#111827] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
       >
-        <span className="text-[20px] font-black leading-none">X</span>
+        <span className="text-[20px] font-black leading-none" style={{ color: "#ffffff" }}>
+          X
+        </span>
       </a>
       <a
         href={`https://social-plugins.line.me/lineit/share?url=${encodedUrl}`}
