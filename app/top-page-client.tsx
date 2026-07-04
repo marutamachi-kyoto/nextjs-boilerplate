@@ -128,7 +128,7 @@ const LikeButton = ({
       disabled={liked}
       onClick={() => onLike(offerName)}
       aria-pressed={liked}
-      className="flex min-h-[42px] w-full max-w-[190px] items-center justify-center rounded-[14px] border-2 border-[#f7c8d8] bg-white px-4 text-sm font-black text-[#d91f68] shadow-[0_8px_18px_rgba(217,31,104,0.12)] transition enabled:hover:scale-105 disabled:cursor-default disabled:opacity-60"
+      className="flex min-h-[42px] w-full max-w-none items-center justify-center overflow-hidden whitespace-nowrap rounded-[14px] border-2 border-[#f7c8d8] bg-white px-3 text-xs font-black text-[#d91f68] shadow-[0_8px_18px_rgba(217,31,104,0.12)] transition enabled:hover:scale-105 disabled:cursor-default disabled:opacity-60 lg:max-w-[190px] lg:px-4 lg:text-sm"
     >
       ♡ いいね！ {count}
     </button>
@@ -160,13 +160,13 @@ const ShareButtons = () => {
   };
 
   return (
-    <div className="mt-5 inline-flex flex-col gap-2.5" aria-label="共有ボタン">
-      <p className="text-sm font-bold text-[#173256]">このページをシェアする</p>
+    <div className="mt-3 inline-flex flex-col gap-2.5 lg:mt-4" aria-label="共有ボタン">
+      <p className="text-[13px] font-bold text-[#173256] lg:text-sm">このページをシェアする</p>
       <div className="flex flex-wrap items-center gap-2.5">
         <button
           type="button"
           onClick={shareNative}
-          className="inline-flex min-h-[42px] min-w-[74px] items-center justify-center rounded-full bg-[#0ea69b] px-5 text-sm font-bold text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
+          className="inline-flex min-h-[40px] min-w-[70px] items-center justify-center rounded-full bg-[#0ea69b] px-5 text-sm font-bold text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105 lg:min-h-[42px] lg:min-w-[74px]"
         >
           共有
         </button>
@@ -175,7 +175,7 @@ const ShareButtons = () => {
           onClick={copyUrl}
           aria-label="URLをコピー"
           title={copied ? "コピーしました" : "URLをコピー"}
-          className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-full bg-[#1f2329] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
+          className="inline-flex h-[40px] w-[40px] items-center justify-center rounded-full bg-[#1f2329] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105 lg:h-[42px] lg:w-[42px]"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
             <path
@@ -206,7 +206,7 @@ const ShareButtons = () => {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Xで共有"
-          className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-full bg-[#111827] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
+          className="inline-flex h-[40px] w-[40px] items-center justify-center rounded-full bg-[#111827] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105 lg:h-[42px] lg:w-[42px]"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ color: "#ffffff" }}>
             <path
@@ -220,7 +220,7 @@ const ShareButtons = () => {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="LINEで共有"
-          className="inline-flex h-[42px] w-[50px] items-center justify-center rounded-full bg-[#06c755] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105"
+          className="inline-flex h-[40px] w-[48px] items-center justify-center rounded-full bg-[#06c755] text-white shadow-[0_10px_20px_rgba(7,22,43,0.08)] transition hover:scale-105 lg:h-[42px] lg:w-[50px]"
         >
           <span className="text-[12px] font-black leading-none tracking-[-0.02em]" style={{ color: "#ffffff" }}>
             LINE
@@ -345,23 +345,23 @@ export default function TopPageClient({
   ];
 
   return (
-    <main className="moppy-analysis-top min-h-screen bg-[linear-gradient(180deg,#edfffc_0,#fffaf0_430px,#fff_820px)] text-[#111827]">
+    <main className="moppy-analysis-top min-h-screen overflow-x-hidden bg-[linear-gradient(180deg,#edfffc_0,#fffaf0_430px,#fff_820px)] text-[#111827]">
       <header className="border-b border-[#d8f4f0] bg-white/95 shadow-[0_6px_20px_rgba(15,23,42,0.04)]">
-        <div className="mx-auto flex min-h-[72px] w-[min(1120px,calc(100%-32px))] items-center">
-          <div className="text-[22px] font-bold tracking-normal text-[#111827] lg:text-[26px]">
+        <div className="mx-auto flex min-h-[58px] w-[min(1120px,calc(100%-32px))] items-center lg:min-h-[72px]">
+          <div className="text-[21px] font-bold tracking-normal text-[#111827] lg:text-[26px]">
             <span className="text-[#28bdb3]">モッピー</span>案件分析
           </div>
         </div>
       </header>
 
       <section className="border-b border-[#c8f2ee]">
-        <div className="mx-auto grid w-[min(1120px,calc(100%-32px))] grid-cols-1 items-center gap-8 py-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.92fr)] lg:gap-8 lg:py-10">
+        <div className="mx-auto grid w-[min(1120px,calc(100%-32px))] grid-cols-1 items-center gap-4 py-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(260px,0.75fr)] lg:gap-8 lg:py-8">
           <div>
-            <div className="inline-flex min-h-[38px] items-center justify-center rounded-full bg-white px-5 py-2 text-sm font-bold text-[#173256] shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+            <div className="inline-flex min-h-[34px] items-center justify-center rounded-full bg-white px-4 py-2 text-[13px] font-bold text-[#173256] shadow-[0_10px_24px_rgba(15,23,42,0.08)] lg:min-h-[36px] lg:px-5 lg:text-sm">
               最終更新：{updatedAt}
             </div>
 
-            <h1 className="mt-5 max-w-[760px] text-[clamp(30px,5.1vw,56px)] font-bold leading-[1.34] tracking-normal text-[#111827]">
+            <h1 className="mt-4 max-w-[760px] text-[clamp(28px,8.3vw,36px)] font-bold leading-[1.25] tracking-normal text-[#111827] lg:mt-5 lg:text-[clamp(30px,4.7vw,52px)] lg:leading-[1.28]">
               <span className="block">
                 ポイ活サイト
                 <span className="text-[#28bdb3]">「モッピー」</span>の
@@ -373,50 +373,52 @@ export default function TopPageClient({
               </span>
             </h1>
 
-            <p className="mt-4 max-w-[760px] text-[17px] font-bold leading-[1.78] text-[#1f2937] lg:text-[22px] lg:leading-[1.85]">
+            <p className="mt-3 max-w-[760px] text-[16px] font-bold leading-[1.65] text-[#1f2937] lg:mt-4 lg:text-[21px] lg:leading-[1.75]">
               AIが分析して、毎日更新しています（0:00～1:00頃）
             </p>
             <ShareButtons />
           </div>
 
-          <div className="justify-self-center overflow-hidden rounded-[22px] border border-[#bdeee9] bg-[linear-gradient(135deg,#f2fffd,#fff_52%,#fff8ed)] p-3.5 shadow-[0_22px_50px_rgba(40,189,179,0.14)]">
+          <div className="w-[min(100%,326px)] justify-self-center overflow-hidden rounded-[22px] border border-[#bdeee9] bg-[linear-gradient(135deg,#f2fffd,#fff_52%,#fff8ed)] p-3 shadow-[0_22px_50px_rgba(40,189,179,0.14)] lg:w-auto lg:justify-self-end lg:p-3.5">
             <img
               src={MOPPY_BANNER_URL}
               alt="モッピー公式バナー"
-              className="block w-[min(100%,300px)] rounded-[14px] shadow-[0_18px_34px_rgba(15,23,42,0.12)]"
+              className="block w-full rounded-[14px] shadow-[0_18px_34px_rgba(15,23,42,0.12)] lg:w-[min(100%,300px)]"
             />
           </div>
         </div>
       </section>
 
-      <section className="mx-auto w-[min(1120px,calc(100%-32px))] py-6 lg:py-8">
-        <div className="grid overflow-hidden rounded-[20px] border border-[#bdeee9] bg-white shadow-[0_12px_28px_rgba(40,189,179,0.08)] sm:grid-cols-4">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`min-h-[58px] border-b-4 px-3 py-3 text-sm font-bold transition lg:text-base ${
-                activeTab === tab.key
-                  ? "border-[#28bdb3] text-[#111827]"
-                  : "border-transparent text-[#334155] hover:bg-[#f6fffd]"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      <section className="mx-auto w-[min(1120px,calc(100%-32px))] py-5 lg:py-8">
+        <div className="sticky top-0 z-10 -mx-4 overflow-x-auto bg-[linear-gradient(180deg,rgba(255,250,240,0.96),rgba(255,250,240,0.74))] px-4 pb-3 [scrollbar-width:none] lg:static lg:mx-0 lg:overflow-visible lg:bg-transparent lg:px-0 lg:pb-0">
+          <div className="flex w-max min-w-full gap-1 rounded-full border border-[#bdeee9] bg-white p-1 shadow-[0_12px_28px_rgba(40,189,179,0.08)] lg:grid lg:grid-cols-4 lg:gap-0 lg:overflow-hidden lg:rounded-[20px] lg:p-0">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`min-h-[42px] min-w-max rounded-full px-5 py-2 text-sm font-bold transition lg:min-h-[58px] lg:rounded-none lg:border-b-4 lg:px-3 lg:py-3 lg:text-base ${
+                  activeTab === tab.key
+                    ? "bg-[#e7fbf8] text-[#075e59] lg:border-[#28bdb3] lg:bg-transparent lg:text-[#111827]"
+                    : "text-[#334155] hover:bg-[#f6fffd] lg:border-transparent"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="mt-8 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="mt-4 flex flex-col gap-3 lg:mt-8 lg:flex-row lg:items-end lg:justify-between">
           <h2 className="text-[clamp(28px,4.2vw,44px)] font-bold leading-tight">
             <span className="text-[#f59a1b]">お得</span>なモッピー案件ランキング
           </h2>
-          <div className="w-fit rounded-full bg-white px-5 py-3 text-sm font-bold text-[#173256] shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+          <div className="w-fit rounded-full bg-white px-4 py-2.5 text-[13px] font-bold text-[#173256] shadow-[0_10px_24px_rgba(15,23,42,0.08)] lg:px-5 lg:py-3 lg:text-sm">
             最終更新：{updatedAt}
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4">
+        <div className="mt-4 grid gap-3 lg:mt-5 lg:gap-4">
           {visibleItems.map((item, index) => {
             const labels = getReasonLabels(item);
             const shouldShowOfferImage = Boolean(item.image_url);
@@ -424,14 +426,14 @@ export default function TopPageClient({
             return (
               <article
                 key={`${item.rank}-${item.offer_name}-${index}`}
-                className="moppy-ranking-card grid min-h-[142px] items-center gap-4 rounded-[24px] border border-[#c8f2ee] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)] lg:grid-cols-[58px_150px_minmax(0,1fr)_160px_190px] lg:gap-[18px] lg:p-[18px]"
+                className="moppy-ranking-card grid min-h-[142px] grid-cols-[40px_90px_minmax(0,1fr)] items-start gap-3 overflow-hidden rounded-[20px] border border-[#c8f2ee] bg-white p-3 shadow-[0_12px_28px_rgba(15,23,42,0.06)] lg:grid-cols-[58px_150px_minmax(0,1fr)_160px_190px] lg:items-center lg:gap-[18px] lg:rounded-[24px] lg:p-[18px]"
               >
-                <div className="grid h-[50px] w-[50px] place-items-center rounded-[16px] bg-[linear-gradient(135deg,#e8fbf8,#fff8ed)] text-[26px] font-bold text-[#07968f]">
+                <div className="grid h-[40px] w-[40px] place-items-center rounded-[13px] bg-[linear-gradient(135deg,#e8fbf8,#fff8ed)] text-[22px] font-bold text-[#07968f] lg:h-[50px] lg:w-[50px] lg:rounded-[16px] lg:text-[26px]">
                   {index + 1}
                 </div>
 
                 {shouldShowOfferImage ? (
-                  <div className="moppy-offer-banner-wrap w-[min(100%,260px)] justify-self-center overflow-hidden rounded-[14px] border border-[#dbe3ed] bg-white lg:w-[150px]">
+                  <div className="moppy-offer-banner-wrap w-[90px] justify-self-center overflow-hidden rounded-[14px] border border-[#dbe3ed] bg-white lg:w-[150px]">
                     <img
                       src={item.image_url || ""}
                       alt={`${item.offer_name}のモッピーバナー`}
@@ -443,15 +445,15 @@ export default function TopPageClient({
                   <div className="hidden lg:block" aria-hidden="true" />
                 )}
 
-                <div>
-                  <h3 className="[overflow-wrap:anywhere] text-[21px] font-bold leading-snug lg:text-[23px]">
+                <div className="min-w-0">
+                  <h3 className="break-all text-[15.5px] font-bold leading-[1.35] lg:[overflow-wrap:anywhere] lg:text-[23px] lg:leading-snug">
                     {item.offer_name}
                   </h3>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-2 flex flex-wrap gap-1.5 lg:mt-3 lg:gap-2">
                     {labels.map((label) => (
                       <span
                         key={label}
-                        className={`inline-flex min-h-[30px] items-center rounded-full px-3 py-1.5 text-[13px] font-bold ${
+                        className={`inline-flex min-h-[25px] items-center rounded-full px-2.5 py-1 text-[12px] font-bold lg:min-h-[30px] lg:px-3 lg:py-1.5 lg:text-[13px] ${
                           label === "無料でできる"
                             ? "bg-[#ecfdf5] text-[#047857]"
                             : label === "高額報酬"
@@ -465,20 +467,20 @@ export default function TopPageClient({
                   </div>
                 </div>
 
-                <div className="text-left lg:text-center">
+                <div className="col-start-2 col-end-4 flex items-baseline gap-2 text-left lg:col-auto lg:block lg:text-center">
                   <small className="block text-xs font-bold text-[#64748b]">獲得ポイント</small>
-                  <strong className="mt-1 block text-[30px] font-bold leading-none text-[#07968f]">
+                  <strong className="mt-1 block text-[29px] font-bold leading-none text-[#07968f] lg:text-[30px]">
                     {formatReward(item.reward)}
                   </strong>
                 </div>
 
-                <div className="flex flex-col items-center gap-3">
+                <div className="col-span-3 grid w-full grid-cols-2 items-center gap-2 lg:col-auto lg:flex lg:flex-col lg:gap-3">
                   <a
                     href={getMoppyLinkUrl(item.primary_site_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => trackMoppyClick(item)}
-                    className="flex min-h-[52px] w-full max-w-[210px] items-center justify-center rounded-[14px] bg-[linear-gradient(90deg,#28bdb3,#07968f)] px-4 text-base font-bold text-white shadow-[0_14px_26px_rgba(40,189,179,0.22)] transition hover:scale-105"
+                    className="flex min-h-[44px] w-full max-w-none items-center justify-center overflow-hidden whitespace-nowrap rounded-[14px] bg-[linear-gradient(90deg,#28bdb3,#07968f)] px-3 text-sm font-bold text-white shadow-[0_14px_26px_rgba(40,189,179,0.22)] transition hover:scale-105 lg:min-h-[52px] lg:max-w-[210px] lg:px-4 lg:text-base"
                   >
                     モッピーで探す ›
                   </a>
